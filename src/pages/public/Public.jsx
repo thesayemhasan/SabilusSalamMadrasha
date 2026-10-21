@@ -16,35 +16,108 @@ function Head({ title }) {
 }
 
 /* ---------------- হোম ---------------- */
+const dig = (n, l) => {
+  const s = String(n)
+  if (l === 'bn') return s.replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d])
+  if (l === 'ar') return s.replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d])
+  return s
+}
+
 export function Home() {
   const { t, lang, settings } = useSite()
-  const notices = useRows('notices', { order: 'date', limit: 4 })
+  const notices = useRows('notices', { order: 'date', limit: 6 })
   const events = useRows('events', { order: 'event_date', asc: true })
+  const gallery = useRows('gallery', { order: 'sort', asc: true, limit: 6 })
+  const teachers = useRows('public_teachers', { order: 'sort', asc: true })
   const today = new Date().toISOString().slice(0, 10)
   const upcoming = events.rows.filter((e) => e.event_date >= today).slice(0, 4)
-  const feats = [
-    ['📖', 'home.why1'],
-    ['🌙', 'home.why2'],
-    ['🌸', 'home.why3'],
-    ['📱', 'home.why4'],
-  ]
+  const slides = gallery.rows.filter((g) => g.image_url)
+  const tcount = teachers.rows.length
+  const feats = [['📖', 'home.why1'], ['🌙', 'home.why2'], ['🌸', 'home.why3'], ['📱', 'home.why4']]
+  const depts = [['📖', 'dept.hifz'], ['📚', 'dept.qawmi'], ['🌸', 'dept.women']]
+  const quick = [['/admission', '📝', 'nav.admission'], ['/notices', '📢', 'nav.notices'], ['/events', '📅', 'nav.events'], ['/gallery', '🖼️', 'nav.gallery'], ['/teachers', '👨‍🏫', 'nav.teachers'], ['/contact', '☎️', 'nav.contact']]
+  const heroStyle = settings.hero_image
+    ? { backgroundImage: `linear-gradient(135deg, rgba(14,122,55,.88), rgba(31,42,122,.85)), url(${settings.hero_image})` }
+    : undefined
+
   return (
     <>
-      <section
-        className={`hero ${settings.hero_image ? 'has-img' : ''}`}
-        style={settings.hero_image ? { backgroundImage: `url(${settings.hero_image})` } : undefined}
-      >
-        <div className="container">
-          <div>
-            <span className="badge">{t('site.established')}</span>
-            <h1>{t('hero.title')}</h1>
-            <p>{t('hero.subtitle')}</p>
-            <div className="actions">
-              <Link to="/admission" className="btn pink">{t('hero.cta1')}</Link>
-              <Link to="/contact" className="btn light">{t('hero.cta2')}</Link>
+      {settings.apply_open !== false && (
+        <section className="container apply-wrap">
+          <div className="apply-bar">
+            <div>
+              <div className="apply-title"><span className="pulse" /> <b>{t('apply.title')}</b></div>
+              <div className="muted">{t('apply.text')}</div>
             </div>
+            <Link to="/admission" className="btn">{t('apply.btn')} →</Link>
           </div>
-          <img className="logo-big" src={settings.logo_url} alt="" />
+        </section>
+      )}
+
+      <section className="hero2">
+        <div className="container">
+          <div className="slider">
+            <div className="slide brand active" style={heroStyle}>
+              <div className="brand-grid">
+                <div className="brand-text">
+                  <span className="badge">{t('site.established')}</span>
+                  <h1>{t('hero.title')}</h1>
+                  <p>{t('hero.subtitle')}</p>
+                  <div className="actions">
+                    <Link to="/admission" className="btn pink">{t('hero.cta1')}</Link>
+                    <Link to="/contact" className="btn light">{t('hero.cta2')}</Link>
+                  </div>
+                </div>
+                <img className="logo-big float" src={settings.logo_url} alt="" />
+              </div>
+            </div>
+            {slides.map((g) => (
+              <div className="slide" key={g.id}>
+                <img className="bg" src={g.image_url} alt="" />
+                {pick(g, 'caption', lang) && <div className="cap">{pick(g, 'caption', lang)}</div>}
+              </div>
+            ))}
+            <button type="button" className="s-btn prev" data-dir="-1" aria-label="prev">‹</button>
+            <button type="button" className="s-btn next" data-dir="1" aria-label="next">›</button>
+            <div className="slider-dots" />
+          </div>
+
+          <aside className="updates card">
+            <h3>{t('updates.title')}</h3>
+            <div className="upd-list">
+              {notices.rows.length === 0 && <p className="muted">{t('notices.empty')}</p>}
+              {notices.rows.map((n) => (
+                <Link to="/notices" className="upd" key={n.id}>
+                  <small>{fmtDate(n.date, lang)}</small>
+                  <b>{pick(n, 'title', lang)}</b>
+                </Link>
+              ))}
+            </div>
+            <Link to="/notices" className="more">{t('common.viewAll')} →</Link>
+          </aside>
+        </div>
+      </section>
+
+      <section className="section" style={{ paddingBottom: 0 }}>
+        <div className="container">
+          <div className="quick-links">
+            {quick.map(([to, ic, k]) => (
+              <Link to={to} className="quick-link" key={to}>
+                <span className="q-ic">{ic}</span>
+                <span>{t(k)}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
+          <div className="stats">
+            <div className="stat-item"><b className="count">{t('stat.year.num')}</b><span>{t('stat.year.label')}</span></div>
+            <div className="stat-item"><b className="count">{t('stat.depts.num')}</b><span>{t('stat.depts.label')}</span></div>
+            {tcount > 0 && <div className="stat-item"><b className="count">{dig(tcount, lang)}</b><span>{t('stat.teachers.label')}</span></div>}
+          </div>
         </div>
       </section>
 
@@ -64,12 +137,43 @@ export function Home() {
       </section>
 
       <section className="section alt">
+        <div className="container">
+          <h2 className="center">{t('departments.title')}</h2>
+          <div className="grid g3" style={{ marginTop: 20 }}>
+            {depts.map(([ico, k]) => (
+              <Link to="/departments" className="card feature" key={k} style={{ color: 'inherit' }}>
+                <div className="ico">{ico}</div>
+                <h3>{t(k + '.title')}</h3>
+                <p className="muted">{t(k + '.text')}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {settings.show_message && (
+        <section className="section">
+          <div className="container">
+            <h2 className="center">{t('msg.title')}</h2>
+            <div className="card msg-card" style={{ marginTop: 20 }}>
+              {settings.principal_photo ? <img src={settings.principal_photo} alt="" /> : <div className="ph">👤</div>}
+              <div>
+                <p className="pre">“ {t('msg.text')} ”</p>
+                <b>{t('msg.name')}</b>
+                <div className="muted">{t('msg.role')}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className="section alt">
         <div className="container grid g2" style={{ alignItems: 'start' }}>
           <div>
             <h2>{t('home.notices.title')}</h2>
             <div className="stack">
               {notices.rows.length === 0 && <p className="muted">{t('notices.empty')}</p>}
-              {notices.rows.map((n) => (
+              {notices.rows.slice(0, 4).map((n) => (
                 <Link to="/notices" className="list-item" key={n.id}>
                   <span className="date-chip">{fmtDate(n.date, lang)}</span>
                   <h3>{pick(n, 'title', lang)}</h3>
@@ -96,7 +200,19 @@ export function Home() {
 
       <section className="section">
         <div className="container">
-          <div className="card center" style={{ background: 'linear-gradient(135deg,#e8f6ed,#fdeaf5)' }}>
+          <h2 className="center">{t('contact.cards.title')}</h2>
+          <div className="grid g3" style={{ marginTop: 20 }}>
+            <div className="card contact-card"><div className="ico">📍</div><h3>{t('contact.address.label')}</h3><p className="muted" style={{ margin: 0 }}>{t('site.address')}</p></div>
+            {settings.phone && <a className="card contact-card" href={`tel:${settings.phone}`}><div className="ico">☎️</div><h3>{t('contact.phone.label')}</h3><p className="muted" style={{ margin: 0 }}>{settings.phone}</p></a>}
+            {settings.email && <a className="card contact-card" href={`mailto:${settings.email}`}><div className="ico">✉️</div><h3>{t('contact.email.label')}</h3><p className="muted" style={{ margin: 0 }}>{settings.email}</p></a>}
+          </div>
+          {settings.map_embed && <iframe className="map" style={{ marginTop: 18 }} title="map" loading="lazy" src={settings.map_embed} />}
+        </div>
+      </section>
+
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <div className="card center cta-card">
             <h2>{t('home.cta.title')}</h2>
             <p>{t('home.cta.text')}</p>
             <Link to="/admission" className="btn pink">{t('home.cta.button')}</Link>

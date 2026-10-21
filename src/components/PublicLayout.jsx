@@ -19,19 +19,28 @@ const NAV = [
 export default function PublicLayout() {
   const { t, lang, setLang, settings } = useSite()
   const [open, setOpen] = useState(false)
-  useLocation()
+  const { pathname } = useLocation()
 
   return (
     <>
       <div className="topbar">
         <div className="container">
-          <span>{settings.phone ? `☎ ${settings.phone}` : t('site.tagline')}</span>
-          <div className="langs">
-            {LANGS.map((l) => (
-              <button key={l.code} className={lang === l.code ? 'on' : ''} onClick={() => setLang(l.code)}>
-                {l.label}
-              </button>
-            ))}
+          <div className="top-info">
+            {settings.phone && <a href={`tel:${settings.phone}`}>☎ {settings.phone}</a>}
+            {settings.email && <a href={`mailto:${settings.email}`}>✉ {settings.email}</a>}
+            {!settings.phone && !settings.email && <span>{t('site.tagline')}</span>}
+          </div>
+          <div className="top-right">
+            {settings.facebook && <a href={settings.facebook} target="_blank" rel="noreferrer">Facebook</a>}
+            {settings.youtube && <a href={settings.youtube} target="_blank" rel="noreferrer">YouTube</a>}
+            <Link to="/admin">{t('nav.login')}</Link>
+            <div className="langs">
+              {LANGS.map((l) => (
+                <button key={l.code} className={lang === l.code ? 'on' : ''} onClick={() => setLang(l.code)}>
+                  {l.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -48,6 +57,7 @@ export default function PublicLayout() {
                 {t(key)}
               </NavLink>
             ))}
+            <Link to="/admission" className="btn small pink nav-cta">{t('apply.btn')}</Link>
           </nav>
           <button className="menu-btn" aria-label="menu" onClick={() => setOpen(!open)}>
             {open ? '✕' : '☰'}
@@ -64,7 +74,7 @@ export default function PublicLayout() {
         )}
       </header>
 
-      <main>
+      <main key={pathname} className="page-in">
         <Outlet />
       </main>
 

@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { initFx } from './lib/fx'
 import PublicLayout from './components/PublicLayout'
 import { About, Admission, Contact, Departments, Donate, Events, Gallery, Home, Notices, Teachers } from './pages/public/Public'
 import AdminShell from './pages/admin/AdminShell'
@@ -12,6 +14,7 @@ import Users from './pages/admin/Users'
 import ModulePage from './pages/admin/ModulePage'
 
 export default function App() {
+  useEffect(() => initFx(), [])
   return (
     <Routes>
       <Route element={<PublicLayout />}>

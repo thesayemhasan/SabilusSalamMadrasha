@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { DEFAULT_SETTINGS, useSite } from '../../lib/store'
-import { ImageUpload } from '../../components/Ui'
+import { ImageUpload, Switch } from '../../components/Ui'
 
 export default function Settings() {
   const { settings, reload } = useSite()
@@ -28,6 +28,16 @@ export default function Settings() {
           <h3>লোগো ও ছবি</h3>
           <div className="field"><label>লোগো</label><ImageUpload folder="brand" value={v.logo_url} onChange={(x) => setV({ ...v, logo_url: x || DEFAULT_SETTINGS.logo_url })} /></div>
           <div className="field"><label>হোম পেইজের ব্যানার ছবি (ঐচ্ছিক)</label><ImageUpload folder="brand" value={v.hero_image} onChange={(x) => setV({ ...v, hero_image: x })} /></div>
+        </div>
+        <div className="card form">
+          <h3>হোম পেইজ</h3>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Switch checked={v.apply_open !== false} onChange={(x) => setV({ ...v, apply_open: x })} /> "ভর্তির আবেদন চলছে" বার দেখান
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Switch checked={!!v.show_message} onChange={(x) => setV({ ...v, show_message: x })} /> পরিচালকের বাণী দেখান (আগে "সাইটের লেখা" থেকে বাণী ও নাম লিখুন)
+          </label>
+          <div className="field"><label>পরিচালকের ছবি</label><ImageUpload folder="brand" value={v.principal_photo} onChange={(x) => setV({ ...v, principal_photo: x })} /></div>
         </div>
         <div className="card form">
           <h3>যোগাযোগ</h3>
