@@ -24,7 +24,7 @@ function Login() {
     setErr('')
     const { error } = await signIn(email, pw)
     setBusy(false)
-    if (error) setErr('ইমেইল বা পাসওয়ার্ড ভুল')
+    if (error) setErr(`লগইন হয়নি: ${error.message}`)
   }
 
   return (
