@@ -1,0 +1,177 @@
+// সাইটের সব লেখা এক জায়গায়। অ্যাডমিন প্যানেল > "সাইটের লেখা" থেকে প্রতিটি লেখা তিন ভাষায় বদলানো যায়।
+// ফরম্যাট: [key, বাংলা, আরবি, ইংরেজি, বড়-লেখা?]
+export const TEXT_GROUPS = [
+  {
+    id: 'brand',
+    label: 'প্রতিষ্ঠানের নাম ও ঠিকানা',
+    items: [
+      ['site.name', 'সাবিলুস সালাম মাদরাসা ও মহিলা মাদরাসা ঢাকা', 'مدرسة سبيل السلام ومدرسة البنات داكا', 'Sabilus Salam Madrasa & Mohila Madrasa Dhaka'],
+      ['site.short', 'সাবিলুস সালাম মাদরাসা', 'مدرسة سبيل السلام', 'Sabilus Salam Madrasa'],
+      ['site.tagline', 'ইলম ও আখলাকের আলোয় আলোকিত প্রজন্ম', 'جيل منوّر بنور العلم والأخلاق', 'A generation lit by knowledge and character'],
+      ['site.established', 'স্থাপিত: ২০২১', 'تأسست: ٢٠٢١', 'Established: 2021'],
+      ['site.address', 'বেপাড়ি বাড়ি মসজিদ সংলগ্ন, ছোলমাইদ, ভাটারা, ঢাকা ১২১২।', 'بجوار مسجد بيباري باري، شولمايد، باتارا، داكا ١٢١٢.', 'Beside Beparibari Mosque, Cholmaid, Vatara, Dhaka 1212.', true],
+    ],
+  },
+  {
+    id: 'nav',
+    label: 'মেনু ও সাধারণ বাটন',
+    items: [
+      ['nav.home', 'হোম', 'الرئيسية', 'Home'],
+      ['nav.about', 'পরিচিতি', 'عن المدرسة', 'About'],
+      ['nav.departments', 'বিভাগসমূহ', 'الأقسام', 'Departments'],
+      ['nav.admission', 'ভর্তি', 'القبول', 'Admission'],
+      ['nav.notices', 'নোটিশ', 'الإعلانات', 'Notices'],
+      ['nav.events', 'ইভেন্ট', 'الفعاليات', 'Events'],
+      ['nav.gallery', 'গ্যালারি', 'المعرض', 'Gallery'],
+      ['nav.teachers', 'শিক্ষকবৃন্দ', 'المدرّسون', 'Teachers'],
+      ['nav.donate', 'দান', 'التبرع', 'Donate'],
+      ['nav.contact', 'যোগাযোগ', 'اتصل بنا', 'Contact'],
+      ['nav.login', 'লগইন', 'تسجيل الدخول', 'Login'],
+      ['common.more', 'বিস্তারিত', 'التفاصيل', 'Read more'],
+      ['common.viewAll', 'সব দেখুন', 'عرض الكل', 'View all'],
+      ['common.loading', 'লোড হচ্ছে…', 'جارٍ التحميل…', 'Loading…'],
+      ['common.pinned', 'গুরুত্বপূর্ণ', 'مهم', 'Important'],
+    ],
+  },
+  {
+    id: 'home',
+    label: 'হোম পেইজ',
+    items: [
+      ['hero.title', 'আল্লাহর পথে ইলম অর্জনের নিরাপদ ঠিকানা', 'مكان آمن لطلب العلم في سبيل الله', 'A safe place to seek knowledge for the sake of Allah', true],
+      ['hero.subtitle', 'হিফজ, কওমি ও মহিলা শাখায় কুরআন-সুন্নাহর আলোকে দ্বীনি ও নৈতিক শিক্ষা।', 'تعليم ديني وأخلاقي على ضوء القرآن والسنة في أقسام الحفظ والقومي والبنات.', 'Religious and moral education in the light of the Quran and Sunnah, across Hifz, Qawmi and women’s sections.', true],
+      ['hero.cta1', 'ভর্তির তথ্য', 'معلومات القبول', 'Admission info'],
+      ['hero.cta2', 'যোগাযোগ করুন', 'تواصل معنا', 'Contact us'],
+      ['home.why.title', 'কেন সাবিলুস সালাম?', 'لماذا سبيل السلام؟', 'Why Sabilus Salam?'],
+      ['home.why1.title', 'কুরআনের শিক্ষা', 'تعليم القرآن', 'Quran education'],
+      ['home.why1.text', 'সহিহ তিলাওয়াত ও নিয়মিত হিফজের তত্ত্বাবধান।', 'تلاوة صحيحة ومتابعة منتظمة للحفظ.', 'Correct recitation and regular supervision of memorisation.', true],
+      ['home.why2.title', 'আদব ও আখলাক', 'الأدب والأخلاق', 'Manners & character'],
+      ['home.why2.text', 'ইলমের পাশাপাশি সুন্নাহভিত্তিক আদব ও চরিত্র গঠন।', 'بناء الأدب والخلق على السنة إلى جانب العلم.', 'Sunnah-based manners and character building alongside knowledge.', true],
+      ['home.why3.title', 'মহিলা শাখা', 'قسم البنات', 'Women’s section'],
+      ['home.why3.text', 'পর্দার পরিবেশে আলাদা শাখায় নারী শিক্ষার ব্যবস্থা।', 'تعليم البنات في بيئة محتشمة وقسم مستقل.', 'Education for girls in a modest, separate section.', true],
+      ['home.why4.title', 'অভিভাবকের সঙ্গে যোগাযোগ', 'التواصل مع أولياء الأمور', 'Parent communication'],
+      ['home.why4.text', 'উপস্থিতি, ফলাফল ও নোটিশ নিয়মিত অভিভাবকের কাছে।', 'الحضور والنتائج والإعلانات تصل إلى ولي الأمر بانتظام.', 'Attendance, results and notices reach parents regularly.', true],
+      ['home.notices.title', 'সর্বশেষ নোটিশ', 'آخر الإعلانات', 'Latest notices'],
+      ['home.events.title', 'আসন্ন কর্মসূচি', 'الفعاليات القادمة', 'Upcoming events'],
+      ['home.cta.title', 'আপনার সন্তানকে ভর্তি করাতে চান?', 'هل تريد تسجيل ابنك أو ابنتك؟', 'Want to admit your child?'],
+      ['home.cta.text', 'অনলাইনে আবেদন করুন, আমরা দ্রুত যোগাযোগ করব।', 'قدّم طلبك عبر الإنترنت وسنتواصل معك قريبًا.', 'Apply online and we will contact you soon.'],
+      ['home.cta.button', 'অনলাইনে আবেদন করুন', 'قدّم الآن', 'Apply online'],
+    ],
+  },
+  {
+    id: 'about',
+    label: 'পরিচিতি',
+    items: [
+      ['about.title', 'আমাদের পরিচিতি', 'من نحن', 'About us'],
+      ['about.p1', 'সাবিলুস সালাম মাদরাসা ও মহিলা মাদরাসা ২০২১ সালে ঢাকার ভাটারার ছোলমাইদে প্রতিষ্ঠিত হয়। কুরআন ও সুন্নাহর আলোকে শিক্ষার্থীদের দ্বীনি ইলম ও উত্তম চরিত্রে গড়ে তোলাই আমাদের লক্ষ্য।', 'تأسست مدرسة سبيل السلام ومدرسة البنات عام ٢٠٢١ في شولمايد بباتارا بداكا. هدفنا تنشئة الطلاب على العلم الشرعي والأخلاق الحسنة في ضوء القرآن والسنة.', 'Sabilus Salam Madrasa & Mohila Madrasa was established in 2021 at Cholmaid, Vatara, Dhaka. Our aim is to nurture students in religious knowledge and good character in the light of the Quran and Sunnah.', true],
+      ['about.p2', 'এখানে ছেলেদের জন্য হিফজ ও কওমি বিভাগ এবং মেয়েদের জন্য আলাদা মহিলা শাখা রয়েছে।', 'يوجد قسم الحفظ والقومي للبنين وقسم مستقل للبنات.', 'We have Hifz and Qawmi departments for boys and a separate women’s section for girls.', true],
+      ['about.mission.title', 'আমাদের লক্ষ্য', 'رسالتنا', 'Our mission'],
+      ['about.mission.text', 'সহিহ কুরআন তিলাওয়াত, দ্বীনি ইলম ও সুন্নাহভিত্তিক জীবনযাপনে শিক্ষার্থীদের প্রস্তুত করা।', 'إعداد الطلاب للتلاوة الصحيحة والعلم الشرعي والحياة وفق السنة.', 'Preparing students for correct recitation, religious knowledge and a Sunnah-based life.', true],
+      ['about.vision.title', 'আমাদের স্বপ্ন', 'رؤيتنا', 'Our vision'],
+      ['about.vision.text', 'এমন আলেম ও হাফেজ তৈরি করা, যারা সমাজকে আলো দেখাবেন।', 'إخراج علماء وحفّاظ ينيرون المجتمع.', 'To produce scholars and huffaz who will light the way for society.', true],
+    ],
+  },
+  {
+    id: 'departments',
+    label: 'বিভাগসমূহ',
+    items: [
+      ['departments.title', 'আমাদের বিভাগসমূহ', 'أقسامنا', 'Our departments'],
+      ['departments.intro', 'শিক্ষার্থীর বয়স ও লক্ষ্য অনুযায়ী আলাদা আলাদা বিভাগ।', 'أقسام مختلفة بحسب عمر الطالب وهدفه.', 'Separate departments according to the student’s age and goal.'],
+      ['dept.hifz.title', 'হিফজ বিভাগ', 'قسم الحفظ', 'Hifz department'],
+      ['dept.hifz.text', 'সবক, সাত সবক ও আমুখতা নিয়মিত তত্ত্বাবধানে পূর্ণ কুরআন হিফজ।', 'حفظ القرآن كاملًا بمتابعة منتظمة للسبق والسبقي والمنزل.', 'Complete Quran memorisation with regular supervision of sabaq, sabaqi and manzil.', true],
+      ['dept.qawmi.title', 'কওমি বিভাগ', 'القسم القومي', 'Qawmi department'],
+      ['dept.qawmi.text', 'আরবি, ফিকহ, হাদিস ও তাফসিরসহ কওমি ধারার পূর্ণাঙ্গ পাঠ্যক্রম।', 'منهج قومي متكامل يشمل العربية والفقه والحديث والتفسير.', 'The full Qawmi curriculum including Arabic, Fiqh, Hadith and Tafsir.', true],
+      ['dept.women.title', 'মহিলা মাদরাসা', 'مدرسة البنات', 'Mohila Madrasa'],
+      ['dept.women.text', 'পর্দার পরিবেশে ছাত্রীদের জন্য কুরআন ও দ্বীনি শিক্ষার আলাদা শাখা।', 'قسم مستقل لتعليم القرآن والعلوم الدينية للطالبات في بيئة محتشمة.', 'A separate section for Quran and religious education for girls in a modest environment.', true],
+    ],
+  },
+  {
+    id: 'admission',
+    label: 'ভর্তি ও আবেদন ফরম',
+    items: [
+      ['admission.title', 'ভর্তি তথ্য', 'معلومات القبول', 'Admission'],
+      ['admission.intro', 'নতুন শিক্ষাবর্ষে ভর্তির জন্য নিচের ফরমটি পূরণ করুন। আবেদন জমা দিলে মাদরাসা থেকে আপনার সঙ্গে যোগাযোগ করা হবে।', 'املأ النموذج أدناه للتقديم للعام الدراسي الجديد، وسنتواصل معك بعد الإرسال.', 'Fill in the form below to apply for the new academic year. We will contact you after you submit.', true],
+      ['admission.rules.title', 'ভর্তির নিয়ম', 'شروط القبول', 'Admission rules'],
+      ['admission.rules.text', 'ভর্তির যোগ্যতা, প্রয়োজনীয় কাগজপত্র ও ফি সম্পর্কে জানতে মাদরাসায় যোগাযোগ করুন।', 'للاطلاع على شروط القبول والوثائق والرسوم، يرجى التواصل مع المدرسة.', 'Contact the madrasa for eligibility, required documents and fees.', true],
+      ['form.student', 'শিক্ষার্থীর নাম', 'اسم الطالب', 'Student name'],
+      ['form.father', 'পিতার নাম', 'اسم الأب', 'Father’s name'],
+      ['form.mother', 'মাতার নাম', 'اسم الأم', 'Mother’s name'],
+      ['form.phone', 'মোবাইল নম্বর', 'رقم الجوال', 'Mobile number'],
+      ['form.department', 'বিভাগ', 'القسم', 'Department'],
+      ['form.class', 'শ্রেণি', 'الصف', 'Class'],
+      ['form.address', 'ঠিকানা', 'العنوان', 'Address'],
+      ['form.note', 'অতিরিক্ত তথ্য', 'ملاحظات إضافية', 'Additional notes'],
+      ['form.submit', 'আবেদন জমা দিন', 'إرسال الطلب', 'Submit application'],
+      ['form.sending', 'পাঠানো হচ্ছে…', 'جارٍ الإرسال…', 'Sending…'],
+      ['form.success', 'আলহামদুলিল্লাহ, আপনার আবেদন জমা হয়েছে। শীঘ্রই আমরা যোগাযোগ করব।', 'الحمد لله، تم استلام طلبك وسنتواصل معك قريبًا.', 'Alhamdulillah, your application has been received. We will contact you soon.', true],
+      ['form.error', 'দুঃখিত, পাঠানো যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।', 'عذرًا، تعذّر الإرسال. حاول مرة أخرى بعد قليل.', 'Sorry, it could not be sent. Please try again shortly.', true],
+      ['form.offline', 'অনলাইন ফরম এখনো চালু হয়নি। অনুগ্রহ করে ফোনে যোগাযোগ করুন।', 'النموذج غير مفعّل بعد. يرجى الاتصال بنا هاتفيًا.', 'The online form is not active yet. Please contact us by phone.', true],
+    ],
+  },
+  {
+    id: 'lists',
+    label: 'নোটিশ, ইভেন্ট, গ্যালারি, শিক্ষক',
+    items: [
+      ['notices.title', 'নোটিশ বোর্ড', 'لوحة الإعلانات', 'Notice board'],
+      ['notices.empty', 'এখন কোনো নোটিশ নেই।', 'لا توجد إعلانات حاليًا.', 'No notices right now.'],
+      ['events.title', 'ইভেন্ট ক্যালেন্ডার', 'تقويم الفعاليات', 'Event calendar'],
+      ['events.empty', 'এখন কোনো কর্মসূচি নেই।', 'لا توجد فعاليات حاليًا.', 'No events right now.'],
+      ['gallery.title', 'ফটো গ্যালারি', 'معرض الصور', 'Photo gallery'],
+      ['gallery.empty', 'এখনো কোনো ছবি যোগ করা হয়নি।', 'لم تُضف أي صور بعد.', 'No photos have been added yet.'],
+      ['teachers.title', 'আমাদের শিক্ষকবৃন্দ', 'مدرّسونا', 'Our teachers'],
+      ['teachers.empty', 'শিক্ষকদের তালিকা শীঘ্রই যোগ করা হবে।', 'ستُضاف قائمة المدرّسين قريبًا.', 'The teacher list will be added soon.'],
+    ],
+  },
+  {
+    id: 'donate',
+    label: 'দান ও চাঁদা',
+    items: [
+      ['donate.title', 'দান ও সহযোগিতা', 'التبرع والدعم', 'Donate & support'],
+      ['donate.intro', 'দ্বীনি শিক্ষার এই কাজে আপনার সদকা, যাকাত ও দান আমাদের শক্তি। আল্লাহ আপনাদের কবুল করুন।', 'صدقاتكم وزكاتكم وتبرعاتكم قوة لنا في خدمة التعليم الديني. تقبّل الله منكم.', 'Your sadaqah, zakat and donations strengthen this work of religious education. May Allah accept from you.', true],
+      ['donate.methods.title', 'দানের মাধ্যম', 'طرق التبرع', 'Ways to donate'],
+      ['donate.methods.text', 'বিকাশ/নগদ/ব্যাংক অ্যাকাউন্টের তথ্য শীঘ্রই এখানে যোগ করা হবে। আপাতত সরাসরি মাদরাসায় বা ফোনে যোগাযোগ করুন।', 'ستُضاف بيانات الحساب المصرفي وبكاش/نقد قريبًا. حاليًا تواصل مع المدرسة مباشرة.', 'bKash/Nagad/bank account details will be added here soon. For now, contact the madrasa directly.', true],
+    ],
+  },
+  {
+    id: 'contact',
+    label: 'যোগাযোগ',
+    items: [
+      ['contact.title', 'যোগাযোগ', 'اتصل بنا', 'Contact us'],
+      ['contact.intro', 'যেকোনো প্রশ্ন বা পরামর্শে আমাদের জানান।', 'راسلنا لأي سؤال أو اقتراح.', 'Tell us about any question or suggestion.'],
+      ['contact.address.label', 'ঠিকানা', 'العنوان', 'Address'],
+      ['contact.phone.label', 'ফোন', 'الهاتف', 'Phone'],
+      ['contact.email.label', 'ইমেইল', 'البريد الإلكتروني', 'Email'],
+      ['contact.hours.label', 'সময়', 'ساعات العمل', 'Hours'],
+      ['contact.hours.text', 'শনিবার–বৃহস্পতিবার, সকাল ৮টা – বিকাল ৫টা', 'السبت – الخميس، ٨ صباحًا – ٥ مساءً', 'Saturday–Thursday, 8:00 AM – 5:00 PM'],
+      ['contact.form.name', 'আপনার নাম', 'اسمك', 'Your name'],
+      ['contact.form.phone', 'মোবাইল নম্বর', 'رقم الجوال', 'Mobile number'],
+      ['contact.form.message', 'আপনার বার্তা', 'رسالتك', 'Your message'],
+      ['contact.form.send', 'বার্তা পাঠান', 'إرسال الرسالة', 'Send message'],
+      ['contact.form.success', 'আপনার বার্তা পাঠানো হয়েছে। ধন্যবাদ।', 'تم إرسال رسالتك. شكرًا لك.', 'Your message has been sent. Thank you.'],
+    ],
+  },
+  {
+    id: 'footer',
+    label: 'ফুটার',
+    items: [
+      ['footer.about', 'কুরআন ও সুন্নাহর আলোকে দ্বীনি শিক্ষা ও আদর্শ চরিত্র গঠনের প্রতিষ্ঠান।', 'مؤسسة للتعليم الديني وبناء الشخصية في ضوء القرآن والسنة.', 'An institution for religious education and character building in the light of the Quran and Sunnah.', true],
+      ['footer.links', 'দ্রুত লিংক', 'روابط سريعة', 'Quick links'],
+      ['footer.contact', 'যোগাযোগ', 'تواصل', 'Contact'],
+      ['footer.rights', 'সর্বস্বত্ব সংরক্ষিত।', 'جميع الحقوق محفوظة.', 'All rights reserved.'],
+    ],
+  },
+]
+
+export const LANGS = [
+  { code: 'bn', label: 'বাংলা', dir: 'ltr' },
+  { code: 'ar', label: 'العربية', dir: 'rtl' },
+  { code: 'en', label: 'English', dir: 'ltr' },
+]
+
+export const DEFAULTS = {}
+export const META = {}
+for (const g of TEXT_GROUPS) {
+  for (const [key, bn, ar, en, multi] of g.items) {
+    DEFAULTS[key] = { bn, ar, en }
+    META[key] = { group: g.id, groupLabel: g.label, multiline: Boolean(multi) }
+  }
+}

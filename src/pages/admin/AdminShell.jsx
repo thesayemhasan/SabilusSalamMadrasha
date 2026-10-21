@@ -1,0 +1,123 @@
+import { useState } from 'react'
+import { Link, NavLink, Outlet } from 'react-router-dom'
+import { configured } from '../../lib/supabase'
+import { useAuth, useSite } from '../../lib/store'
+import { MODULES, MODULE_GROUPS, BUILT } from '../../lib/modules'
+
+const MENU = [
+  ['প্রধান', [['/admin', '🏠', 'ড্যাশবোর্ড', true], ['/admin/applications', '📝', 'ভর্তির আবেদন'], ['/admin/messages', '✉️', 'যোগাযোগের বার্তা']]],
+  ['ওয়েবসাইট', [['/admin/texts', '✏️', 'সাইটের লেখা'], ['/admin/notices', '📢', 'নোটিশ'], ['/admin/events', '📅', 'ইভেন্ট'], ['/admin/gallery', '🖼️', 'গ্যালারি'], ['/admin/teachers', '👨‍🏫', 'শিক্ষকবৃন্দ (পাবলিক)']]],
+  ['সিস্টেম', [['/admin/modules', '🎛️', 'মডিউল সুইচ'], ['/admin/integrations', '🔌', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', '⚙️', 'প্রতিষ্ঠানের তথ্য ও থিম'], ['/admin/users', '👥', 'ব্যবহারকারী ও অনুমতি']]],
+]
+
+function Login() {
+  const { signIn } = useAuth()
+  const { settings } = useSite()
+  const [email, setEmail] = useState('')
+  const [pw, setPw] = useState('')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function submit(e) {
+    e.preventDefault()
+    setBusy(true)
+    setErr('')
+    const { error } = await signIn(email, pw)
+    setBusy(false)
+    if (error) setErr('ইমেইল বা পাসওয়ার্ড ভুল')
+  }
+
+  return (
+    <div className="login-wrap">
+      <form className="card form login-box" onSubmit={submit}>
+        <div className="center">
+          <img src={settings.logo_url} alt="" style={{ width: 84, height: 84, margin: '0 auto 8px', objectFit: 'contain' }} />
+          <h2 style={{ marginBottom: 2 }}>অ্যাডমিন লগইন</h2>
+          <div className="muted">সাবিলুস সালাম মাদরাসা</div>
+        </div>
+        <div className="field"><label>ইমেইল</label><input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+        <div className="field"><label>পাসওয়ার্ড</label><input type="password" required autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} /></div>
+        {err && <div className="alert err">{err}</div>}
+        <button className="btn" disabled={busy}>{busy ? 'অপেক্ষা করুন…' : 'প্রবেশ করুন'}</button>
+        <Link to="/" className="center muted">← ওয়েবসাইটে ফিরুন</Link>
+      </form>
+    </div>
+  )
+}
+
+export default function AdminShell() {
+  const { session, profile, loading, isAdmin, signOut } = useAuth()
+  const { settings } = useSite()
+  const [open, setOpen] = useState(false)
+
+  if (!configured) {
+    return (
+      <div className="login-wrap">
+        <div className="card login-box">
+          <h2>Supabase সংযুক্ত নয়</h2>
+          <p>অ্যাডমিন প্যানেল চালাতে .env ফাইলে (বা GitHub Secrets এ) VITE_SUPABASE_URL ও VITE_SUPABASE_ANON_KEY বসাতে হবে। README ফাইলে ধাপগুলো দেওয়া আছে।</p>
+          <Link to="/" className="btn">ওয়েবসাইটে ফিরুন</Link>
+        </div>
+      </div>
+    )
+  }
+  if (loading) return <div className="login-wrap"><p>লোড হচ্ছে…</p></div>
+  if (!session) return <Login />
+  if (!isAdmin) {
+    return (
+      <div className="login-wrap">
+        <div className="card login-box">
+          <h2>অ্যাক্সেস নেই</h2>
+          <p>{profile ? 'আপনার অ্যাকাউন্টে এখনো অ্যাডমিন অনুমতি দেওয়া হয়নি। সুপার অ্যাডমিনকে বলুন আপনার ভূমিকা ঠিক করে দিতে।' : 'প্রোফাইল পাওয়া যায়নি। schema.sql চালানো হয়েছে কিনা দেখুন।'}</p>
+          <button className="btn outline" onClick={signOut}>লগআউট</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="adm">
+      {open && <div className="scrim" onClick={() => setOpen(false)} />}
+      <aside className={`adm-side ${open ? 'open' : ''}`}>
+        <div className="brand">
+          <img src={settings.logo_url} alt="" style={{ background: '#fff', borderRadius: '50%', padding: 2 }} />
+          <span>অ্যাডমিন প্যানেল</span>
+        </div>
+        {MENU.map(([title, items]) => (
+          <div key={title}>
+            <h5>{title}</h5>
+            {items.map(([to, ic, label, end]) => (
+              <NavLink key={to} to={to} end={end} onClick={() => setOpen(false)} className={({ isActive }) => (isActive ? 'active' : '')}>
+                <span className="ic">{ic}</span>{label}
+              </NavLink>
+            ))}
+          </div>
+        ))}
+        <h5>ম্যানেজমেন্ট মডিউল</h5>
+        {MODULE_GROUPS.map((g) => (
+          <details key={g.id} style={{ margin: '2px 0' }}>
+            <summary style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '.95rem' }}>{g.label}</summary>
+            {MODULES.filter((m) => m.group === g.id).map((m) => (
+              <NavLink key={m.key} to={`/admin/m/${m.key}`} onClick={() => setOpen(false)} className={({ isActive }) => (isActive ? 'active' : '')} style={{ paddingInlineStart: 28, fontSize: '.9rem' }}>
+                {m.name}
+                <span className="tag" style={{ marginInlineStart: 'auto' }}>{BUILT.has(m.key) ? '✓' : `ধাপ ${m.step}`}</span>
+              </NavLink>
+            ))}
+          </details>
+        ))}
+        <h5>অন্যান্য</h5>
+        <Link to="/"><span className="ic">🌐</span>ওয়েবসাইট দেখুন</Link>
+      </aside>
+      <div className="adm-main">
+        <div className="adm-top">
+          <button className="menu-btn" onClick={() => setOpen(true)}>☰</button>
+          <span className="muted" style={{ fontSize: '.9rem' }}>{profile.full_name || profile.email}</span>
+          <button className="btn small outline" onClick={signOut}>লগআউট</button>
+        </div>
+        <div className="adm-body">
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  )
+}
