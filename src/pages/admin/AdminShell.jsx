@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { configured } from '../../lib/supabase'
 import { useAuth, useSite } from '../../lib/store'
+import Icon from '../../components/Icon'
 import { MODULES, MODULE_GROUPS, BUILT } from '../../lib/modules'
 
 const MENU = [
-  ['প্রধান', [['/admin', '🏠', 'ড্যাশবোর্ড', true], ['/admin/applications', '📝', 'ভর্তির আবেদন'], ['/admin/messages', '✉️', 'যোগাযোগের বার্তা']]],
-  ['ওয়েবসাইট', [['/admin/texts', '✏️', 'সাইটের লেখা'], ['/admin/notices', '📢', 'নোটিশ'], ['/admin/events', '📅', 'ইভেন্ট'], ['/admin/gallery', '🖼️', 'গ্যালারি'], ['/admin/teachers', '👨‍🏫', 'শিক্ষকবৃন্দ (পাবলিক)']]],
-  ['সিস্টেম', [['/admin/modules', '🎛️', 'মডিউল সুইচ'], ['/admin/integrations', '🔌', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', '⚙️', 'প্রতিষ্ঠানের তথ্য ও থিম'], ['/admin/users', '👥', 'ব্যবহারকারী ও অনুমতি']]],
+  ['প্রধান', [['/admin', 'dashboard', 'ড্যাশবোর্ড', true], ['/admin/applications', 'clipboard', 'ভর্তির আবেদন'], ['/admin/messages', 'mail', 'যোগাযোগের বার্তা']]],
+  ['ওয়েবসাইট', [['/admin/texts', 'edit', 'সাইটের লেখা'], ['/admin/notices', 'megaphone', 'নোটিশ'], ['/admin/events', 'calendar', 'ইভেন্ট'], ['/admin/gallery', 'image', 'গ্যালারি'], ['/admin/teachers', 'teacher', 'শিক্ষকবৃন্দ (পাবলিক)']]],
+  ['সিস্টেম', [['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'প্রতিষ্ঠানের তথ্য ও থিম'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
 ]
 
 function Login() {
@@ -88,7 +89,7 @@ export default function AdminShell() {
             <h5>{title}</h5>
             {items.map(([to, ic, label, end]) => (
               <NavLink key={to} to={to} end={end} onClick={() => setOpen(false)} className={({ isActive }) => (isActive ? 'active' : '')}>
-                <span className="ic">{ic}</span>{label}
+                <span className="ic"><Icon name={ic} size={20} cls="cur" /></span>{label}
               </NavLink>
             ))}
           </div>
@@ -100,17 +101,17 @@ export default function AdminShell() {
             {MODULES.filter((m) => m.group === g.id).map((m) => (
               <NavLink key={m.key} to={`/admin/m/${m.key}`} onClick={() => setOpen(false)} className={({ isActive }) => (isActive ? 'active' : '')} style={{ paddingInlineStart: 28, fontSize: '.9rem' }}>
                 {m.name}
-                <span className="tag" style={{ marginInlineStart: 'auto' }}>{BUILT.has(m.key) ? '✓' : `ধাপ ${m.step}`}</span>
+                <span className="tag" style={{ marginInlineStart: 'auto' }}>{BUILT.has(m.key) ? 'তৈরি' : `ধাপ ${m.step}`}</span>
               </NavLink>
             ))}
           </details>
         ))}
         <h5>অন্যান্য</h5>
-        <Link to="/"><span className="ic">🌐</span>ওয়েবসাইট দেখুন</Link>
+        <Link to="/"><span className="ic"><Icon name="globe" size={20} cls="cur" /></span>ওয়েবসাইট দেখুন</Link>
       </aside>
       <div className="adm-main">
         <div className="adm-top">
-          <button className="menu-btn" onClick={() => setOpen(true)}>☰</button>
+          <button className="menu-btn" onClick={() => setOpen(true)}><Icon name="menu" size={22} /></button>
           <span className="muted" style={{ fontSize: '.9rem' }}>{profile.full_name || profile.email}</span>
           <button className="btn small outline" onClick={signOut}>লগআউট</button>
         </div>

@@ -16,7 +16,7 @@ export default function Settings() {
     const { error } = await supabase.from('site_settings').upsert({ key: 'institute', value: v, updated_at: new Date().toISOString() })
     if (error) return setState('ত্রুটি: ' + error.message)
     await reload()
-    setState('সংরক্ষিত ✓')
+    setState('সংরক্ষিত হয়েছে')
   }
 
   return (
@@ -34,10 +34,6 @@ export default function Settings() {
           <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Switch checked={v.apply_open !== false} onChange={(x) => setV({ ...v, apply_open: x })} /> "ভর্তির আবেদন চলছে" বার দেখান
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Switch checked={!!v.show_message} onChange={(x) => setV({ ...v, show_message: x })} /> পরিচালকের বাণী দেখান (আগে "সাইটের লেখা" থেকে বাণী ও নাম লিখুন)
-          </label>
-          <div className="field"><label>পরিচালকের ছবি</label><ImageUpload folder="brand" value={v.principal_photo} onChange={(x) => setV({ ...v, principal_photo: x })} /></div>
         </div>
         <div className="card form">
           <h3>যোগাযোগ</h3>

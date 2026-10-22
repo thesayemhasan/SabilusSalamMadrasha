@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import Icon from '../../components/Icon'
 
 const STATUS = { new: 'নতুন', contacted: 'যোগাযোগ হয়েছে', admitted: 'ভর্তি হয়েছে', rejected: 'বাতিল' }
 const fmt = (d) => new Date(d).toLocaleString('bn-BD')
@@ -41,9 +42,9 @@ export function Applications() {
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setOpen(open === r.id ? null : r.id)}>
               <div>
                 <b>{r.student_name}</b> <span className={`pill ${r.status === 'new' ? 'new' : ''}`}>{STATUS[r.status]}</span>
-                <div className="muted" style={{ fontSize: '.85rem' }}>☎ {r.phone} · {r.department || '—'} · {fmt(r.created_at)}</div>
+                <div className="muted" style={{ fontSize: '.85rem' }}><Icon name="phone" size={14} /> {r.phone} · {r.department || '—'} · {fmt(r.created_at)}</div>
               </div>
-              <span>{open === r.id ? '▲' : '▼'}</span>
+              <Icon name={open === r.id ? 'chevup' : 'chevdown'} size={20} />
             </div>
             {open === r.id && (
               <div style={{ marginTop: 12 }}>
@@ -98,7 +99,7 @@ export function Messages() {
         {rows.map((r) => (
           <div className="card" key={r.id} style={{ borderInlineStart: r.is_read ? undefined : '4px solid var(--secondary)' }}>
             <b>{r.name}</b> {!r.is_read && <span className="pill new">নতুন</span>}
-            <div className="muted" style={{ fontSize: '.85rem' }}>{r.phone ? `☎ ${r.phone} · ` : ''}{fmt(r.created_at)}</div>
+            <div className="muted" style={{ fontSize: '.85rem' }}>{r.phone && <><Icon name="phone" size={14} /> {r.phone} · </>}{fmt(r.created_at)}</div>
             <p className="pre" style={{ margin: '8px 0' }}>{r.message}</p>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className="btn small outline" onClick={() => toggle(r)}>{r.is_read ? 'অপঠিত করুন' : 'পড়া হয়েছে'}</button>

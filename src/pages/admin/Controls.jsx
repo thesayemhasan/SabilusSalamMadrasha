@@ -62,7 +62,7 @@ export function Integrations() {
     const r = get(k)
     setState({ ...state, [k]: '…' })
     const { error } = await supabase.from('integrations').upsert({ key: k, enabled: r.enabled, config: r.config, updated_at: new Date().toISOString() })
-    setState({ ...state, [k]: error ? 'ত্রুটি: ' + error.message : 'সংরক্ষিত ✓' })
+    setState({ ...state, [k]: error ? 'ত্রুটি: ' + error.message : 'সংরক্ষিত হয়েছে' })
   }
 
   return (

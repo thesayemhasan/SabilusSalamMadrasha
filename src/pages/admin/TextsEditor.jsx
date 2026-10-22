@@ -21,7 +21,7 @@ function Row({ k }) {
     const { error } = await supabase.from('site_texts').upsert({ key: k, ...v, updated_at: new Date().toISOString() })
     if (error) return setState('ত্রুটি: ' + error.message)
     await reload()
-    setState('সংরক্ষিত ✓')
+    setState('সংরক্ষিত হয়েছে')
   }
   async function reset() {
     if (!confirm('মূল লেখায় ফিরিয়ে নেবেন?')) return

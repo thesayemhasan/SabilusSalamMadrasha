@@ -14,8 +14,6 @@ export const DEFAULT_SETTINGS = {
   youtube: '',
   map_embed: '',
   hero_image: '',
-  principal_photo: '',
-  show_message: false,
   apply_open: true,
   color_primary: '#16a34a',
   color_secondary: '#e0158a',
@@ -23,7 +21,7 @@ export const DEFAULT_SETTINGS = {
 }
 
 export function SiteProvider({ children }) {
-  const [lang, setLangState] = useState(() => localStorage.getItem('lang') || 'bn')
+  const [lang, setLangState] = useState(() => { const l = localStorage.getItem('lang'); return LANGS.some((x) => x.code === l) ? l : 'bn' })
   const [overrides, setOverrides] = useState({})
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [modules, setModules] = useState({})

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useSite } from '../../lib/store'
 import { MODULES, BUILT } from '../../lib/modules'
+import Icon from '../../components/Icon'
 
 export default function Dashboard() {
   const { modules } = useSite()
@@ -33,8 +34,8 @@ export default function Dashboard() {
     <>
       <h2>ড্যাশবোর্ড</h2>
       <div className="quick">
-        {[['📢', 'নতুন নোটিশ', '/admin/notices'], ['📅', 'নতুন ইভেন্ট', '/admin/events'], ['🖼️', 'ছবি যোগ', '/admin/gallery'], ['✏️', 'লেখা বদলান', '/admin/texts'], ['🎛️', 'মডিউল সুইচ', '/admin/modules'], ['⚙️', 'সেটিংস', '/admin/settings']].map(([ic, label, to]) => (
-          <Link to={to} key={to}><span className="big">{ic}</span>{label}</Link>
+        {[['megaphone', 'নতুন নোটিশ', '/admin/notices'], ['calendar', 'নতুন ইভেন্ট', '/admin/events'], ['image', 'ছবি যোগ', '/admin/gallery'], ['edit', 'লেখা বদলান', '/admin/texts'], ['sliders', 'মডিউল সুইচ', '/admin/modules'], ['gear', 'সেটিংস', '/admin/settings']].map(([ic, label, to]) => (
+          <Link to={to} key={to}><span className="big"><Icon name={ic} size={34} /></span>{label}</Link>
         ))}
       </div>
       <div className="grid g4" style={{ marginBottom: 20 }}>

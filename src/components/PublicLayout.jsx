@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { LANGS } from '../lib/texts'
 import { useSite } from '../lib/store'
+import Icon from './Icon'
 
 const NAV = [
   ['/', 'nav.home'],
@@ -26,8 +27,8 @@ export default function PublicLayout() {
       <div className="topbar">
         <div className="container">
           <div className="top-info">
-            {settings.phone && <a href={`tel:${settings.phone}`}>☎ {settings.phone}</a>}
-            {settings.email && <a href={`mailto:${settings.email}`}>✉ {settings.email}</a>}
+            {settings.phone && <a href={`tel:${settings.phone}`}><Icon name="phone" size={16} cls="cur" /> {settings.phone}</a>}
+            {settings.email && <a href={`mailto:${settings.email}`}><Icon name="mail" size={16} cls="cur" /> {settings.email}</a>}
             {!settings.phone && !settings.email && <span>{t('site.tagline')}</span>}
           </div>
           <div className="top-right">
@@ -60,7 +61,7 @@ export default function PublicLayout() {
             <Link to="/admission" className="btn small pink nav-cta">{t('apply.btn')}</Link>
           </nav>
           <button className="menu-btn" aria-label="menu" onClick={() => setOpen(!open)}>
-            {open ? '✕' : '☰'}
+            <Icon name={open ? 'close' : 'menu'} size={22} />
           </button>
         </div>
         {open && (
@@ -99,9 +100,9 @@ export default function PublicLayout() {
             <div>
               <h4>{t('footer.contact')}</h4>
               <ul>
-                <li>📍 {t('site.address')}</li>
-                {settings.phone && <li>☎ {settings.phone}</li>}
-                {settings.email && <li>✉ {settings.email}</li>}
+                <li><Icon name="pin" size={16} cls="cur" /> {t('site.address')}</li>
+                {settings.phone && <li><Icon name="phone" size={16} cls="cur" /> {settings.phone}</li>}
+                {settings.email && <li><Icon name="mail" size={16} cls="cur" /> {settings.email}</li>}
                 {settings.facebook && <li><a href={settings.facebook} target="_blank" rel="noreferrer">Facebook</a></li>}
                 {settings.youtube && <li><a href={settings.youtube} target="_blank" rel="noreferrer">YouTube</a></li>}
               </ul>

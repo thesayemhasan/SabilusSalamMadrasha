@@ -61,10 +61,6 @@ export const TEXT_GROUPS = [
       ['stat.depts.num', '৩', '٣', '3'],
       ['stat.depts.label', 'বিভাগ', 'أقسام', 'Departments'],
       ['stat.teachers.label', 'শিক্ষক-শিক্ষিকা', 'المدرّسون', 'Teachers'],
-      ['msg.title', 'পরিচালকের বাণী', 'كلمة المدير', 'Director’s message'],
-      ['msg.text', 'আসসালামু আলাইকুম। এখানে পরিচালকের বাণী লিখুন।', 'السلام عليكم. اكتب كلمة المدير هنا.', 'Assalamu alaikum. Write the director’s message here.', true],
-      ['msg.name', 'পরিচালকের নাম', 'اسم المدير', 'Director name'],
-      ['msg.role', 'পরিচালক', 'المدير', 'Director'],
       ['contact.cards.title', 'আমাদের সাথে যোগাযোগ', 'تواصل معنا', 'Get in touch'],
       ['home.cta.title', 'আপনার সন্তানকে ভর্তি করাতে চান?', 'هل تريد تسجيل ابنك أو ابنتك؟', 'Want to admit your child?'],
       ['home.cta.text', 'অনলাইনে আবেদন করুন, আমরা দ্রুত যোগাযোগ করব।', 'قدّم طلبك عبر الإنترنت وسنتواصل معك قريبًا.', 'Apply online and we will contact you soon.'],
@@ -177,7 +173,6 @@ export const TEXT_GROUPS = [
 
 export const LANGS = [
   { code: 'bn', label: 'বাংলা', dir: 'ltr' },
-  { code: 'ar', label: 'العربية', dir: 'rtl' },
   { code: 'en', label: 'English', dir: 'ltr' },
 ]
 

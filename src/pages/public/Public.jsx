@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, configured } from '../../lib/supabase'
 import { useSite, useRows, pick } from '../../lib/store'
+import Icon from '../../components/Icon'
 
 const LOCALE = { bn: 'bn-BD', ar: 'ar-u-ca-gregory', en: 'en-GB' }
 export const fmtDate = (d, lang) =>
@@ -33,9 +34,9 @@ export function Home() {
   const upcoming = events.rows.filter((e) => e.event_date >= today).slice(0, 4)
   const slides = gallery.rows.filter((g) => g.image_url)
   const tcount = teachers.rows.length
-  const feats = [['📖', 'home.why1'], ['🌙', 'home.why2'], ['🌸', 'home.why3'], ['📱', 'home.why4']]
-  const depts = [['📖', 'dept.hifz'], ['📚', 'dept.qawmi'], ['🌸', 'dept.women']]
-  const quick = [['/admission', '📝', 'nav.admission'], ['/notices', '📢', 'nav.notices'], ['/events', '📅', 'nav.events'], ['/gallery', '🖼️', 'nav.gallery'], ['/teachers', '👨‍🏫', 'nav.teachers'], ['/contact', '☎️', 'nav.contact']]
+  const feats = [['book', 'home.why1'], ['moon', 'home.why2'], ['lotus', 'home.why3'], ['chat', 'home.why4']]
+  const depts = [['book', 'dept.hifz'], ['books', 'dept.qawmi'], ['lotus', 'dept.women']]
+  const quick = [['/admission', 'apply', 'nav.admission'], ['/notices', 'megaphone', 'nav.notices'], ['/events', 'calendar', 'nav.events'], ['/gallery', 'image', 'nav.gallery'], ['/teachers', 'teacher', 'nav.teachers'], ['/contact', 'phone', 'nav.contact']]
   const heroStyle = settings.hero_image
     ? { backgroundImage: `linear-gradient(135deg, rgba(14,122,55,.88), rgba(31,42,122,.85)), url(${settings.hero_image})` }
     : undefined
@@ -103,7 +104,7 @@ export function Home() {
           <div className="quick-links">
             {quick.map(([to, ic, k]) => (
               <Link to={to} className="quick-link" key={to}>
-                <span className="q-ic">{ic}</span>
+                <span className="q-ic"><Icon name={ic} size={30} /></span>
                 <span>{t(k)}</span>
               </Link>
             ))}
@@ -127,7 +128,7 @@ export function Home() {
           <div className="grid g4" style={{ marginTop: 20 }}>
             {feats.map(([ico, k]) => (
               <div className="card feature" key={k}>
-                <div className="ico">{ico}</div>
+                <div className="ico"><Icon name={ico} size={28} /></div>
                 <h3>{t(k + '.title')}</h3>
                 <p className="muted">{t(k + '.text')}</p>
               </div>
@@ -142,7 +143,7 @@ export function Home() {
           <div className="grid g3" style={{ marginTop: 20 }}>
             {depts.map(([ico, k]) => (
               <Link to="/departments" className="card feature" key={k} style={{ color: 'inherit' }}>
-                <div className="ico">{ico}</div>
+                <div className="ico"><Icon name={ico} size={28} /></div>
                 <h3>{t(k + '.title')}</h3>
                 <p className="muted">{t(k + '.text')}</p>
               </Link>
@@ -150,22 +151,6 @@ export function Home() {
           </div>
         </div>
       </section>
-
-      {settings.show_message && (
-        <section className="section">
-          <div className="container">
-            <h2 className="center">{t('msg.title')}</h2>
-            <div className="card msg-card" style={{ marginTop: 20 }}>
-              {settings.principal_photo ? <img src={settings.principal_photo} alt="" /> : <div className="ph">👤</div>}
-              <div>
-                <p className="pre">“ {t('msg.text')} ”</p>
-                <b>{t('msg.name')}</b>
-                <div className="muted">{t('msg.role')}</div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
       <section className="section alt">
         <div className="container grid g2" style={{ alignItems: 'start' }}>
@@ -202,9 +187,9 @@ export function Home() {
         <div className="container">
           <h2 className="center">{t('contact.cards.title')}</h2>
           <div className="grid g3" style={{ marginTop: 20 }}>
-            <div className="card contact-card"><div className="ico">📍</div><h3>{t('contact.address.label')}</h3><p className="muted" style={{ margin: 0 }}>{t('site.address')}</p></div>
-            {settings.phone && <a className="card contact-card" href={`tel:${settings.phone}`}><div className="ico">☎️</div><h3>{t('contact.phone.label')}</h3><p className="muted" style={{ margin: 0 }}>{settings.phone}</p></a>}
-            {settings.email && <a className="card contact-card" href={`mailto:${settings.email}`}><div className="ico">✉️</div><h3>{t('contact.email.label')}</h3><p className="muted" style={{ margin: 0 }}>{settings.email}</p></a>}
+            <div className="card contact-card"><div className="ico"><Icon name="pin" size={28} /></div><h3>{t('contact.address.label')}</h3><p className="muted" style={{ margin: 0 }}>{t('site.address')}</p></div>
+            {settings.phone && <a className="card contact-card" href={`tel:${settings.phone}`}><div className="ico"><Icon name="phone" size={28} /></div><h3>{t('contact.phone.label')}</h3><p className="muted" style={{ margin: 0 }}>{settings.phone}</p></a>}
+            {settings.email && <a className="card contact-card" href={`mailto:${settings.email}`}><div className="ico"><Icon name="mail" size={28} /></div><h3>{t('contact.email.label')}</h3><p className="muted" style={{ margin: 0 }}>{settings.email}</p></a>}
           </div>
           {settings.map_embed && <iframe className="map" style={{ marginTop: 18 }} title="map" loading="lazy" src={settings.map_embed} />}
         </div>
@@ -246,7 +231,7 @@ export function About() {
 /* ---------------- বিভাগ ---------------- */
 export function Departments() {
   const { t } = useSite()
-  const d = [['📖', 'dept.hifz'], ['📚', 'dept.qawmi'], ['🌸', 'dept.women']]
+  const d = [['book', 'dept.hifz'], ['books', 'dept.qawmi'], ['lotus', 'dept.women']]
   return (
     <>
       <Head title={t('departments.title')} />
@@ -256,7 +241,7 @@ export function Departments() {
           <div className="grid g3">
             {d.map(([ico, k]) => (
               <div className="card feature" key={k}>
-                <div className="ico">{ico}</div>
+                <div className="ico"><Icon name={ico} size={28} /></div>
                 <h3>{t(k + '.title')}</h3>
                 <p>{t(k + '.text')}</p>
               </div>
@@ -429,7 +414,7 @@ export function Teachers() {
           <div className="grid g4">
             {rows.map((x) => (
               <div className="card teacher" key={x.id}>
-                {x.photo_url ? <img src={x.photo_url} alt="" /> : <div className="ph">👤</div>}
+                {x.photo_url ? <img src={x.photo_url} alt="" /> : <div className="ph"><Icon name="user" size={44} /></div>}
                 <h3>{pick(x, 'name', lang)}</h3>
                 <p className="muted" style={{ margin: 0 }}>{pick(x, 'designation', lang)}</p>
               </div>
@@ -485,11 +470,11 @@ export function Contact() {
           <div className="stack">
             <p>{t('contact.intro')}</p>
             <div className="card">
-              <p><b>📍 {t('contact.address.label')}</b><br />{t('site.address')}</p>
-              {settings.phone && <p><b>☎ {t('contact.phone.label')}</b><br /><a href={`tel:${settings.phone}`}>{settings.phone}</a></p>}
-              {settings.email && <p><b>✉ {t('contact.email.label')}</b><br /><a href={`mailto:${settings.email}`}>{settings.email}</a></p>}
+              <p><b><Icon name="pin" size={18} /> {t('contact.address.label')}</b><br />{t('site.address')}</p>
+              {settings.phone && <p><b><Icon name="phone" size={18} /> {t('contact.phone.label')}</b><br /><a href={`tel:${settings.phone}`}>{settings.phone}</a></p>}
+              {settings.email && <p><b><Icon name="mail" size={18} /> {t('contact.email.label')}</b><br /><a href={`mailto:${settings.email}`}>{settings.email}</a></p>}
               {settings.whatsapp && <p><b>WhatsApp</b><br /><a href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">{settings.whatsapp}</a></p>}
-              <p style={{ margin: 0 }}><b>🕘 {t('contact.hours.label')}</b><br />{t('contact.hours.text')}</p>
+              <p style={{ margin: 0 }}><b><Icon name="clock" size={18} /> {t('contact.hours.label')}</b><br />{t('contact.hours.text')}</p>
             </div>
             {settings.map_embed && <iframe className="map" title="map" loading="lazy" src={settings.map_embed} />}
           </div>
