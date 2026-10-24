@@ -7,7 +7,7 @@ import AdminShell from './pages/admin/AdminShell'
 import Dashboard from './pages/admin/Dashboard'
 import TextsEditor from './pages/admin/TextsEditor'
 import Settings from './pages/admin/Settings'
-import { AdmissionFieldsAdmin, EventsAdmin, GalleryAdmin, HeroSlidesAdmin, HomeBlocksAdmin, NoticesAdmin, TeachersAdmin } from './pages/admin/Sections'
+import { AdmissionFieldsAdmin, DepartmentsAdmin, EventsAdmin, GalleryAdmin, HeroSlidesAdmin, HomeBlocksAdmin, NoticesAdmin, TeachersAdmin } from './pages/admin/Sections'
 import { Applications, Messages } from './pages/admin/Inbox'
 import { Integrations, Modules } from './pages/admin/Controls'
 import Users from './pages/admin/Users'
@@ -39,6 +39,7 @@ export default function App() {
         <Route path="applications" element={<Applications />} />
         <Route path="messages" element={<Messages />} />
         <Route path="texts" element={<TextsEditor />} />
+        <Route path="departments" element={<DepartmentsAdmin />} />
         <Route path="slides" element={<HeroSlidesAdmin />} />
         <Route path="notices" element={<NoticesAdmin />} />
         <Route path="events" element={<EventsAdmin />} />

@@ -117,6 +117,18 @@ create table if not exists public.public_teachers (
   created_at timestamptz not null default now()
 );
 
+
+-- ---------- মাদরাসার বিভাগ (অ্যাডমিন থেকে যোগ/সম্পাদনা/মুছা যাবে) ----------
+create table if not exists public.departments (
+  id uuid primary key default gen_random_uuid(),
+  name_bn text, name_en text,
+  text_bn text, text_en text,
+  icon text default 'book',
+  sort int not null default 0,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
 -- ---------- ভর্তির আবেদন ও যোগাযোগ ----------
 create table if not exists public.admission_applications (
   id uuid primary key default gen_random_uuid(),
@@ -216,7 +228,7 @@ begin
   end loop;
 
   -- প্রকাশিত হলে সবাই দেখবে, অ্যাডমিন সব দেখবে ও বদলাবে
-  foreach t in array array['notices','events','gallery','public_teachers','hero_slides','home_blocks','admission_fields'] loop
+  foreach t in array array['notices','events','gallery','public_teachers','hero_slides','home_blocks','admission_fields','departments'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "%1$s_read" on public.%1$I', t);
     execute format('create policy "%1$s_read" on public.%1$I for select using (published or public.is_admin())', t);
@@ -278,3 +290,15 @@ create policy "applications_admin_read" on storage.objects for select to authent
 drop policy if exists "applications_admin_delete" on storage.objects;
 create policy "applications_admin_delete" on storage.objects for delete to authenticated
   using (bucket_id = 'applications' and public.is_admin());
+
+-- ---------- শুরুর তিনটি বিভাগ (শুধু টেবিল ফাঁকা থাকলে একবার বসবে) ----------
+insert into public.departments (name_bn, name_en, text_bn, text_en, icon, sort)
+select * from (values
+ ('হিফজ বিভাগ','Hifz department','সবক, সাত সবক ও আমুখতা নিয়মিত তত্ত্বাবধানে পূর্ণ কুরআন হিফজ।','Complete Quran memorisation with regular supervision of sabaq, sabaqi and manzil.','book',1),
+ ('কওমি বিভাগ','Qawmi department','আরবি, ফিকহ, হাদিস ও তাফসিরসহ কওমি ধারার পূর্ণাঙ্গ পাঠ্যক্রম।','The full Qawmi curriculum including Arabic, Fiqh, Hadith and Tafsir.','books',2),
+ ('মহিলা মাদরাসা','Mohila Madrasa','পর্দার পরিবেশে ছাত্রীদের জন্য কুরআন ও দ্বীনি শিক্ষার আলাদা শাখা।','A separate section for Quran and religious education for girls in a modest environment.','lotus',3)
+) as v(name_bn,name_en,text_bn,text_en,icon,sort)
+where not exists (select 1 from public.departments);
+
+-- নতুন টেবিল/কলাম সঙ্গে সঙ্গে চালু করতে (স্কিমা ক্যাশ রিফ্রেশ)
+notify pgrst, 'reload schema';

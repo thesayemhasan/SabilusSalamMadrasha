@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, configured, uploadApplicationFile } from '../../lib/supabase'
-import { useSite, useRows, pick } from '../../lib/store'
+import { useSite, useRows, useDepartments, pick } from '../../lib/store'
 import { fmtDate, socialHref, youtubeId } from '../../lib/util'
 import Icon from '../../components/Icon'
 import { Modal, Select } from '../../components/Ui'
@@ -40,7 +40,7 @@ export function About() {
 /* ---------------- বিভাগ ---------------- */
 export function Departments() {
   const { t } = useSite()
-  const d = [['book', 'dept.hifz'], ['books', 'dept.qawmi'], ['lotus', 'dept.women']]
+  const d = useDepartments().list
   return (
     <>
       <Head title={t('departments.title')} />
@@ -48,11 +48,11 @@ export function Departments() {
         <div className="container">
           <p className="muted">{t('departments.intro')}</p>
           <div className="grid g3">
-            {d.map(([ico, k]) => (
-              <div className="card feature" key={k}>
-                <div className="ico"><Icon name={ico} size={28} /></div>
-                <h3>{t(k + '.title')}</h3>
-                <p>{t(k + '.text')}</p>
+            {d.map((x) => (
+              <div className="card feature" key={x.id}>
+                <div className="ico"><Icon name={x.icon} size={28} /></div>
+                <h3>{x.title}</h3>
+                <p>{x.text}</p>
               </div>
             ))}
           </div>

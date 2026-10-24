@@ -234,3 +234,25 @@ export const AdmissionFieldsAdmin = () => (
     summary={(r) => (<><b>{r.label_bn || r.label_en}</b>{r.required && <span className="tag built">আবশ্যক</span>}<span className="tag">{(FTYPES.find((k) => k[0] === r.type) || [])[1]}</span></>)}
   />
 )
+
+const DEPT_ICONS = [['book', 'বই'], ['books', 'বই (একাধিক)'], ['lotus', 'পদ্ম'], ['moon', 'চাঁদ'], ['star', 'তারা'], ['teacher', 'শিক্ষক'], ['users', 'ছাত্র-ছাত্রী'], ['building', 'ভবন'], ['shield', 'ঢাল'], ['globe', 'গ্লোব'], ['chat', 'আলোচনা'], ['home', 'ঘর']]
+
+export const DepartmentsAdmin = () => (
+  <Crud
+    table="departments"
+    title="মাদরাসার বিভাগ"
+    hint="এখানে যোগ, সম্পাদনা বা মুছে দিলে হোম পেইজ ও 'বিভাগসমূহ' পেইজে সঙ্গে সঙ্গে বদলে যাবে। হোম পেইজের বিভাগ সংখ্যাও নিজে থেকে হিসাব হবে।"
+    order="sort"
+    asc
+    nameOf={(r) => bn(r, 'name')}
+    blank={{ published: true, sort: 0, icon: 'book' }}
+    fields={[
+      { name: 'name', label: 'বিভাগের নাম', i18n: true, required: true },
+      { name: 'text', label: 'সংক্ষিপ্ত বিবরণ', type: 'textarea', i18n: true },
+      { name: 'icon', label: 'আইকন', type: 'select', options: DEPT_ICONS },
+      { name: 'sort', label: 'ক্রম (ছোট সংখ্যা আগে)', type: 'number' },
+      { name: 'published', label: 'প্রকাশিত', type: 'bool' },
+    ]}
+    summary={(r) => (<><b>{bn(r, 'name')}</b>{sub(r.text_bn || r.text_en || '')}</>)}
+  />
+)

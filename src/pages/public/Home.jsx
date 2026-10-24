@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useRows, useSite, pick } from '../../lib/store'
+import { useRows, useSite, useDepartments, pick } from '../../lib/store'
 import { dig, fmtDate } from '../../lib/util'
 import Icon from '../../components/Icon'
 import SmartLink from '../../components/SmartLink'
@@ -204,7 +204,7 @@ export function Home() {
   const items = [...(settings.hero_brand_slide !== false || !picSlides.length ? [{ brand: true }] : []), ...picSlides]
 
   const feats = [['book', 'home.why1'], ['moon', 'home.why2'], ['lotus', 'home.why3'], ['chat', 'home.why4']]
-  const depts = [['book', 'dept.hifz'], ['books', 'dept.qawmi'], ['lotus', 'dept.women']]
+  const depts = useDepartments()
   const quick = [['/admission', 'apply', 'nav.admission'], ['/notices', 'megaphone', 'nav.notices'], ['/events', 'calendar', 'nav.events'], ['/gallery', 'image', 'nav.gallery'], ['/teachers', 'teacher', 'nav.teachers'], ['/contact', 'phone', 'nav.contact']]
 
   return (
@@ -243,7 +243,7 @@ export function Home() {
         <div className="container">
           <div className="stats">
             <div className="stat-item"><b className="count">{t('stat.year.num')}</b><span>{t('stat.year.label')}</span></div>
-            <div className="stat-item"><b className="count">{t('stat.depts.num')}</b><span>{t('stat.depts.label')}</span></div>
+            <div className="stat-item"><b className="count">{depts.fromDb ? dig(depts.list.length, lang) : t('stat.depts.num')}</b><span>{t('stat.depts.label')}</span></div>
             {tcount > 0 && <div className="stat-item"><b className="count">{dig(tcount, lang)}</b><span>{t('stat.teachers.label')}</span></div>}
           </div>
         </div>
@@ -269,11 +269,11 @@ export function Home() {
         <div className="container">
           <SecTitle>{t('departments.title')}</SecTitle>
           <div className="grid g3" style={{ marginTop: 22 }}>
-            {depts.map(([ico, k]) => (
-              <Link to="/departments" className="card feature" key={k} style={{ color: 'inherit' }}>
-                <div className="ico"><Icon name={ico} size={28} /></div>
-                <h3>{t(k + '.title')}</h3>
-                <p className="muted">{t(k + '.text')}</p>
+            {depts.list.map((d) => (
+              <Link to="/departments" className="card feature" key={d.id} style={{ color: 'inherit' }}>
+                <div className="ico"><Icon name={d.icon} size={28} /></div>
+                <h3>{d.title}</h3>
+                <p className="muted">{d.text}</p>
               </Link>
             ))}
           </div>

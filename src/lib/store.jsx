@@ -191,3 +191,24 @@ export function useRows(table, { order = 'created_at', asc = false, limit } = {}
 export function pick(row, field, lang) {
   return row[`${field}_${lang}`] || row[`${field}_bn`] || row[`${field}_en`] || ''
 }
+
+// বিভাগ: ডেটাবেস থেকে; টেবিল না থাকলে (স্কিমা এখনো চালানো হয়নি) ডিফল্ট তিনটি
+const DEFAULT_DEPTS = [
+  { id: 'd1', icon: 'book', k: 'dept.hifz' },
+  { id: 'd2', icon: 'books', k: 'dept.qawmi' },
+  { id: 'd3', icon: 'lotus', k: 'dept.women' },
+]
+export function useDepartments() {
+  const { t, lang } = useSite()
+  const [rows, setRows] = useState(null)
+  useEffect(() => {
+    if (!supabase) return
+    supabase.from('departments').select('*').order('sort', { ascending: true }).then(({ data, error }) => {
+      if (!error && data) setRows(data.filter((r) => r.published !== false))
+    })
+  }, [])
+  const list = rows
+    ? rows.map((r) => ({ id: r.id, icon: r.icon || 'book', title: pick(r, 'name', lang), text: pick(r, 'text', lang) }))
+    : DEFAULT_DEPTS.map((d) => ({ id: d.id, icon: d.icon, title: t(d.k + '.title'), text: t(d.k + '.text') }))
+  return { list, fromDb: rows !== null }
+}

@@ -105,9 +105,9 @@ export default function PublicLayout() {
             <div>
               <h4>{t('footer.contact')}</h4>
               <ul>
-                <li><Icon name="pin" size={16} cls="cur" /> {t('site.address')}</li>
-                {settings.phone && <li><Icon name="phone" size={16} cls="cur" /> <a href={`tel:${settings.phone}`}>{settings.phone}</a></li>}
-                {settings.email && <li><Icon name="mail" size={16} cls="cur" /> <a href={`mailto:${settings.email}`}>{settings.email}</a></li>}
+                <li><Icon name="pin" size={16} cls="cur" /><span className="ft">{t('site.address')}</span></li>
+                {settings.phone && <li><Icon name="phone" size={16} cls="cur" /><span className="ft"><a href={`tel:${settings.phone}`}>{settings.phone}</a></span></li>}
+                {settings.email && <li><Icon name="mail" size={16} cls="cur" /><span className="ft"><a href={`mailto:${settings.email}`}>{settings.email}</a></span></li>}
               </ul>
             </div>
           </div>
