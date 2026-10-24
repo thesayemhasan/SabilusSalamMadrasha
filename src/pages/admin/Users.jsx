@@ -1,17 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../lib/store'
+import { Select, useConfirm } from '../../components/Ui'
 
-export const ROLES = {
-  none: 'কোনো অ্যাক্সেস নেই',
-  super_admin: 'সুপার অ্যাডমিন',
-  admin: 'অ্যাডমিন',
-  accountant: 'হিসাবরক্ষক',
-  teacher: 'শিক্ষক',
-  parent: 'অভিভাবক',
-}
+import { ROLES } from '../../lib/util'
+export { ROLES }
 
 export default function Users() {
+  const confirm = useConfirm()
   const { isSuper, profile } = useAuth()
   const [rows, setRows] = useState([])
   const [msg, setMsg] = useState('')
@@ -21,7 +17,10 @@ export default function Users() {
   }, [])
   useEffect(() => { load() }, [load])
 
-  async function setRole(id, role) {
+  async function setRole(r, role) {
+    if (role === r.role) return
+    const id = r.id
+    if (!(await confirm({ name: r.full_name || r.email, action: 'change', question: `এর ভূমিকা “${ROLES[role]}” করবেন?`, yes: 'হ্যাঁ, বদলান' }))) return
     const { error } = await supabase.from('profiles').update({ role }).eq('id', id)
     setMsg(error ? error.message : '')
     load()
@@ -31,7 +30,7 @@ export default function Users() {
     <>
       <h2>ব্যবহারকারী ও অনুমতি</h2>
       <div className="alert info" style={{ marginBottom: 14 }}>
-        নতুন ব্যবহারকারী যোগ করতে Supabase → Authentication → Users → Add user এ ইমেইল ও পাসওয়ার্ড দিয়ে তৈরি করুন। তৈরি হলে এখানে দেখা যাবে, তখন তার ভূমিকা ঠিক করে দিন। নতুন ব্যবহারকারী শুরুতে "কোনো অ্যাক্সেস নেই" অবস্থায় থাকে।
+        কেউ ওয়েবসাইটে সাইন আপ করলে বা Supabase → Authentication → Users থেকে যোগ করলে এখানে দেখা যাবে। নতুন ব্যবহারকারী শুরুতে "কোনো অ্যাক্সেস নেই" অবস্থায় থাকে; আপনি ভূমিকা ঠিক করে দিলে তবেই সে অ্যাডমিন বা অন্য সুবিধা পাবে।
       </div>
       {!isSuper && <div className="alert warn" style={{ marginBottom: 14 }}>ভূমিকা বদলাতে পারেন শুধু সুপার অ্যাডমিন।</div>}
       {msg && <div className="alert err">{msg}</div>}
@@ -43,9 +42,7 @@ export default function Users() {
               <tr key={r.id}>
                 <td><b>{r.full_name || '—'}</b><div className="muted" style={{ fontSize: '.85rem' }}>{r.email}</div></td>
                 <td>
-                  <select disabled={!isSuper || r.id === profile?.id} value={r.role} onChange={(e) => setRole(r.id, e.target.value)}>
-                    {Object.entries(ROLES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-                  </select>
+                  <Select disabled={!isSuper || r.id === profile?.id} value={r.role} onChange={(x) => setRole(r, x)} options={Object.entries(ROLES)} />
                 </td>
               </tr>
             ))}

@@ -141,6 +141,67 @@ create table if not exists public.contact_messages (
   created_at timestamptz not null default now()
 );
 
+-- ---------- ধাপ ১ ফাইনাল ডিজাইনের নতুন অংশ (আবার চালালেও ক্ষতি নেই) ----------
+
+-- হোম স্লাইডের নিজস্ব ছবি (১২০০×৬০০)
+create table if not exists public.hero_slides (
+  id uuid primary key default gen_random_uuid(),
+  image_url text not null,
+  title_bn text, title_en text,
+  sub_bn text, sub_en text,
+  link text,
+  sort int not null default 0,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- হোমপেইজের যেকোনো নতুন রো/বিজ্ঞপ্তি (ঘোষণা বার, কার্ড, লেখা, ছবি+লেখা)
+create table if not exists public.home_blocks (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null default 'text' check (kind in ('announce','text','cards','image_text')),
+  place text not null default 'after_why',
+  title_bn text, title_en text,
+  body_bn text, body_en text,
+  btn_bn text, btn_en text,
+  link text,
+  image_url text,
+  items jsonb not null default '[]'::jsonb,
+  sort int not null default 0,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- ভর্তি ফরমের ঘর (অ্যাডমিন যোগ/বাদ দিতে পারেন)
+create table if not exists public.admission_fields (
+  id uuid primary key default gen_random_uuid(),
+  field_key text not null,
+  label_bn text, label_en text,
+  type text not null default 'text' check (type in ('text','textarea','phone','email','date','number','select','file')),
+  options_bn text, options_en text,
+  required boolean not null default false,
+  map_to text,
+  sort int not null default 0,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- পুরনো টেবিলে নতুন কলাম
+alter table public.admission_applications alter column student_name drop not null;
+alter table public.admission_applications alter column phone drop not null;
+alter table public.admission_applications add column if not exists data jsonb not null default '{}'::jsonb;
+alter table public.gallery alter column image_url drop not null;
+alter table public.gallery add column if not exists kind text not null default 'image';
+alter table public.gallery add column if not exists video_url text;
+alter table public.events add column if not exists start_at timestamptz;
+alter table public.events add column if not exists end_at timestamptz;
+alter table public.events add column if not exists show_start_timer boolean not null default false;
+alter table public.events add column if not exists show_end_timer boolean not null default false;
+alter table public.public_teachers add column if not exists facebook text;
+alter table public.public_teachers add column if not exists whatsapp text;
+alter table public.public_teachers add column if not exists phone text;
+alter table public.public_teachers add column if not exists call_msg_bn text;
+alter table public.public_teachers add column if not exists call_msg_en text;
+
 -- ---------- RLS ----------
 do $$
 declare t text;
@@ -155,7 +216,7 @@ begin
   end loop;
 
   -- প্রকাশিত হলে সবাই দেখবে, অ্যাডমিন সব দেখবে ও বদলাবে
-  foreach t in array array['notices','events','gallery','public_teachers'] loop
+  foreach t in array array['notices','events','gallery','public_teachers','hero_slides','home_blocks','admission_fields'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "%1$s_read" on public.%1$I', t);
     execute format('create policy "%1$s_read" on public.%1$I for select using (published or public.is_admin())', t);
@@ -201,3 +262,19 @@ create policy "media_admin_update" on storage.objects for update to authenticate
 drop policy if exists "media_admin_delete" on storage.objects;
 create policy "media_admin_delete" on storage.objects for delete to authenticated
   using (bucket_id = 'media' and public.is_admin());
+
+-- ---------- ভর্তির কাগজপত্র (ছবি, জন্ম সনদ) রাখার ব্যক্তিগত বাকেট: সর্বোচ্চ ৫ MB, শুধু ছবি ও PDF; শুধু অ্যাডমিন দেখতে পারেন ----------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('applications', 'applications', false, 5242880, array['image/jpeg','image/png','image/webp','application/pdf'])
+on conflict (id) do update set public = false, file_size_limit = 5242880,
+  allowed_mime_types = array['image/jpeg','image/png','image/webp','application/pdf'];
+
+drop policy if exists "applications_upload" on storage.objects;
+create policy "applications_upload" on storage.objects for insert to anon, authenticated
+  with check (bucket_id = 'applications');
+drop policy if exists "applications_admin_read" on storage.objects;
+create policy "applications_admin_read" on storage.objects for select to authenticated
+  using (bucket_id = 'applications' and public.is_admin());
+drop policy if exists "applications_admin_delete" on storage.objects;
+create policy "applications_admin_delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'applications' and public.is_admin());

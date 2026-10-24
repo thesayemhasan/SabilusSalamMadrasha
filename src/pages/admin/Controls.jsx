@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useSite } from '../../lib/store'
 import { BUILT, INTEGRATIONS, MODULES, MODULE_GROUPS } from '../../lib/modules'
-import { Switch } from '../../components/Ui'
+import { Switch, useConfirm } from '../../components/Ui'
 
 export function Modules() {
+  const confirm = useConfirm()
   const { modules, reload } = useSite()
   const [msg, setMsg] = useState('')
 
-  async function toggle(key, enabled) {
+  async function toggle(m, enabled) {
+    const key = m.key
+    if (!(await confirm({ name: m.name, action: 'change', question: enabled ? 'মডিউলটি চালু করবেন?' : 'মডিউলটি বন্ধ করবেন?', yes: enabled ? 'হ্যাঁ, চালু করুন' : 'হ্যাঁ, বন্ধ করুন' }))) return
     const { error } = await supabase.from('modules').upsert({ key, enabled, updated_at: new Date().toISOString() })
     if (error) return setMsg(error.message)
     reload()
@@ -33,7 +36,7 @@ export function Modules() {
                   {built ? <span className="tag built">তৈরি আছে</span> : <span className="tag">ধাপ {m.step}</span>}
                   <div className="muted" style={{ fontSize: '.85rem' }}>{m.desc}</div>
                 </div>
-                <Switch checked={on} onChange={(v) => toggle(m.key, v)} />
+                <Switch checked={on} onChange={(v) => toggle(m, v)} />
               </div>
             )
           })}
@@ -44,6 +47,7 @@ export function Modules() {
 }
 
 export function Integrations() {
+  const confirm = useConfirm()
   const [data, setData] = useState({})
   const [state, setState] = useState({})
 
@@ -57,6 +61,10 @@ export function Integrations() {
 
   const get = (k) => data[k] || { key: k, enabled: false, config: {} }
   const patch = (k, p) => setData({ ...data, [k]: { ...get(k), ...p } })
+  async function flip(it, v) {
+    if (!(await ask({ name: it.name, verb: v ? 'চালু করবেন' : 'বন্ধ করবেন', tone: 'warn', yes: v ? 'হ্যাঁ, চালু করুন' : 'হ্যাঁ, বন্ধ করুন' }))) return
+    patch(it.key, { enabled: v })
+  }
 
   async function save(k) {
     const r = get(k)
@@ -80,7 +88,7 @@ export function Integrations() {
                 <h3 style={{ margin: 0 }}>{it.name}</h3>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span className={`pill ${r.enabled ? 'ok' : ''}`}>{r.enabled ? 'চালু' : 'বন্ধ'}</span>
-                  <Switch checked={r.enabled} onChange={(v) => patch(it.key, { enabled: v })} />
+                  <Switch checked={r.enabled} onChange={async (v) => { if (await confirm({ name: it.name, action: 'change', question: v ? 'চালু করবেন?' : 'বন্ধ করবেন?', yes: v ? 'হ্যাঁ, চালু করুন' : 'হ্যাঁ, বন্ধ করুন' })) patch(it.key, { enabled: v }) }} />
                 </label>
               </div>
               <p className="muted" style={{ margin: 0 }}>{it.note}</p>

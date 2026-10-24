@@ -1,212 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase, configured } from '../../lib/supabase'
+import { supabase, configured, uploadApplicationFile } from '../../lib/supabase'
 import { useSite, useRows, pick } from '../../lib/store'
+import { fmtDate, socialHref, youtubeId } from '../../lib/util'
 import Icon from '../../components/Icon'
+import { Modal, Select } from '../../components/Ui'
+import Prose from '../../components/Prose'
+import PageHead from '../../components/PageHead'
+import Countdown from '../../components/Countdown'
+import { isUpcoming } from './Home'
 
-const LOCALE = { bn: 'bn-BD', ar: 'ar-u-ca-gregory', en: 'en-GB' }
-export const fmtDate = (d, lang) =>
-  d ? new Date(d + 'T00:00:00').toLocaleDateString(LOCALE[lang] || 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
+export { Home } from './Home'
+export { Account } from './Account'
+export { Privacy, Terms } from './Legal'
+export { fmtDate }
 
-function Head({ title }) {
-  return (
-    <div className="page-head">
-      <div className="container"><h1>{title}</h1></div>
-    </div>
-  )
-}
-
-/* ---------------- হোম ---------------- */
-const dig = (n, l) => {
-  const s = String(n)
-  if (l === 'bn') return s.replace(/\d/g, (d) => '০১২৩৪৫৬৭৮৯'[d])
-  if (l === 'ar') return s.replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d])
-  return s
-}
-
-export function Home() {
-  const { t, lang, settings } = useSite()
-  const notices = useRows('notices', { order: 'date', limit: 6 })
-  const events = useRows('events', { order: 'event_date', asc: true })
-  const gallery = useRows('gallery', { order: 'sort', asc: true, limit: 6 })
-  const teachers = useRows('public_teachers', { order: 'sort', asc: true })
-  const today = new Date().toISOString().slice(0, 10)
-  const upcoming = events.rows.filter((e) => e.event_date >= today).slice(0, 4)
-  const slides = gallery.rows.filter((g) => g.image_url)
-  const tcount = teachers.rows.length
-  const feats = [['book', 'home.why1'], ['moon', 'home.why2'], ['lotus', 'home.why3'], ['chat', 'home.why4']]
-  const depts = [['book', 'dept.hifz'], ['books', 'dept.qawmi'], ['lotus', 'dept.women']]
-  const quick = [['/admission', 'apply', 'nav.admission'], ['/notices', 'megaphone', 'nav.notices'], ['/events', 'calendar', 'nav.events'], ['/gallery', 'image', 'nav.gallery'], ['/teachers', 'teacher', 'nav.teachers'], ['/contact', 'phone', 'nav.contact']]
-  const heroStyle = settings.hero_image
-    ? { backgroundImage: `linear-gradient(135deg, rgba(14,122,55,.88), rgba(31,42,122,.85)), url(${settings.hero_image})` }
-    : undefined
-
-  return (
-    <>
-      {settings.apply_open !== false && (
-        <section className="container apply-wrap">
-          <div className="apply-bar">
-            <div>
-              <div className="apply-title"><span className="pulse" /> <b>{t('apply.title')}</b></div>
-              <div className="muted">{t('apply.text')}</div>
-            </div>
-            <Link to="/admission" className="btn">{t('apply.btn')} →</Link>
-          </div>
-        </section>
-      )}
-
-      <section className="hero2">
-        <div className="container">
-          <div className="slider">
-            <div className="slide brand active" style={heroStyle}>
-              <div className="brand-grid">
-                <div className="brand-text">
-                  <span className="badge">{t('site.established')}</span>
-                  <h1>{t('hero.title')}</h1>
-                  <p>{t('hero.subtitle')}</p>
-                  <div className="actions">
-                    <Link to="/admission" className="btn pink">{t('hero.cta1')}</Link>
-                    <Link to="/contact" className="btn light">{t('hero.cta2')}</Link>
-                  </div>
-                </div>
-                <img className="logo-big float" src={settings.logo_url} alt="" />
-              </div>
-            </div>
-            {slides.map((g) => (
-              <div className="slide" key={g.id}>
-                <img className="bg" src={g.image_url} alt="" />
-                {pick(g, 'caption', lang) && <div className="cap">{pick(g, 'caption', lang)}</div>}
-              </div>
-            ))}
-            <button type="button" className="s-btn prev" data-dir="-1" aria-label="prev">‹</button>
-            <button type="button" className="s-btn next" data-dir="1" aria-label="next">›</button>
-            <div className="slider-dots" />
-          </div>
-
-          <aside className="updates card">
-            <h3>{t('updates.title')}</h3>
-            <div className="upd-list">
-              {notices.rows.length === 0 && <p className="muted">{t('notices.empty')}</p>}
-              {notices.rows.map((n) => (
-                <Link to="/notices" className="upd" key={n.id}>
-                  <small>{fmtDate(n.date, lang)}</small>
-                  <b>{pick(n, 'title', lang)}</b>
-                </Link>
-              ))}
-            </div>
-            <Link to="/notices" className="more">{t('common.viewAll')} →</Link>
-          </aside>
-        </div>
-      </section>
-
-      <section className="section" style={{ paddingBottom: 0 }}>
-        <div className="container">
-          <div className="quick-links">
-            {quick.map(([to, ic, k]) => (
-              <Link to={to} className="quick-link" key={to}>
-                <span className="q-ic"><Icon name={ic} size={30} /></span>
-                <span>{t(k)}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <div className="stats">
-            <div className="stat-item"><b className="count">{t('stat.year.num')}</b><span>{t('stat.year.label')}</span></div>
-            <div className="stat-item"><b className="count">{t('stat.depts.num')}</b><span>{t('stat.depts.label')}</span></div>
-            {tcount > 0 && <div className="stat-item"><b className="count">{dig(tcount, lang)}</b><span>{t('stat.teachers.label')}</span></div>}
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <h2 className="center">{t('home.why.title')}</h2>
-          <div className="grid g4" style={{ marginTop: 20 }}>
-            {feats.map(([ico, k]) => (
-              <div className="card feature" key={k}>
-                <div className="ico"><Icon name={ico} size={28} /></div>
-                <h3>{t(k + '.title')}</h3>
-                <p className="muted">{t(k + '.text')}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section alt">
-        <div className="container">
-          <h2 className="center">{t('departments.title')}</h2>
-          <div className="grid g3" style={{ marginTop: 20 }}>
-            {depts.map(([ico, k]) => (
-              <Link to="/departments" className="card feature" key={k} style={{ color: 'inherit' }}>
-                <div className="ico"><Icon name={ico} size={28} /></div>
-                <h3>{t(k + '.title')}</h3>
-                <p className="muted">{t(k + '.text')}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section alt">
-        <div className="container grid g2" style={{ alignItems: 'start' }}>
-          <div>
-            <h2>{t('home.notices.title')}</h2>
-            <div className="stack">
-              {notices.rows.length === 0 && <p className="muted">{t('notices.empty')}</p>}
-              {notices.rows.slice(0, 4).map((n) => (
-                <Link to="/notices" className="list-item" key={n.id}>
-                  <span className="date-chip">{fmtDate(n.date, lang)}</span>
-                  <h3>{pick(n, 'title', lang)}</h3>
-                </Link>
-              ))}
-            </div>
-            <p style={{ marginTop: 12 }}><Link to="/notices">{t('common.viewAll')} →</Link></p>
-          </div>
-          <div>
-            <h2>{t('home.events.title')}</h2>
-            <div className="stack">
-              {upcoming.length === 0 && <p className="muted">{t('events.empty')}</p>}
-              {upcoming.map((e) => (
-                <Link to="/events" className="list-item" key={e.id}>
-                  <span className="date-chip">{fmtDate(e.event_date, lang)}</span>
-                  <h3>{pick(e, 'title', lang)}</h3>
-                </Link>
-              ))}
-            </div>
-            <p style={{ marginTop: 12 }}><Link to="/events">{t('common.viewAll')} →</Link></p>
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <h2 className="center">{t('contact.cards.title')}</h2>
-          <div className="grid g3" style={{ marginTop: 20 }}>
-            <div className="card contact-card"><div className="ico"><Icon name="pin" size={28} /></div><h3>{t('contact.address.label')}</h3><p className="muted" style={{ margin: 0 }}>{t('site.address')}</p></div>
-            {settings.phone && <a className="card contact-card" href={`tel:${settings.phone}`}><div className="ico"><Icon name="phone" size={28} /></div><h3>{t('contact.phone.label')}</h3><p className="muted" style={{ margin: 0 }}>{settings.phone}</p></a>}
-            {settings.email && <a className="card contact-card" href={`mailto:${settings.email}`}><div className="ico"><Icon name="mail" size={28} /></div><h3>{t('contact.email.label')}</h3><p className="muted" style={{ margin: 0 }}>{settings.email}</p></a>}
-          </div>
-          {settings.map_embed && <iframe className="map" style={{ marginTop: 18 }} title="map" loading="lazy" src={settings.map_embed} />}
-        </div>
-      </section>
-
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="container">
-          <div className="card center cta-card">
-            <h2>{t('home.cta.title')}</h2>
-            <p>{t('home.cta.text')}</p>
-            <Link to="/admission" className="btn pink">{t('home.cta.button')}</Link>
-          </div>
-        </div>
-      </section>
-    </>
-  )
-}
+const Head = ({ title }) => <PageHead title={title} />
 
 /* ---------------- পরিচিতি ---------------- */
 export function About() {
@@ -254,21 +63,111 @@ export function Departments() {
 }
 
 /* ---------------- ভর্তি ---------------- */
+const splitOpts = (s = '') => String(s).split(/\n|,/).map((x) => x.trim()).filter(Boolean)
+
+function FileField({ value, onChange, t }) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [name, setName] = useState('')
+  const [thumb, setThumb] = useState('')
+  async function pickFile(e) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setErr('')
+    if (!/^(image\/|application\/pdf)/.test(f.type)) return setErr(t('admission.file.hint'))
+    if (f.size > 5 * 1024 * 1024) return setErr(t('admission.file.hint'))
+    setBusy(true)
+    try { onChange(await uploadApplicationFile(f)); setName(f.name); setThumb(f.type.startsWith('image/') ? URL.createObjectURL(f) : '') } catch { setErr(t('form.error')) }
+    setBusy(false)
+    e.target.value = ''
+  }
+  return (
+    <div>
+      <div className="file-pick">
+        <label className="btn outline small">
+          <input type="file" accept="image/*,application/pdf" hidden onChange={pickFile} />
+          <Icon name="upload" size={16} cls="cur" /> {busy ? t('form.sending') : t('admission.file.pick')}
+        </label>
+        {value && (thumb ? <img className="f-thumb" src={thumb} alt="" /> : <span className="f-name"><Icon name="check" size={16} cls="cur" /> {name || 'PDF'}</span>)}
+      </div>
+      <small className="muted hint-s">{t('admission.file.hint')}</small>
+      {err && <div className="alert err">{err}</div>}
+    </div>
+  )
+}
+
 export function Admission() {
-  const { t } = useSite()
-  const empty = { student_name: '', father_name: '', mother_name: '', phone: '', department: '', class_name: '', address: '', note: '' }
-  const [f, setF] = useState(empty)
+  const { t, lang, settings } = useSite()
+  const fields = useRows('admission_fields', { order: 'sort', asc: true })
+  const defaults = useMemo(() => [
+    { id: 'd1', field_key: 'student_name', map_to: 'student_name', type: 'text', required: true, label: t('form.student') },
+    { id: 'd2', field_key: 'father_name', map_to: 'father_name', type: 'text', label: t('form.father'), half: true },
+    { id: 'd3', field_key: 'mother_name', map_to: 'mother_name', type: 'text', label: t('form.mother'), half: true },
+    { id: 'd4', field_key: 'phone', map_to: 'phone', type: 'phone', required: true, label: t('form.phone'), half: true },
+    { id: 'd5', field_key: 'department', map_to: 'department', type: 'select', label: t('form.department'), half: true, opts: ['dept.hifz', 'dept.qawmi', 'dept.women'].map((k) => t(k + '.title')) },
+    { id: 'd6', field_key: 'class_name', map_to: 'class_name', type: 'text', label: t('form.class') },
+    { id: 'd7', field_key: 'address', map_to: 'address', type: 'text', label: t('form.address') },
+    { id: 'd8', field_key: 'note', map_to: 'note', type: 'textarea', label: t('form.note') },
+  ], [t])
+  const live = fields.rows.filter((f) => f.published !== false)
+  const list = live.length
+    ? live.map((f) => ({ ...f, label: pick(f, 'label', lang), opts: splitOpts(pick(f, 'options', lang)) }))
+    : defaults
+
+  const [v, setV] = useState({})
+  const [agree, setAgree] = useState(false)
   const [state, setState] = useState('idle')
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
+  const [msg, setMsg] = useState('')
+  const set = (k, val) => setV((o) => ({ ...o, [k]: val }))
+  const rules = t('admission.rules.text')
+  const needAgree = settings.admission_agree !== false && rules
 
   async function submit(e) {
     e.preventDefault()
     if (!supabase) return setState('offline')
+    setMsg('')
+    for (const f of list) {
+      if ((f.type === 'file' || f.type === 'select') && f.required && !v[f.field_key]) return setMsg(`${f.label} *`)
+    }
+    if (needAgree && !agree) return setMsg(t('admission.agree'))
     setState('sending')
-    const { error } = await supabase.from('admission_applications').insert({ ...f, status: 'new' })
+    const payload = { status: 'new' }
+    const data = {}
+    for (const f of list) {
+      const val = (v[f.field_key] ?? '').toString().trim()
+      if (!val) continue
+      if (f.map_to) payload[f.map_to] = val
+      data[f.field_key] = { label: f.label, value: val, type: f.type }
+    }
+    payload.data = data
+    const { error } = await supabase.from('admission_applications').insert(payload)
     if (error) return setState('error')
-    setF(empty)
+    setV({}); setAgree(false)
     setState('ok')
+  }
+
+  const Row = ({ items }) => <div className="row2">{items}</div>
+  const render = (f) => {
+    const val = v[f.field_key] || ''
+    const req = f.required ? ' *' : ''
+    return (
+      <div className="field" key={f.id}>
+        <label>{f.label}{req}</label>
+        {f.type === 'textarea' && <textarea required={f.required} value={val} onChange={(e) => set(f.field_key, e.target.value)} />}
+        {['text', 'phone', 'email', 'date', 'number'].includes(f.type) && (
+          <input required={f.required} type={f.type === 'phone' ? 'tel' : f.type} value={val} onChange={(e) => set(f.field_key, e.target.value)} />
+        )}
+        {f.type === 'select' && <Select value={val} onChange={(x) => set(f.field_key, x)} placeholder={t('admission.select')} options={f.opts || []} />}
+        {f.type === 'file' && <FileField value={val} onChange={(x) => set(f.field_key, x)} t={t} />}
+      </div>
+    )
+  }
+  // দুটি ছোট ঘর পাশাপাশি
+  const nodes = []
+  for (let i = 0; i < list.length; i++) {
+    const f = list[i]
+    const short = (x) => x && (x.half || (!live.length ? false : ['text', 'phone', 'email', 'date', 'number', 'select'].includes(x.type) && x.half !== false && false))
+    if (short(f) && short(list[i + 1])) { nodes.push(<Row key={f.id} items={[render(f), render(list[i + 1])]} />); i++ } else nodes.push(render(f))
   }
 
   return (
@@ -278,32 +177,22 @@ export function Admission() {
         <div className="container grid g2" style={{ alignItems: 'start' }}>
           <div>
             <p>{t('admission.intro')}</p>
-            <div className="card">
-              <h3>{t('admission.rules.title')}</h3>
-              <p className="muted pre">{t('admission.rules.text')}</p>
-            </div>
+            {rules && (
+              <details className="card rules" open>
+                <summary><Icon name="shield" size={24} /><h3 style={{ margin: 0 }}>{t('admission.rules.title')}</h3><span className="chev"><Icon name="chevdown" size={20} /></span></summary>
+                <Prose text={rules} />
+              </details>
+            )}
           </div>
           <form className="card form" onSubmit={submit}>
-            <div className="field"><label>{t('form.student')} *</label><input required value={f.student_name} onChange={set('student_name')} /></div>
-            <div className="row2">
-              <div className="field"><label>{t('form.father')}</label><input value={f.father_name} onChange={set('father_name')} /></div>
-              <div className="field"><label>{t('form.mother')}</label><input value={f.mother_name} onChange={set('mother_name')} /></div>
-            </div>
-            <div className="row2">
-              <div className="field"><label>{t('form.phone')} *</label><input required type="tel" value={f.phone} onChange={set('phone')} /></div>
-              <div className="field">
-                <label>{t('form.department')}</label>
-                <select value={f.department} onChange={set('department')}>
-                  <option value="">—</option>
-                  {['dept.hifz', 'dept.qawmi', 'dept.women'].map((k) => (
-                    <option key={k} value={t(k + '.title')}>{t(k + '.title')}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="field"><label>{t('form.class')}</label><input value={f.class_name} onChange={set('class_name')} /></div>
-            <div className="field"><label>{t('form.address')}</label><input value={f.address} onChange={set('address')} /></div>
-            <div className="field"><label>{t('form.note')}</label><textarea value={f.note} onChange={set('note')} /></div>
+            {nodes}
+            {needAgree && (
+              <label className="check">
+                <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+                <span>{t('admission.agree')}</span>
+              </label>
+            )}
+            {msg && <div className="alert err">{msg}</div>}
             {state === 'ok' && <div className="alert ok">{t('form.success')}</div>}
             {state === 'error' && <div className="alert err">{t('form.error')}</div>}
             {(state === 'offline' || !configured) && <div className="alert warn">{t('form.offline')}</div>}
@@ -321,7 +210,7 @@ export function Admission() {
 export function Notices() {
   const { t, lang } = useSite()
   const { rows, loading } = useRows('notices', { order: 'date' })
-  const sorted = [...rows].sort((a, b) => Number(b.pinned) - Number(a.pinned))
+  const sorted = [...rows].filter((n) => n.published !== false).sort((a, b) => Number(b.pinned) - Number(a.pinned))
   return (
     <>
       <Head title={t('notices.title')} />
@@ -346,14 +235,15 @@ export function Notices() {
 export function Events() {
   const { t, lang } = useSite()
   const { rows, loading } = useRows('events', { order: 'event_date', asc: true })
-  const today = new Date().toISOString().slice(0, 10)
-  const up = rows.filter((e) => e.event_date >= today)
-  const past = rows.filter((e) => e.event_date < today).reverse()
+  const vis = rows.filter((e) => e.published !== false)
+  const up = vis.filter(isUpcoming)
+  const past = vis.filter((e) => !isUpcoming(e)).reverse()
   const Item = ({ e }) => (
     <article className="list-item">
       <span className="date-chip">{fmtDate(e.event_date, lang)}</span>
       <h3>{pick(e, 'title', lang)}</h3>
       <p className="pre muted" style={{ margin: 0 }}>{pick(e, 'desc', lang)}</p>
+      <Countdown start={e.start_at} end={e.end_at} showStart={e.show_start_timer} showEnd={e.show_end_timer} />
     </article>
   )
   return (
@@ -361,31 +251,54 @@ export function Events() {
       <Head title={t('events.title')} />
       <section className="section">
         <div className="container stack" style={{ maxWidth: 820 }}>
-          {!loading && rows.length === 0 && <p className="muted">{t('events.empty')}</p>}
+          {!loading && vis.length === 0 && <p className="muted">{t('events.empty')}</p>}
           {up.map((e) => <Item e={e} key={e.id} />)}
-          {past.length > 0 && <h3 style={{ marginTop: 16 }} className="muted">…</h3>}
-          {past.map((e) => <div style={{ opacity: 0.7 }} key={e.id}><Item e={e} /></div>)}
+          {past.length > 0 && <h3 style={{ marginTop: 16 }} className="muted">{t('events.past')}</h3>}
+          {past.map((e) => <div style={{ opacity: 0.72 }} key={e.id}><Item e={e} /></div>)}
         </div>
       </section>
     </>
   )
 }
 
-/* ---------------- গ্যালারি ---------------- */
+/* ---------------- গ্যালারি (ছবি + ইউটিউব ভিডিও) ---------------- */
 export function Gallery() {
   const { t, lang } = useSite()
   const { rows, loading } = useRows('gallery', { order: 'sort', asc: true })
+  const [tab, setTab] = useState('all')
   const [big, setBig] = useState(null)
+  const vis = rows.filter((g) => g.published !== false)
+  const kind = (g) => (g.kind === 'video' ? 'video' : 'image')
+  const shown = vis.filter((g) => tab === 'all' || kind(g) === (tab === 'photos' ? 'image' : 'video'))
+  const hasVideo = vis.some((g) => kind(g) === 'video')
+  const thumb = (g) => (kind(g) === 'video' ? (g.image_url || `https://img.youtube.com/vi/${youtubeId(g.video_url)}/hqdefault.jpg`) : g.image_url)
+
+  useEffect(() => {
+    const k = (e) => e.key === 'Escape' && setBig(null)
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [])
+
   return (
     <>
       <Head title={t('gallery.title')} />
       <section className="section">
         <div className="container">
-          {!loading && rows.length === 0 && <p className="muted">{t('gallery.empty')}</p>}
+          {hasVideo && (
+            <div className="seg">
+              {[['all', 'gallery.all'], ['photos', 'gallery.photos'], ['videos', 'gallery.videos']].map(([k, l]) => (
+                <button key={k} type="button" className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{t(l)}</button>
+              ))}
+            </div>
+          )}
+          {!loading && shown.length === 0 && <p className="muted">{t('gallery.empty')}</p>}
           <div className="gallery">
-            {rows.map((g) => (
-              <figure key={g.id} onClick={() => setBig(g)}>
-                <img loading="lazy" src={g.image_url} alt={pick(g, 'caption', lang)} />
+            {shown.map((g) => (
+              <figure key={g.id} className={kind(g) === 'video' ? 'vid' : ''} onClick={() => setBig(g)}>
+                <div>
+                  <img loading="lazy" src={thumb(g)} alt={pick(g, 'caption', lang)} />
+                  {kind(g) === 'video' && <span className="play"><Icon name="play" size={24} cls="cur" /></span>}
+                </div>
                 {pick(g, 'caption', lang) && <figcaption>{pick(g, 'caption', lang)}</figcaption>}
               </figure>
             ))}
@@ -394,7 +307,16 @@ export function Gallery() {
       </section>
       {big && (
         <div className="lightbox" onClick={() => setBig(null)}>
-          <img src={big.image_url} alt="" />
+          <button type="button" className="lb-x" aria-label="close"><Icon name="close" size={24} cls="cur" /></button>
+          {kind(big) === 'video' && youtubeId(big.video_url) ? (
+            <div className="lb-video" onClick={(e) => e.stopPropagation()}>
+              <iframe title="video" src={`https://www.youtube-nocookie.com/embed/${youtubeId(big.video_url)}?autoplay=1&rel=0`} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen />
+            </div>
+          ) : kind(big) === 'video' ? (
+            <a className="btn" href={big.video_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>YouTube</a>
+          ) : (
+            <img src={big.image_url} alt="" onClick={(e) => e.stopPropagation()} />
+          )}
         </div>
       )}
     </>
@@ -403,25 +325,49 @@ export function Gallery() {
 
 /* ---------------- শিক্ষক ---------------- */
 export function Teachers() {
-  const { t, lang } = useSite()
+  const { t, lang, settings } = useSite()
   const { rows, loading } = useRows('public_teachers', { order: 'sort', asc: true })
+  const [call, setCall] = useState(null)
+  const vis = rows.filter((x) => x.published !== false)
+  const phone = (x) => x.phone || settings.phone
   return (
     <>
       <Head title={t('teachers.title')} />
       <section className="section">
         <div className="container">
-          {!loading && rows.length === 0 && <p className="muted">{t('teachers.empty')}</p>}
-          <div className="grid g4">
-            {rows.map((x) => (
+          {!loading && vis.length === 0 && <p className="muted">{t('teachers.empty')}</p>}
+          <div className="grid teachers">
+            {vis.map((x) => (
               <div className="card teacher" key={x.id}>
-                {x.photo_url ? <img src={x.photo_url} alt="" /> : <div className="ph"><Icon name="user" size={44} /></div>}
+                <div className="t-photo">
+                  {x.photo_url ? <img src={x.photo_url} alt="" loading="lazy" /> : <div className="ph"><Icon name="user" size={52} /></div>}
+                </div>
                 <h3>{pick(x, 'name', lang)}</h3>
                 <p className="muted" style={{ margin: 0 }}>{pick(x, 'designation', lang)}</p>
+                <div className="t-soc">
+                  {x.facebook && <a className="fb" href={socialHref('facebook', x.facebook)} target="_blank" rel="noreferrer" aria-label="Facebook" title="Facebook"><Icon name="facebook" size={19} cls="cur" /></a>}
+                  {x.whatsapp && <a className="wa" href={socialHref('whatsapp', x.whatsapp)} target="_blank" rel="noreferrer" aria-label="WhatsApp" title="WhatsApp"><Icon name="whatsapp" size={19} cls="cur" /></a>}
+                  <button className="cl" type="button" aria-label="Call" title="Call" onClick={() => setCall(x)}><Icon name="phone" size={19} cls="cur" /></button>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
+      {call && (
+        <Modal onClose={() => setCall(null)}>
+          <div className="confirm">
+            <div className="confirm-ic"><Icon name="phone" size={30} cls="cur" /></div>
+            <h3>{t('teachers.call.title')}</h3>
+            <div className="confirm-name">{pick(call, 'name', lang)}</div>
+            <p className="muted pre">{pick(call, 'call_msg', lang) || t('teachers.call.default')}</p>
+            <div className="confirm-actions">
+              <button type="button" className="btn outline" onClick={() => setCall(null)}>{t('teachers.call.close')}</button>
+              {phone(call) && <a className="btn" href={`tel:${phone(call)}`}><Icon name="phone" size={17} cls="cur" /> {t('teachers.call.btn')}</a>}
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   )
 }
@@ -473,7 +419,7 @@ export function Contact() {
               <p><b><Icon name="pin" size={18} /> {t('contact.address.label')}</b><br />{t('site.address')}</p>
               {settings.phone && <p><b><Icon name="phone" size={18} /> {t('contact.phone.label')}</b><br /><a href={`tel:${settings.phone}`}>{settings.phone}</a></p>}
               {settings.email && <p><b><Icon name="mail" size={18} /> {t('contact.email.label')}</b><br /><a href={`mailto:${settings.email}`}>{settings.email}</a></p>}
-              {settings.whatsapp && <p><b>WhatsApp</b><br /><a href={`https://wa.me/${settings.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">{settings.whatsapp}</a></p>}
+              {settings.whatsapp && <p><b><Icon name="whatsapp" size={18} /> WhatsApp</b><br /><a href={socialHref('whatsapp', settings.whatsapp)} target="_blank" rel="noreferrer">{settings.whatsapp}</a></p>}
               <p style={{ margin: 0 }}><b><Icon name="clock" size={18} /> {t('contact.hours.label')}</b><br />{t('contact.hours.text')}</p>
             </div>
             {settings.map_embed && <iframe className="map" title="map" loading="lazy" src={settings.map_embed} />}

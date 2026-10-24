@@ -2,7 +2,7 @@
 // (React অ্যাপ ও প্রিভিউ, দুই জায়গাতেই একই কোড চলে)
 const D_BN = '০১২৩৪৫৬৭৮৯'
 const D_AR = '٠١٢٣٤٥٦٧٨٩'
-const SEL = '.card, .list-item, .gallery figure, .page-head h1, .section h2, .stat-item, .quick-link, .alert, .table-wrap, .mod-row, .apply-bar, .updates, .msg-card'
+const SEL = '.card, .list-item, .gallery figure, .page-head h1, .sec-title, .stat-item, .quick-link, .table-wrap, .apply-bar, .urgent, .split-img, .split-tx, .map, .stats, .seg, .cd'
 
 function runCount(el, instant) {
   const text = el.textContent
@@ -25,41 +25,6 @@ function runCount(el, instant) {
   requestAnimationFrame(step)
 }
 
-function setupSlider(el) {
-  if (el.__sl) return
-  el.__sl = 1
-  let i = 0
-  let timer
-  const slides = () => [...el.querySelectorAll('.slide')]
-  const dots = el.querySelector('.slider-dots')
-  const show = (n) => {
-    const s = slides()
-    if (!s.length) return
-    i = (n + s.length) % s.length
-    s.forEach((x, k) => x.classList.toggle('active', k === i))
-    if (dots) {
-      if (dots.children.length !== s.length) dots.innerHTML = s.map((_, k) => `<button type="button" aria-label="${k + 1}"></button>`).join('')
-      ;[...dots.children].forEach((d, k) => d.classList.toggle('on', k === i))
-    }
-  }
-  const start = () => {
-    clearInterval(timer)
-    timer = setInterval(() => { if (!el.isConnected) return clearInterval(timer); show(i + 1) }, 5500)
-  }
-  el.addEventListener('click', (e) => {
-    const b = e.target.closest && e.target.closest('button')
-    if (!b) return
-    if (b.dataset.dir) show(i + Number(b.dataset.dir))
-    else if (dots && b.parentElement === dots) show([...dots.children].indexOf(b))
-    else return
-    start()
-  })
-  el.addEventListener('mouseenter', () => clearInterval(timer))
-  el.addEventListener('mouseleave', start)
-  show(0)
-  start()
-}
-
 export function initFx() {
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const io = 'IntersectionObserver' in window
@@ -76,22 +41,25 @@ export function initFx() {
   const prep = (el) => {
     if (el.__fx) return
     el.__fx = 1
+    if (el.closest('.adm, .modal')) { el.classList.add('in'); return }
     const isCount = el.classList.contains('count')
     if (reduce || !io || window.__still) { el.classList.add('in'); return }
-    if (!isCount) el.classList.add('reveal')
+    if (!isCount) {
+      el.classList.add('reveal')
+      const sibs = el.parentElement ? [...el.parentElement.children].filter((c) => c.__fx || c.matches(SEL)) : []
+      el.style.setProperty('--d', Math.min(sibs.indexOf(el), 6) * 0.08 + 's')
+    }
     io.observe(el)
   }
   const MATCH = SEL + ', .count'
   const scan = (root) => {
     if (!root.querySelectorAll) return
     root.querySelectorAll(MATCH).forEach(prep)
-    root.querySelectorAll('.slider').forEach(setupSlider)
   }
   scan(document)
   const mo = new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach((n) => {
     if (n.nodeType !== 1) return
     if (n.matches && n.matches(MATCH)) prep(n)
-    if (n.matches && n.matches('.slider')) setupSlider(n)
     scan(n)
   })))
   mo.observe(document.body, { childList: true, subtree: true })

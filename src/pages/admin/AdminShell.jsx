@@ -1,14 +1,15 @@
-import { useState } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { configured } from '../../lib/supabase'
 import { useAuth, useSite } from '../../lib/store'
+import { ScrollToTop } from '../../components/ScrollTools'
 import Icon from '../../components/Icon'
 import { MODULES, MODULE_GROUPS, BUILT } from '../../lib/modules'
 
 const MENU = [
   ['প্রধান', [['/admin', 'dashboard', 'ড্যাশবোর্ড', true], ['/admin/applications', 'clipboard', 'ভর্তির আবেদন'], ['/admin/messages', 'mail', 'যোগাযোগের বার্তা']]],
-  ['ওয়েবসাইট', [['/admin/texts', 'edit', 'সাইটের লেখা'], ['/admin/notices', 'megaphone', 'নোটিশ'], ['/admin/events', 'calendar', 'ইভেন্ট'], ['/admin/gallery', 'image', 'গ্যালারি'], ['/admin/teachers', 'teacher', 'শিক্ষকবৃন্দ (পাবলিক)']]],
-  ['সিস্টেম', [['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'প্রতিষ্ঠানের তথ্য ও থিম'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
+  ['ওয়েবসাইট', [['/admin/texts', 'edit', 'সাইটের লেখা'], ['/admin/slides', 'image', 'হোম স্লাইড'], ['/admin/home-blocks', 'building', 'হোম সেকশন (নতুন রো)'], ['/admin/notices', 'megaphone', 'নোটিশ'], ['/admin/events', 'calendar', 'ইভেন্ট ও টাইমার'], ['/admin/gallery', 'video', 'গ্যালারি'], ['/admin/teachers', 'teacher', 'শিক্ষকবৃন্দ (পাবলিক)'], ['/admin/admission-form', 'apply', 'ভর্তি ফরম']]],
+  ['সিস্টেম', [['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'সাইটের সেটিংস (হেডার, ফুটার…)'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
 ]
 
 function Login() {
@@ -48,8 +49,10 @@ function Login() {
 
 export default function AdminShell() {
   const { session, profile, loading, isAdmin, signOut } = useAuth()
-  const { settings } = useSite()
+  const { settings, theme, setTheme } = useSite()
   const [open, setOpen] = useState(false)
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }) }, [pathname])
 
   if (!configured) {
     return (
@@ -78,6 +81,7 @@ export default function AdminShell() {
 
   return (
     <div className="adm">
+      <ScrollToTop />
       {open && <div className="scrim" onClick={() => setOpen(false)} />}
       <aside className={`adm-side ${open ? 'open' : ''}`}>
         <div className="brand">
@@ -112,8 +116,11 @@ export default function AdminShell() {
       <div className="adm-main">
         <div className="adm-top">
           <button className="menu-btn" onClick={() => setOpen(true)}><Icon name="menu" size={22} /></button>
-          <span className="muted" style={{ fontSize: '.9rem' }}>{profile.full_name || profile.email}</span>
-          <button className="btn small outline" onClick={signOut}>লগআউট</button>
+          <span className="muted grow" style={{ fontSize: '.9rem' }}>{profile.full_name || profile.email}</span>
+          <button type="button" className="theme-btn solid" aria-label="theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+            <span key={theme} className="theme-ic"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} cls="cur" /></span>
+          </button>
+          <button className="btn small outline" onClick={signOut}><Icon name="logout" size={15} cls="cur" /> লগআউট</button>
         </div>
         <div className="adm-body">
           <Outlet />

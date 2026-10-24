@@ -34,7 +34,7 @@ export default function Dashboard() {
     <>
       <h2>ড্যাশবোর্ড</h2>
       <div className="quick">
-        {[['megaphone', 'নতুন নোটিশ', '/admin/notices'], ['calendar', 'নতুন ইভেন্ট', '/admin/events'], ['image', 'ছবি যোগ', '/admin/gallery'], ['edit', 'লেখা বদলান', '/admin/texts'], ['sliders', 'মডিউল সুইচ', '/admin/modules'], ['gear', 'সেটিংস', '/admin/settings']].map(([ic, label, to]) => (
+        {[['megaphone', 'নতুন নোটিশ', '/admin/notices'], ['calendar', 'নতুন ইভেন্ট', '/admin/events'], ['image', 'হোম স্লাইড', '/admin/slides'], ['building', 'হোমে নতুন রো', '/admin/home-blocks'], ['apply', 'ভর্তি ফরম', '/admin/admission-form'], ['edit', 'লেখা বদলান', '/admin/texts'], ['gear', 'সেটিংস', '/admin/settings']].map(([ic, label, to]) => (
           <Link to={to} key={to}><span className="big"><Icon name={ic} size={34} /></span>{label}</Link>
         ))}
       </div>

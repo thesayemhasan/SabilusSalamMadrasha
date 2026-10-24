@@ -2,12 +2,12 @@ import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { initFx } from './lib/fx'
 import PublicLayout from './components/PublicLayout'
-import { About, Admission, Contact, Departments, Donate, Events, Gallery, Home, Notices, Teachers } from './pages/public/Public'
+import { About, Account, Admission, Contact, Departments, Donate, Events, Gallery, Home, Notices, Privacy, Teachers, Terms } from './pages/public/Public'
 import AdminShell from './pages/admin/AdminShell'
 import Dashboard from './pages/admin/Dashboard'
 import TextsEditor from './pages/admin/TextsEditor'
 import Settings from './pages/admin/Settings'
-import { EventsAdmin, GalleryAdmin, NoticesAdmin, TeachersAdmin } from './pages/admin/Sections'
+import { AdmissionFieldsAdmin, EventsAdmin, GalleryAdmin, HeroSlidesAdmin, HomeBlocksAdmin, NoticesAdmin, TeachersAdmin } from './pages/admin/Sections'
 import { Applications, Messages } from './pages/admin/Inbox'
 import { Integrations, Modules } from './pages/admin/Controls'
 import Users from './pages/admin/Users'
@@ -28,6 +28,10 @@ export default function App() {
         <Route path="teachers" element={<Teachers />} />
         <Route path="donate" element={<Donate />} />
         <Route path="contact" element={<Contact />} />
+        <Route path="account" element={<Account />} />
+        <Route path="privacy" element={<Privacy />} />
+        <Route path="terms" element={<Terms />} />
+        <Route path="signup" element={<Account />} />
       </Route>
 
       <Route path="admin" element={<AdminShell />}>
@@ -35,10 +39,13 @@ export default function App() {
         <Route path="applications" element={<Applications />} />
         <Route path="messages" element={<Messages />} />
         <Route path="texts" element={<TextsEditor />} />
+        <Route path="slides" element={<HeroSlidesAdmin />} />
         <Route path="notices" element={<NoticesAdmin />} />
         <Route path="events" element={<EventsAdmin />} />
         <Route path="gallery" element={<GalleryAdmin />} />
         <Route path="teachers" element={<TeachersAdmin />} />
+        <Route path="home-blocks" element={<HomeBlocksAdmin />} />
+        <Route path="admission-form" element={<AdmissionFieldsAdmin />} />
         <Route path="modules" element={<Modules />} />
         <Route path="integrations" element={<Integrations />} />
         <Route path="settings" element={<Settings />} />

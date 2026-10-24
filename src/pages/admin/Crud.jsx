@@ -1,14 +1,25 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { LANGS } from '../../lib/texts'
-import { ImageUpload, Modal, Switch } from '../../components/Ui'
+import { ImageUpload, Modal, Select, Switch, useConfirm } from '../../components/Ui'
+import Icon from '../../components/Icon'
 
-// একটি জেনেরিক তালিকা + যোগ/সম্পাদনা/মুছা ফর্ম (নোটিশ, ইভেন্ট, গ্যালারি, শিক্ষক এসবে ব্যবহৃত)
-export default function Crud({ table, title, fields, order = 'created_at', asc = false, summary, blank = {} }) {
+export const ICON_CHOICES = ['star', 'book', 'books', 'moon', 'lotus', 'chat', 'apply', 'megaphone', 'calendar', 'image', 'teacher', 'building', 'shield', 'users', 'clock', 'pin', 'phone', 'mail', 'globe', 'video', 'bell', 'home'].map((k) => [k, k])
+
+const toLocal = (iso) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+// একটি জেনেরিক তালিকা + যোগ/সম্পাদনা/মুছা ফর্ম
+export default function Crud({ table, title, hint, fields, order = 'created_at', asc = false, summary, blank = {}, nameOf, beforeSave, extra, toggle = 'published', toggleLabel = 'প্রকাশিত' }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [edit, setEdit] = useState(null)
   const [msg, setMsg] = useState('')
+  const confirm = useConfirm()
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.from(table).select('*').order(order, { ascending: asc })
@@ -18,15 +29,17 @@ export default function Crud({ table, title, fields, order = 'created_at', asc =
   }, [table, order, asc])
   useEffect(() => { load() }, [load])
 
+  const label = (r) => (nameOf ? nameOf(r) : r.title_bn || r.name_bn || r.label_bn || r.caption_bn || r.title_en || 'এই আইটেম')
+
   async function remove(row) {
-    if (!confirm('মুছে ফেলবেন?')) return
+    if (!(await confirm({ name: label(row), text: 'মুছে ফেলবেন? এটি আর ফিরিয়ে আনা যাবে না।' }))) return
     const { error } = await supabase.from(table).delete().eq('id', row.id)
     if (error) setMsg(error.message)
     load()
   }
 
-  async function toggle(row, name, v) {
-    await supabase.from(table).update({ [name]: v }).eq('id', row.id)
+  async function flip(row, v) {
+    await supabase.from(table).update({ [toggle]: v }).eq('id', row.id)
     load()
   }
 
@@ -34,42 +47,83 @@ export default function Crud({ table, title, fields, order = 'created_at', asc =
     <>
       <div className="toolbar">
         <h2 style={{ margin: 0, flex: '1 1 auto' }}>{title}</h2>
-        <button className="btn" onClick={() => setEdit({ ...blank })}>+ নতুন যোগ করুন</button>
+        {extra && extra({ reload: load })}
+        <button className="btn" onClick={() => setEdit({ ...blank })}><Icon name="plus" size={18} cls="cur" /> নতুন যোগ করুন</button>
       </div>
+      {hint && <p className="muted" style={{ marginTop: -6 }}>{hint}</p>}
       {msg && <div className="alert err" style={{ marginBottom: 12 }}>{msg}</div>}
       {loading ? <p>লোড হচ্ছে…</p> : rows.length === 0 ? <div className="card muted">এখনো কিছু যোগ করা হয়নি।</div> : (
         <div className="stack">
           {rows.map((r) => (
-            <div className="card" key={r.id} style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <div className="card row-card" key={r.id}>
               <div style={{ minWidth: 0, flex: '1 1 240px' }}>{summary(r)}</div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <span className="muted" style={{ fontSize: '.8rem' }}>প্রকাশিত</span>
-                <Switch checked={r.published} onChange={(v) => toggle(r, 'published', v)} />
-                <button className="btn small outline" onClick={() => setEdit(r)}>সম্পাদনা</button>
-                <button className="btn small danger" onClick={() => remove(r)}>মুছুন</button>
+              <div className="row-actions">
+                {toggle && <><span className="muted" style={{ fontSize: '.8rem' }}>{toggleLabel}</span>
+                <Switch checked={r[toggle]} onChange={(v) => flip(r, v)} /></>}
+                <button className="btn small outline" onClick={() => setEdit(r)}><Icon name="edit" size={15} cls="cur" /> সম্পাদনা</button>
+                <button className="btn small danger" onClick={() => remove(r)}><Icon name="trash" size={15} cls="cur" /> মুছুন</button>
               </div>
             </div>
           ))}
         </div>
       )}
-      {edit && <Form table={table} fields={fields} initial={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load() }} />}
+      {edit && <Form table={table} fields={fields} initial={edit} beforeSave={beforeSave} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load() }} />}
     </>
   )
 }
 
-function Form({ table, fields, initial, onClose, onSaved }) {
+function ItemsEditor({ value, onChange, itemFields, tab }) {
+  const items = Array.isArray(value) ? value : []
+  const upd = (i, k, val) => onChange(items.map((it, j) => (j === i ? { ...it, [k]: val } : it)))
+  const move = (i, d) => { const a = [...items]; const j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; onChange(a) }
+  return (
+    <div className="items-ed">
+      {items.map((it, i) => (
+        <div className="item-row" key={i}>
+          <div className="item-top">
+            <b>#{i + 1}</b>
+            <span className="row-actions">
+              <button type="button" className="btn small outline" onClick={() => move(i, -1)} aria-label="up"><Icon name="chevup" size={14} cls="cur" /></button>
+              <button type="button" className="btn small outline" onClick={() => move(i, 1)} aria-label="down"><Icon name="chevdown" size={14} cls="cur" /></button>
+              <button type="button" className="btn small danger" onClick={() => onChange(items.filter((_, j) => j !== i))}><Icon name="trash" size={14} cls="cur" /></button>
+            </span>
+          </div>
+          {itemFields.map((f) => {
+            const name = f.i18n ? `${f.name}_${tab}` : f.name
+            return (
+              <div className="field" key={name}>
+                <label>{f.label}{f.i18n ? ` (${LANGS.find((l) => l.code === tab).label})` : ''}</label>
+                {f.type === 'icon' && (
+                  <div className="icon-pick">
+                    {ICON_CHOICES.map(([k]) => <button type="button" key={k} className={(it[name] || 'star') === k ? 'on' : ''} onClick={() => upd(i, name, k)} title={k}><Icon name={k} size={22} /></button>)}
+                  </div>
+                )}
+                {f.type === 'textarea' && <textarea value={it[name] || ''} onChange={(e) => upd(i, name, e.target.value)} />}
+                {(!f.type || f.type === 'text') && <input value={it[name] || ''} onChange={(e) => upd(i, name, e.target.value)} />}
+              </div>
+            )
+          })}
+        </div>
+      ))}
+      <button type="button" className="btn small outline" onClick={() => onChange([...items, { icon: 'star' }])}><Icon name="plus" size={15} cls="cur" /> আইটেম যোগ</button>
+    </div>
+  )
+}
+
+function Form({ table, fields, initial, beforeSave, onClose, onSaved }) {
   const [v, setV] = useState(initial)
   const [tab, setTab] = useState('bn')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  const hasI18n = fields.some((f) => f.i18n)
+  const hasI18n = fields.some((f) => f.i18n) || fields.some((f) => f.itemFields?.some((x) => x.i18n))
   const set = (k, val) => setV((o) => ({ ...o, [k]: val }))
 
   async function save(e) {
     e.preventDefault()
     setBusy(true)
     setErr('')
-    const { id, created_at, ...payload } = v
+    let { id, created_at, ...payload } = v
+    if (beforeSave) payload = beforeSave(payload)
     const q = id ? supabase.from(table).update(payload).eq('id', id) : supabase.from(table).insert(payload)
     const { error } = await q
     setBusy(false)
@@ -78,7 +132,7 @@ function Form({ table, fields, initial, onClose, onSaved }) {
   }
 
   return (
-    <Modal onClose={onClose}>
+    <Modal onClose={onClose} wide>
       <h3>{initial.id ? 'সম্পাদনা' : 'নতুন যোগ করুন'}</h3>
       <form className="form" onSubmit={save}>
         {hasI18n && (
@@ -88,21 +142,25 @@ function Form({ table, fields, initial, onClose, onSaved }) {
             ))}
           </div>
         )}
-        {fields.map((f) => {
+        {fields.filter((f) => !f.showIf || f.showIf(v)).map((f) => {
           const name = f.i18n ? `${f.name}_${tab}` : f.name
           return (
             <div className="field" key={name}>
-              {f.type !== 'bool' && <label>{f.label}{f.i18n ? ` (${LANGS.find((l) => l.code === tab).label})` : ''}{f.required && tab === 'bn' ? ' *' : ''}</label>}
-              {f.type === 'textarea' && <textarea dir={tab === 'ar' && f.i18n ? 'rtl' : undefined} value={v[name] || ''} onChange={(e) => set(name, e.target.value)} />}
-              {(f.type === 'text' || !f.type) && <input dir={tab === 'ar' && f.i18n ? 'rtl' : undefined} required={f.required && (!f.i18n || tab === 'bn')} value={v[name] || ''} onChange={(e) => set(name, e.target.value)} />}
+              {f.type !== 'bool' && <label>{f.label}{f.i18n ? ` (${LANGS.find((l) => l.code === tab).label})` : ''}{f.required && (!f.i18n || tab === 'bn') ? ' *' : ''}</label>}
+              {f.type === 'textarea' && <textarea rows={f.rows} value={v[name] || ''} onChange={(e) => set(name, e.target.value)} />}
+              {(f.type === 'text' || !f.type) && <input required={f.required && (!f.i18n || tab === 'bn')} value={v[name] || ''} onChange={(e) => set(name, e.target.value)} placeholder={f.placeholder} />}
               {f.type === 'date' && <input type="date" required value={v[name] || ''} onChange={(e) => set(name, e.target.value)} />}
+              {f.type === 'datetime' && <input type="datetime-local" value={toLocal(v[name])} onChange={(e) => set(name, e.target.value ? new Date(e.target.value).toISOString() : null)} />}
               {f.type === 'number' && <input type="number" value={v[name] ?? 0} onChange={(e) => set(name, Number(e.target.value))} />}
-              {f.type === 'image' && <ImageUpload folder={table} value={v[name]} onChange={(x) => set(name, x)} />}
+              {f.type === 'image' && <ImageUpload folder={table} value={v[name]} onChange={(x) => set(name, x)} shape={f.shape} />}
+              {f.type === 'select' && <Select value={v[name] ?? ''} onChange={(x) => set(name, x)} options={f.options} />}
+              {f.type === 'items' && <ItemsEditor value={v[name]} onChange={(x) => set(name, x)} itemFields={f.itemFields} tab={tab} />}
               {f.type === 'bool' && (
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Switch checked={v[name]} onChange={(x) => set(name, x)} /> {f.label}
                 </label>
               )}
+              {f.hint && <span className="muted" style={{ fontSize: '.85rem' }}>{f.hint}</span>}
             </div>
           )
         })}
