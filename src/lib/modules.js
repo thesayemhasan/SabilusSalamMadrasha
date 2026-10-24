@@ -55,7 +55,7 @@ const L = [
 export const MODULES = L.map(([key, name, group, step, free, desc]) => ({ key, name, group, step, free, desc }))
 
 // যেগুলো ধাপ ১ এ ইতিমধ্যে তৈরি
-export const BUILT = new Set(['settings', 'events', 'website', 'students', 'teachers', 'attendance'])
+export const BUILT = new Set(['settings', 'events', 'website', 'students', 'teachers', 'attendance', 'fees', 'accounts_basic', 'reports', 'hr_payroll', 'activity_log'])
 
 // বাইরের সেবা, যেগুলো চালু করলে সংশ্লিষ্ট মডিউল নিজে থেকে কাজ শুরু করবে
 export const INTEGRATIONS = [

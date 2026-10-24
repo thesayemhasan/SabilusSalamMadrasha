@@ -141,12 +141,11 @@ export function Admission() {
     }
     payload.data = data
     const { error } = await supabase.from('admission_applications').insert(payload)
-    if (error) return setState('error')
+    if (error) { setMsg(error.message || ''); return setState('error') }
     setV({}); setAgree(false)
     setState('ok')
   }
 
-  const Row = ({ items }) => <div className="row2">{items}</div>
   const render = (f) => {
     const val = v[f.field_key] || ''
     const req = f.required ? ' *' : ''
@@ -167,7 +166,7 @@ export function Admission() {
   for (let i = 0; i < list.length; i++) {
     const f = list[i]
     const short = (x) => x && (x.half || (!live.length ? false : ['text', 'phone', 'email', 'date', 'number', 'select'].includes(x.type) && x.half !== false && false))
-    if (short(f) && short(list[i + 1])) { nodes.push(<Row key={f.id} items={[render(f), render(list[i + 1])]} />); i++ } else nodes.push(render(f))
+    if (short(f) && short(list[i + 1])) { nodes.push(<div className="row2" key={f.id}>{render(f)}{render(list[i + 1])}</div>); i++ } else nodes.push(render(f))
   }
 
   return (
@@ -192,9 +191,9 @@ export function Admission() {
                 <span>{t('admission.agree')}</span>
               </label>
             )}
-            {msg && <div className="alert err">{msg}</div>}
+            {msg && state !== 'error' && <div className="alert err">{msg}</div>}
             {state === 'ok' && <div className="alert ok">{t('form.success')}</div>}
-            {state === 'error' && <div className="alert err">{t('form.error')}</div>}
+            {state === 'error' && <div className="alert err">{t('form.error')}{msg && <div className="muted" style={{ fontSize: '.8rem', marginTop: 4, direction: 'ltr', overflowWrap: 'anywhere' }}>{msg}</div>}</div>}
             {(state === 'offline' || !configured) && <div className="alert warn">{t('form.offline')}</div>}
             <button className="btn" disabled={state === 'sending'}>
               {state === 'sending' ? t('form.sending') : t('form.submit')}
@@ -429,7 +428,7 @@ export function Contact() {
             <div className="field"><label>{t('contact.form.phone')}</label><input type="tel" value={f.phone} onChange={set('phone')} /></div>
             <div className="field"><label>{t('contact.form.message')} *</label><textarea required value={f.message} onChange={set('message')} /></div>
             {state === 'ok' && <div className="alert ok">{t('contact.form.success')}</div>}
-            {state === 'error' && <div className="alert err">{t('form.error')}</div>}
+            {state === 'error' && <div className="alert err">{t('form.error')}{msg && <div className="muted" style={{ fontSize: '.8rem', marginTop: 4, direction: 'ltr', overflowWrap: 'anywhere' }}>{msg}</div>}</div>}
             {(state === 'offline' || !configured) && <div className="alert warn">{t('form.offline')}</div>}
             <button className="btn" disabled={state === 'sending'}>
               {state === 'sending' ? t('form.sending') : t('contact.form.send')}

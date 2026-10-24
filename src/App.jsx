@@ -14,6 +14,12 @@ import Users from './pages/admin/Users'
 import ModulePage from './pages/admin/ModulePage'
 import { ClassesAdmin, ResidenceAdmin, SessionsAdmin, StaffAdmin, StudentsAdmin } from './pages/admin/People'
 import Attendance, { Gate } from './pages/admin/Attendance'
+import FeesPage, { Billing } from './pages/admin/Fees'
+import { AccountSetup, FeeSetup } from './pages/admin/FinSetup'
+import Ledger from './pages/admin/Ledger'
+import Salary from './pages/admin/Salary'
+import Reports from './pages/admin/Reports'
+import Audit from './pages/admin/Audit'
 
 export default function App() {
   useEffect(() => initFx(), [])
@@ -48,6 +54,15 @@ export default function App() {
         <Route path="attendance" element={<Gate mod="attendance" name="হাজিরা"><Attendance /></Gate>} />
         <Route path="residence" element={<ResidenceAdmin />} />
         <Route path="sessions" element={<SessionsAdmin />} />
+        <Route path="fees" element={<Gate mod="fees" name="বেতন ও চাঁদা"><FeesPage /></Gate>} />
+        <Route path="billing" element={<Gate mod="fees" name="বেতন ও চাঁদা"><Billing /></Gate>} />
+        <Route path="fee-setup" element={<Gate mod="fees" name="বেতন ও চাঁদা"><FeeSetup /></Gate>} />
+        <Route path="income" element={<Gate mod="accounts_basic" name="আয়-ব্যয় হিসাব"><Ledger kind="income" /></Gate>} />
+        <Route path="expense" element={<Gate mod="accounts_basic" name="আয়-ব্যয় হিসাব"><Ledger kind="expense" /></Gate>} />
+        <Route path="account-setup" element={<Gate mod="accounts_basic" name="আয়-ব্যয় হিসাব"><AccountSetup /></Gate>} />
+        <Route path="salary" element={<Gate mod="hr_payroll" name="এইচআর ও পে-রোল"><Salary /></Gate>} />
+        <Route path="reports" element={<Gate mod="reports" name="রিপোর্ট"><Reports /></Gate>} />
+        <Route path="audit" element={<Gate mod="activity_log" name="অ্যাক্টিভিটি লগ"><Audit /></Gate>} />
         <Route path="slides" element={<HeroSlidesAdmin />} />
         <Route path="notices" element={<NoticesAdmin />} />
         <Route path="events" element={<EventsAdmin />} />

@@ -58,6 +58,7 @@ export const StudentsAdmin = () => (
       { name: 'department_id', label: 'সব বিভাগ', optionsFrom: DEPT },
       { name: 'class_id', label: 'সব শ্রেণি', optionsFrom: CLASS },
       { name: 'residence', label: 'সব ধরন', optionsFrom: RESIDENCE },
+      { name: 'blood_group', label: 'রক্তের গ্রুপ', options: ['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'].map((b) => [b, b]) },
       { name: 'status', label: 'সব অবস্থা', options: STU_STATUS },
     ]}
     csv={{
@@ -65,7 +66,7 @@ export const StudentsAdmin = () => (
       cols: [
         ['আইডি', (r) => r.student_no], ['নাম', (r) => bn(r, 'name')], ['পিতা', (r) => r.father_name], ['মাতা', (r) => r.mother_name],
         ['অভিভাবকের ফোন', (r) => r.guardian_phone], ['বিভাগ', (r, m) => m.department_id?.[r.department_id]], ['শ্রেণি', (r, m) => m.class_id?.[r.class_id]],
-        ['ধরন', (r) => r.residence], ['ভর্তির তারিখ', (r) => r.admission_date], ['জন্মতারিখ', (r) => r.dob], ['ঠিকানা', (r) => r.address], ['অবস্থা', (r) => STATUS_L[r.status]],
+        ['ধরন', (r) => r.residence], ['রক্তের গ্রুপ', (r) => r.blood_group], ['ভর্তির তারিখ', (r) => r.admission_date], ['জন্মতারিখ', (r) => r.dob], ['ঠিকানা', (r) => r.address], ['অবস্থা', (r) => STATUS_L[r.status]],
       ],
     }}
     fields={[
@@ -73,6 +74,7 @@ export const StudentsAdmin = () => (
       { name: 'name', label: 'ছাত্রের নাম', i18n: true, required: true },
       { name: 'gender', label: 'ছেলে / মেয়ে', type: 'select', options: [['', '— বাছাই করুন —'], ...GENDER] },
       { name: 'dob', label: 'জন্মতারিখ', type: 'date', required: false },
+      { name: 'blood_group', label: 'রক্তের গ্রুপ', type: 'select', options: [['', '— জানা নেই —'], ...['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'].map((b) => [b, b])] },
       { name: 'father_name', label: 'পিতার নাম' },
       { name: 'mother_name', label: 'মাতার নাম' },
       { name: 'guardian_phone', label: 'অভিভাবকের মোবাইল (SMS ও হাজিরার বার্তা এই নম্বরে যাবে)' },
@@ -121,6 +123,7 @@ export const StaffAdmin = () => (
       { name: 'kind', label: 'ধরন', type: 'select', options: KIND },
       { name: 'designation', label: 'পদবি', i18n: true },
       { name: 'phone', label: 'মোবাইল' },
+      { name: 'salary', label: 'মাসিক বেতন (টাকা)', type: 'number' },
       { name: 'nid', label: 'জাতীয় পরিচয়পত্র নম্বর' },
       { name: 'address', label: 'ঠিকানা', type: 'textarea' },
       { name: 'join_date', label: 'যোগদানের তারিখ', type: 'date', required: false },

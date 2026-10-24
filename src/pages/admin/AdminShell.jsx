@@ -9,11 +9,12 @@ import { MODULES, MODULE_GROUPS, BUILT } from '../../lib/modules'
 const MENU = [
   ['প্রধান', [['/admin', 'dashboard', 'ড্যাশবোর্ড', true], ['/admin/applications', 'clipboard', 'ভর্তির আবেদন'], ['/admin/messages', 'mail', 'যোগাযোগের বার্তা']]],
   ['ছাত্র ও হাজিরা', [['/admin/students', 'users', 'ছাত্র-ছাত্রী'], ['/admin/classes', 'books', 'শ্রেণি ও হালকা'], ['/admin/staff', 'teacher', 'শিক্ষক ও কর্মচারী'], ['/admin/attendance', 'clipboard', 'হাজিরা'], ['/admin/residence', 'building', 'আবাসিক/অনাবাসিক ধরন'], ['/admin/sessions', 'clock', 'হাজিরার সময়']]],
+  ['ফি ও হিসাব', [['/admin/fees', 'wallet', 'ফি আদায় ও রসিদ'], ['/admin/billing', 'clipboard', 'বিল তৈরি'], ['/admin/fee-setup', 'sliders', 'ফি-র ধরন ও পরিমাণ'], ['/admin/income', 'coins', 'দান ও অন্যান্য আয়'], ['/admin/expense', 'coins', 'ব্যয়'], ['/admin/salary', 'users', 'শিক্ষক-কর্মচারীর বেতন'], ['/admin/reports', 'chart', 'হিসাব ও রিপোর্ট'], ['/admin/account-setup', 'gear', 'খাত ও পেমেন্ট মাধ্যম'], ['/admin/audit', 'shield', 'আর্থিক লগ']]],
   ['ওয়েবসাইট', [['/admin/texts', 'edit', 'সাইটের লেখা'], ['/admin/slides', 'image', 'হোম স্লাইড'], ['/admin/departments', 'books', 'বিভাগসমূহ'], ['/admin/home-blocks', 'building', 'হোম সেকশন (নতুন রো)'], ['/admin/notices', 'megaphone', 'নোটিশ'], ['/admin/events', 'calendar', 'ইভেন্ট ও টাইমার'], ['/admin/gallery', 'video', 'গ্যালারি'], ['/admin/teachers', 'teacher', 'শিক্ষকবৃন্দ (পাবলিক)'], ['/admin/admission-form', 'apply', 'ভর্তি ফরম']]],
   ['সিস্টেম', [['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'সাইটের সেটিংস (হেডার, ফুটার…)'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
 ]
 
-const PATH_MOD = { '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance' }
+const PATH_MOD = { '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance', '/admin/fees': 'fees', '/admin/billing': 'fees', '/admin/fee-setup': 'fees', '/admin/income': 'accounts_basic', '/admin/expense': 'accounts_basic', '/admin/account-setup': 'accounts_basic', '/admin/salary': 'hr_payroll', '/admin/reports': 'reports', '/admin/audit': 'activity_log' }
 
 function Login() {
   const { signIn } = useAuth()
@@ -51,7 +52,7 @@ function Login() {
 }
 
 export default function AdminShell() {
-  const { session, profile, loading, isAdmin, signOut } = useAuth()
+  const { session, profile, loading, isFinance, isAccountant, signOut } = useAuth()
   const { settings, theme, setTheme, modules } = useSite()
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
@@ -70,7 +71,7 @@ export default function AdminShell() {
   }
   if (loading) return <div className="login-wrap"><p>লোড হচ্ছে…</p></div>
   if (!session) return <Login />
-  if (!isAdmin) {
+  if (!isFinance) {
     return (
       <div className="login-wrap">
         <div className="card login-box">
@@ -91,7 +92,7 @@ export default function AdminShell() {
           <img src={settings.logo_url} alt="" style={{ background: '#fff', borderRadius: '50%', padding: 2 }} />
           <span>অ্যাডমিন প্যানেল</span>
         </div>
-        {MENU.map(([title, items]) => (
+        {MENU.filter(([title]) => !isAccountant || ['প্রধান', 'ফি ও হিসাব'].includes(title)).map(([title, items]) => (
           <div key={title}>
             <h5>{title}</h5>
             {items.filter(([to]) => modules[PATH_MOD[to]] !== false).map(([to, ic, label, end]) => (
@@ -101,8 +102,8 @@ export default function AdminShell() {
             ))}
           </div>
         ))}
-        <h5>ম্যানেজমেন্ট মডিউল</h5>
-        {MODULE_GROUPS.map((g) => (
+        {!isAccountant && <h5>ম্যানেজমেন্ট মডিউল</h5>}
+        {!isAccountant && MODULE_GROUPS.map((g) => (
           <details key={g.id} style={{ margin: '2px 0' }}>
             <summary style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '.95rem' }}>{g.label}</summary>
             {MODULES.filter((m) => m.group === g.id).map((m) => (

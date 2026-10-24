@@ -80,6 +80,7 @@ function Hero({ items }) {
   const [i, setI] = useState(0)
   const [hold, setHold] = useState(false)
   const x0 = useRef(null)
+  const moved = useRef(false)
   const n = items.length
   const go = (k) => setI((k + n) % n)
   useEffect(() => { if (i >= n) setI(0) }, [n, i])
@@ -98,12 +99,15 @@ function Hero({ items }) {
       className="hero-slider"
       onMouseEnter={() => setHold(true)}
       onMouseLeave={() => setHold(false)}
-      onTouchStart={(e) => { x0.current = e.touches[0].clientX; setHold(true) }}
-      onTouchEnd={(e) => {
-        const dx = e.changedTouches[0].clientX - (x0.current ?? 0)
-        if (Math.abs(dx) > 45) go(i + (dx < 0 ? 1 : -1))
+      onPointerDown={(e) => { x0.current = e.clientX; moved.current = false; setHold(true) }}
+      onPointerUp={(e) => {
+        const dx = e.clientX - (x0.current ?? e.clientX)
+        if (n > 1 && Math.abs(dx) > 45) { moved.current = true; go(i + (dx < 0 ? 1 : -1)) }
+        x0.current = null
         setHold(false)
       }}
+      onPointerCancel={() => { x0.current = null; setHold(false) }}
+      onClickCapture={(e) => { if (moved.current) { e.preventDefault(); e.stopPropagation(); moved.current = false } }}
     >
       {items.map((it, k) => {
         const active = k === i
@@ -146,8 +150,6 @@ function Hero({ items }) {
       })}
       {n > 1 && (
         <>
-          <button type="button" className="s-btn prev" aria-label="prev" onClick={() => go(i - 1)}><Icon name="arrowright" size={22} cls="cur" /></button>
-          <button type="button" className="s-btn next" aria-label="next" onClick={() => go(i + 1)}><Icon name="arrowright" size={22} cls="cur" /></button>
           <div className="slider-dots">
             {items.map((_, k) => <button type="button" key={k} aria-label={String(k + 1)} className={k === i ? 'on' : ''} onClick={() => go(k)} />)}
           </div>

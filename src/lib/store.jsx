@@ -161,9 +161,11 @@ export function AuthProvider({ children }) {
   const changePassword = (password) => (supabase.auth.updateUser ? supabase.auth.updateUser({ password }) : Promise.resolve({ error: null }))
   const isAdmin = Boolean(profile && ['super_admin', 'admin'].includes(profile.role))
   const isSuper = Boolean(profile && profile.role === 'super_admin')
+  const isFinance = Boolean(profile && ['super_admin', 'admin', 'accountant'].includes(profile.role))
+  const isAccountant = Boolean(profile && profile.role === 'accountant')
 
   return (
-    <AuthCtx.Provider value={{ session, profile, loading, signIn, signOut, signUp, resetPassword, changePassword, isAdmin, isSuper }}>
+    <AuthCtx.Provider value={{ session, profile, loading, signIn, signOut, signUp, resetPassword, changePassword, isAdmin, isSuper, isFinance, isAccountant }}>
       {children}
     </AuthCtx.Provider>
   )

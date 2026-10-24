@@ -467,5 +467,320 @@ insert into public.lookups (kind, code, name_bn, name_en, sort)
 select 'session', 'day', 'দৈনিক', 'Daily', 1
 where not exists (select 1 from public.lookups where kind = 'session');
 
+-- =====================================================================
+-- ধাপ ৩: ফি, আদায়, রসিদ, দান, আয়-ব্যয়, বেতন, রিপোর্ট, লগ (আবার চালালেও ক্ষতি নেই)
+-- আর্থিক তথ্য শুধু সুপার অ্যাডমিন, অ্যাডমিন ও হিসাবরক্ষক দেখতে/লিখতে পারবে
+-- আদায়, আয়-ব্যয় ও বেতনের এন্ট্রি মোছা যায় না; ভুল হলে "বাতিল" করা যায় (কারণসহ, লগে থাকে)
+-- =====================================================================
+
+create or replace function public.is_finance() returns boolean
+language sql security definer set search_path = public stable as $$
+  select exists (select 1 from public.profiles
+    where id = auth.uid() and role in ('super_admin','admin','accountant'));
+$$;
+
+alter table public.students add column if not exists blood_group text;
+alter table public.staff add column if not exists salary numeric not null default 0;
+alter table public.lookups add column if not exists opening numeric not null default 0;
+
+-- ফি-র ধরন (মাসিক বেতন, খাবার, ভর্তি ফি ইত্যাদি)
+create table if not exists public.fee_heads (
+  id uuid primary key default gen_random_uuid(),
+  name_bn text, name_en text,
+  kind text not null default 'monthly',      -- monthly | one_time
+  default_amount numeric not null default 0,
+  sort int not null default 0,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- পরিমাণ: শ্রেণি / বিভাগ / আবাসিক ধরন অনুযায়ী (যেটা বেশি নির্দিষ্ট সেটাই প্রযোজ্য)
+create table if not exists public.fee_rates (
+  id uuid primary key default gen_random_uuid(),
+  head_id uuid not null references public.fee_heads(id) on delete cascade,
+  class_id uuid references public.classes(id) on delete cascade,
+  department_id uuid references public.departments(id) on delete cascade,
+  residence text,
+  amount numeric not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- ছাত্রভিত্তিক আলাদা পরিমাণ / ছাড় / অব্যাহতি
+create table if not exists public.student_fees (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.students(id) on delete cascade,
+  head_id uuid not null references public.fee_heads(id) on delete cascade,
+  amount numeric,                            -- ফাঁকা হলে সাধারণ পরিমাণ
+  discount numeric not null default 0,
+  exempt boolean not null default false,     -- এই ফি প্রযোজ্য নয়
+  note text,
+  created_at timestamptz not null default now(),
+  unique (student_id, head_id)
+);
+
+-- বিল
+create table if not exists public.invoices (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.students(id) on delete restrict,
+  head_id uuid references public.fee_heads(id) on delete set null,
+  period text not null default '',           -- 2026-01 অথবা এককালীন লেবেল
+  title text,
+  amount numeric not null default 0,
+  paid numeric not null default 0,
+  cancelled boolean not null default false,
+  cancel_reason text,
+  created_at timestamptz not null default now(),
+  unique (student_id, head_id, period)
+);
+create index if not exists invoices_student_idx on public.invoices(student_id);
+create index if not exists invoices_period_idx on public.invoices(period);
+
+create sequence if not exists public.receipt_seq;
+
+-- আদায় (রসিদ)
+create table if not exists public.payments (
+  id uuid primary key default gen_random_uuid(),
+  receipt_no text,
+  student_id uuid references public.students(id) on delete restrict,
+  payer text,
+  method text not null default 'cash',
+  amount numeric not null check (amount > 0),
+  txn_ref text,
+  paid_at date not null default current_date,
+  note text,
+  void boolean not null default false,
+  void_reason text,
+  voided_at timestamptz,
+  created_by uuid default auth.uid(),
+  created_at timestamptz not null default now()
+);
+create index if not exists payments_date_idx on public.payments(paid_at);
+create index if not exists payments_student_idx on public.payments(student_id);
+
+create table if not exists public.payment_items (
+  id uuid primary key default gen_random_uuid(),
+  payment_id uuid not null references public.payments(id) on delete restrict,
+  invoice_id uuid not null references public.invoices(id) on delete restrict,
+  amount numeric not null check (amount > 0)
+);
+create index if not exists pitems_inv_idx on public.payment_items(invoice_id);
+
+-- আয়-ব্যয়ের খাত
+create table if not exists public.ledger_categories (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('income','expense')),
+  name_bn text, name_en text,
+  sort int not null default 0,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+-- দান/চাঁদা (আয়) ও খরচ (ব্যয়)
+create table if not exists public.ledger (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('income','expense')),
+  category_id uuid references public.ledger_categories(id) on delete set null,
+  category_name text,
+  amount numeric not null check (amount > 0),
+  method text not null default 'cash',
+  date date not null default current_date,
+  party text,                                -- দাতা / যাকে দেওয়া হয়েছে
+  phone text,
+  receipt_no text,
+  voucher_url text,
+  note text,
+  void boolean not null default false,
+  void_reason text,
+  voided_at timestamptz,
+  created_by uuid default auth.uid(),
+  created_at timestamptz not null default now()
+);
+create index if not exists ledger_date_idx on public.ledger(date);
+
+-- শিক্ষক-কর্মচারীর অগ্রিম
+create table if not exists public.staff_advances (
+  id uuid primary key default gen_random_uuid(),
+  staff_id uuid not null references public.staff(id) on delete restrict,
+  amount numeric not null check (amount > 0),
+  method text not null default 'cash',
+  date date not null default current_date,
+  note text,
+  void boolean not null default false,
+  void_reason text,
+  voided_at timestamptz,
+  created_by uuid default auth.uid(),
+  created_at timestamptz not null default now()
+);
+
+-- মাসিক বেতন প্রদান
+create table if not exists public.salary_payments (
+  id uuid primary key default gen_random_uuid(),
+  staff_id uuid not null references public.staff(id) on delete restrict,
+  period text not null,                      -- 2026-01
+  base numeric not null default 0,
+  deduction numeric not null default 0,      -- অনুপস্থিতি/অন্য কর্তন
+  advance_deduct numeric not null default 0, -- অগ্রিম কাটা
+  bonus numeric not null default 0,
+  net numeric not null default 0,
+  method text not null default 'cash',
+  paid_at date not null default current_date,
+  note text,
+  void boolean not null default false,
+  void_reason text,
+  voided_at timestamptz,
+  created_by uuid default auth.uid(),
+  created_at timestamptz not null default now()
+);
+create unique index if not exists salary_once on public.salary_payments(staff_id, period) where not void;
+
+-- আর্থিক লগ: কে, কখন, কী করল
+create table if not exists public.audit_log (
+  id uuid primary key default gen_random_uuid(),
+  table_name text, action text, row_id uuid,
+  who uuid default auth.uid(),
+  data jsonb,
+  created_at timestamptz not null default now()
+);
+
+-- রসিদ নম্বর নিজে নিজে (আদায়: R-, দান/আয়: D-)
+create or replace function public.set_receipt_no() returns trigger language plpgsql as $$
+begin
+  if coalesce(new.receipt_no, '') = '' then
+    new.receipt_no := 'R-' || to_char(current_date, 'YY') || lpad(nextval('public.receipt_seq')::text, 5, '0');
+  end if;
+  return new;
+end $$;
+create or replace function public.set_ledger_receipt_no() returns trigger language plpgsql as $$
+begin
+  if new.kind = 'income' and coalesce(new.receipt_no, '') = '' then
+    new.receipt_no := 'D-' || to_char(current_date, 'YY') || lpad(nextval('public.receipt_seq')::text, 5, '0');
+  end if;
+  return new;
+end $$;
+drop trigger if exists payments_receipt on public.payments;
+create trigger payments_receipt before insert on public.payments for each row execute function public.set_receipt_no();
+drop trigger if exists ledger_receipt on public.ledger;
+create trigger ledger_receipt before insert on public.ledger for each row execute function public.set_ledger_receipt_no();
+
+-- আর্থিক এন্ট্রির শুধু "বাতিল" ঘরগুলো বদলানো যায়, টাকার অঙ্ক বা অন্য কিছু নয়
+create or replace function public.lock_financial() returns trigger language plpgsql as $$
+begin
+  if (to_jsonb(new) - 'void' - 'void_reason' - 'voided_at') <> (to_jsonb(old) - 'void' - 'void_reason' - 'voided_at') then
+    raise exception 'আর্থিক এন্ট্রি বদলানো যাবে না। ভুল হলে বাতিল করে নতুন এন্ট্রি দিন।';
+  end if;
+  if old.void and not new.void then
+    raise exception 'বাতিল এন্ট্রি ফিরিয়ে আনা যাবে না।';
+  end if;
+  return new;
+end $$;
+do $$
+declare t text;
+begin
+  foreach t in array array['payments','ledger','staff_advances','salary_payments'] loop
+    execute format('drop trigger if exists %1$s_lock on public.%1$I', t);
+    execute format('create trigger %1$s_lock before update on public.%1$I for each row execute function public.lock_financial()', t);
+  end loop;
+end $$;
+
+-- বিলের জমা (paid) নিজে নিজে হিসাব হয়
+create or replace function public.recalc_invoice(p_inv uuid) returns void language sql security definer set search_path = public as $$
+  update public.invoices i set paid = coalesce((
+    select sum(pi.amount) from public.payment_items pi join public.payments p on p.id = pi.payment_id
+    where pi.invoice_id = i.id and not p.void), 0)
+  where i.id = p_inv;
+$$;
+create or replace function public.pitems_changed() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  perform public.recalc_invoice(coalesce(new.invoice_id, old.invoice_id));
+  return null;
+end $$;
+drop trigger if exists pitems_recalc on public.payment_items;
+create trigger pitems_recalc after insert on public.payment_items for each row execute function public.pitems_changed();
+create or replace function public.payment_voided() returns trigger language plpgsql security definer set search_path = public as $$
+declare r record;
+begin
+  if new.void and not old.void then
+    for r in select invoice_id from public.payment_items where payment_id = new.id loop
+      perform public.recalc_invoice(r.invoice_id);
+    end loop;
+  end if;
+  return null;
+end $$;
+drop trigger if exists payments_void_recalc on public.payments;
+create trigger payments_void_recalc after update on public.payments for each row execute function public.payment_voided();
+
+-- লগ
+create or replace function public.audit_fn() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.audit_log (table_name, action, row_id, data)
+  values (tg_table_name, tg_op, new.id, to_jsonb(new));
+  return null;
+end $$;
+do $$
+declare t text;
+begin
+  foreach t in array array['payments','ledger','staff_advances','salary_payments','invoices'] loop
+    execute format('drop trigger if exists %1$s_audit on public.%1$I', t);
+    execute format('create trigger %1$s_audit after insert or update on public.%1$I for each row execute function public.audit_fn()', t);
+  end loop;
+end $$;
+
+-- নিরাপত্তা (RLS)
+do $$
+declare t text;
+begin
+  -- বদলানো ও মোছা যায় এমন টেবিল
+  foreach t in array array['fee_heads','fee_rates','student_fees','ledger_categories'] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists "%1$s_fin" on public.%1$I', t);
+    execute format('create policy "%1$s_fin" on public.%1$I for all using (public.is_finance()) with check (public.is_finance())', t);
+  end loop;
+  -- মোছা যায় না এমন টেবিল (শুধু দেখা, যোগ, বদলানো)
+  foreach t in array array['invoices','payments','payment_items','ledger','staff_advances','salary_payments'] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists "%1$s_fin" on public.%1$I', t);
+    execute format('drop policy if exists "%1$s_sel" on public.%1$I', t);
+    execute format('drop policy if exists "%1$s_ins" on public.%1$I', t);
+    execute format('drop policy if exists "%1$s_upd" on public.%1$I', t);
+    execute format('create policy "%1$s_sel" on public.%1$I for select using (public.is_finance())', t);
+    execute format('create policy "%1$s_ins" on public.%1$I for insert with check (public.is_finance())', t);
+    execute format('create policy "%1$s_upd" on public.%1$I for update using (public.is_finance()) with check (public.is_finance())', t);
+  end loop;
+  alter table public.audit_log enable row level security;
+  drop policy if exists "audit_sel" on public.audit_log;
+  create policy "audit_sel" on public.audit_log for select using (public.is_finance());
+  -- হিসাবরক্ষক ছাত্র, শিক্ষক-কর্মচারী, শ্রেণি, হাজিরা ও তালিকা দেখতে পারবে (বদলাতে নয়)
+  foreach t in array array['students','staff','classes','lookups','attendance'] loop
+    execute format('drop policy if exists "%1$s_fin_read" on public.%1$I', t);
+    execute format('create policy "%1$s_fin_read" on public.%1$I for select using (public.is_finance())', t);
+  end loop;
+end $$;
+
+-- আয়ের খাত শুরুর তালিকা
+insert into public.ledger_categories (kind, name_bn, name_en, sort)
+select * from (values
+  ('income','দান / সদকা','Donation / Sadaqah',1), ('income','যাকাত','Zakat',2), ('income','মাসিক চাঁদা','Monthly subscription',3),
+  ('income','ফিতরা','Fitrah',4), ('income','কোরবানির চামড়া','Qurbani hides',5), ('income','অন্যান্য আয়','Other income',9),
+  ('expense','খাবার / বাজার','Food / groceries',1), ('expense','ভাড়া','Rent',2), ('expense','বিদ্যুৎ-পানি-গ্যাস','Utilities',3),
+  ('expense','মেরামত','Repairs',4), ('expense','শিক্ষা উপকরণ','Teaching materials',5), ('expense','যাতায়াত','Transport',6), ('expense','অন্যান্য ব্যয়','Other expenses',9)
+) v(kind, name_bn, name_en, sort)
+where not exists (select 1 from public.ledger_categories);
+
+-- ফি-র ধরন শুরুর তালিকা
+insert into public.fee_heads (name_bn, name_en, kind, default_amount, sort)
+select * from (values
+  ('মাসিক বেতন','Monthly tuition','monthly',0,1), ('খাবার ও থাকা (আবাসিক)','Boarding & meals','monthly',0,2),
+  ('ভর্তি ফি','Admission fee','one_time',0,3), ('পরীক্ষা ফি','Exam fee','one_time',0,4)
+) v(name_bn, name_en, kind, default_amount, sort)
+where not exists (select 1 from public.fee_heads);
+
+-- পেমেন্ট মাধ্যম শুরুর তালিকা (শুরুর জমা সহ; অ্যাডমিন বদলাতে পারবে)
+insert into public.lookups (kind, code, name_bn, name_en, sort)
+select * from (values
+  ('method','cash','হাতে নগদ','Cash in hand',1), ('method','bkash','বিকাশ','bKash',2),
+  ('method','nagad','নগদ (Nagad)','Nagad',3), ('method','bank','ব্যাংক','Bank',4)
+) v(kind, code, name_bn, name_en, sort)
+where not exists (select 1 from public.lookups where kind = 'method');
+
 -- নতুন টেবিল/কলাম সঙ্গে সঙ্গে চালু করতে (স্কিমা ক্যাশ রিফ্রেশ)
 notify pgrst, 'reload schema';
