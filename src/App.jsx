@@ -12,6 +12,8 @@ import { Applications, Messages } from './pages/admin/Inbox'
 import { Integrations, Modules } from './pages/admin/Controls'
 import Users from './pages/admin/Users'
 import ModulePage from './pages/admin/ModulePage'
+import { ClassesAdmin, ResidenceAdmin, SessionsAdmin, StaffAdmin, StudentsAdmin } from './pages/admin/People'
+import Attendance, { Gate } from './pages/admin/Attendance'
 
 export default function App() {
   useEffect(() => initFx(), [])
@@ -40,6 +42,12 @@ export default function App() {
         <Route path="messages" element={<Messages />} />
         <Route path="texts" element={<TextsEditor />} />
         <Route path="departments" element={<DepartmentsAdmin />} />
+        <Route path="students" element={<Gate mod="students" name="ছাত্র ও ভর্তি"><StudentsAdmin /></Gate>} />
+        <Route path="classes" element={<Gate mod="students" name="ছাত্র ও ভর্তি"><ClassesAdmin /></Gate>} />
+        <Route path="staff" element={<Gate mod="teachers" name="শিক্ষক ব্যবস্থাপনা"><StaffAdmin /></Gate>} />
+        <Route path="attendance" element={<Gate mod="attendance" name="হাজিরা"><Attendance /></Gate>} />
+        <Route path="residence" element={<ResidenceAdmin />} />
+        <Route path="sessions" element={<SessionsAdmin />} />
         <Route path="slides" element={<HeroSlidesAdmin />} />
         <Route path="notices" element={<NoticesAdmin />} />
         <Route path="events" element={<EventsAdmin />} />

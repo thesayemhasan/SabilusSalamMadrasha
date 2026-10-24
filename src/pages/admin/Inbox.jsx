@@ -34,6 +34,21 @@ export function Applications() {
     await supabase.from('admission_applications').delete().eq('id', r.id)
     load()
   }
+  async function admit(r) {
+    if (!(await confirm({ danger: false, name: r.student_name || 'এই আবেদন', text: 'এই আবেদনের তথ্য দিয়ে ছাত্র হিসেবে ভর্তি করবেন? ছাত্র তালিকায় যুক্ত হবে এবং আবেদনের অবস্থা "ভর্তি হয়েছে" হবে।', ok: 'হ্যাঁ, ভর্তি করুন' }))) return
+    const [{ data: deps }, { data: cls }] = await Promise.all([supabase.from('departments').select('*'), supabase.from('classes').select('*')])
+    const same = (a, b) => a && b && String(a).trim() === String(b).trim()
+    const dep = (deps || []).find((d) => same(d.name_bn, r.department) || same(d.name_en, r.department))
+    const cl = (cls || []).find((c) => same(c.name_bn, r.class_name) || same(c.name_en, r.class_name))
+    const notes = [r.note, !cl && r.class_name && `আবেদনের শ্রেণি: ${r.class_name}`, !dep && r.department && `আবেদনের বিভাগ: ${r.department}`].filter(Boolean).join('\n')
+    const { error } = await supabase.from('students').insert({
+      name_bn: nameOf(r), father_name: r.father_name, mother_name: r.mother_name, guardian_phone: phoneOf(r), address: r.address,
+      department_id: dep?.id || null, class_id: cl?.id || null, application_id: r.id, note: notes || null, status: 'active',
+    })
+    if (error) return window.alert(`ভর্তি হয়নি: ${error.message}`)
+    await supabase.from('admission_applications').update({ status: 'admitted' }).eq('id', r.id)
+    load()
+  }
   const shown = rows.filter((r) => !filter || r.status === filter)
   const phoneOf = (r) => r.phone || Object.values(r.data || {}).find((x) => x.type === 'phone')?.value
   const nameOf = (r) => r.student_name || Object.values(r.data || {})[0]?.value || '(নামহীন)'
@@ -79,6 +94,7 @@ export function Applications() {
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                     <div style={{ minWidth: 190 }}><Select value={r.status} onChange={(x) => setStatus(r, x)} options={Object.entries(STATUS)} /></div>
+                    {r.status !== 'admitted' && <button className="btn small" onClick={() => admit(r)}><Icon name="check" size={15} cls="cur" /> ছাত্র হিসেবে ভর্তি করুন</button>}
                     {phoneOf(r) && <a className="btn small outline" href={`tel:${phoneOf(r)}`}><Icon name="phone" size={15} cls="cur" /> কল করুন</a>}
                     <button className="btn small danger" onClick={() => remove(r)}><Icon name="trash" size={15} cls="cur" /> মুছুন</button>
                   </div>

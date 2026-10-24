@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { fetchAll } from '../../lib/db'
 import { LANGS } from '../../lib/texts'
 import { ImageUpload, Modal, Select, Switch, useConfirm } from '../../components/Ui'
 import Icon from '../../components/Icon'
@@ -13,20 +14,64 @@ const toLocal = (iso) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
+// ড্রপডাউনের অপশন অন্য টেবিল থেকে আনা: { table, label: (row)=>text, eq: {col: val}, order }
+function useOpts(specs) {
+  const [o, setO] = useState({})
+  useEffect(() => {
+    let off = false
+    Object.entries(specs).forEach(([name, sp]) => {
+      let q = supabase.from(sp.table).select('*').order(sp.order || 'sort', { ascending: true })
+      Object.entries(sp.eq || {}).forEach(([c, v]) => { q = q.eq(c, v) })
+      q.then(({ data }) => { if (!off) setO((x) => ({ ...x, [name]: (data || []).map((r) => [sp.value ? sp.value(r) : r.id, sp.label(r)]) })) })
+    })
+    return () => { off = true }
+    // eslint-disable-next-line
+  }, [])
+  return o
+}
+
+export function downloadCsv(file, head, rows) {
+  const esc = (x) => `"${String(x ?? '').replace(/"/g, '""')}"`
+  const txt = '\ufeff' + [head, ...rows].map((r) => r.map(esc).join(',')).join('\r\n')
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' }))
+  a.download = file
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+}
+
 // একটি জেনেরিক তালিকা + যোগ/সম্পাদনা/মুছা ফর্ম
-export default function Crud({ table, title, hint, fields, order = 'created_at', asc = false, summary, blank = {}, nameOf, beforeSave, extra, toggle = 'published', toggleLabel = 'প্রকাশিত' }) {
+export default function Crud({ table, title, hint, fields, order = 'created_at', asc = false, summary, blank = {}, nameOf, beforeSave, extra, toggle = 'published', toggleLabel = 'প্রকাশিত', eq, filters = [], searchFields, csv, addLabel = 'নতুন যোগ করুন', afterSave }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [edit, setEdit] = useState(null)
   const [msg, setMsg] = useState('')
+  const [q, setQ] = useState('')
+  const [fv, setFv] = useState({})
   const confirm = useConfirm()
+  const optSpecs = useMemo(() => {
+    const o = {}
+    fields.forEach((f) => { if (f.optionsFrom) o[f.name] = f.optionsFrom })
+    filters.forEach((f) => { if (f.optionsFrom) o[`f:${f.name}`] = f.optionsFrom })
+    return o
+  }, []) // eslint-disable-line
+  const opts = useOpts(optSpecs)
+  const maps = useMemo(() => {
+    const m = {}
+    Object.entries(opts).forEach(([k, arr]) => { m[k.replace('f:', '')] = Object.fromEntries(arr) })
+    return m
+  }, [opts])
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase.from(table).select('*').order(order, { ascending: asc })
+    const { data, error } = await fetchAll((a, b) => {
+      let qy = supabase.from(table).select('*').order(order, { ascending: asc }).range(a, b)
+      Object.entries(eq || {}).forEach(([c, v]) => { qy = qy.eq(c, v) })
+      return qy
+    })
     if (error) setMsg(error.message)
     setRows(data || [])
     setLoading(false)
-  }, [table, order, asc])
+  }, [table, order, asc, eq])
   useEffect(() => { load() }, [load])
 
   const label = (r) => (nameOf ? nameOf(r) : r.title_bn || r.name_bn || r.label_bn || r.caption_bn || r.title_en || 'এই আইটেম')
@@ -43,20 +88,37 @@ export default function Crud({ table, title, hint, fields, order = 'created_at',
     load()
   }
 
+  const shown = rows.filter((r) => {
+    if (q && searchFields && !searchFields.some((k) => String(r[k] ?? '').toLowerCase().includes(q.trim().toLowerCase()))) return false
+    return filters.every((f) => !fv[f.name] || String(r[f.name] ?? '') === String(fv[f.name]))
+  })
+
   return (
     <>
       <div className="toolbar">
         <h2 style={{ margin: 0, flex: '1 1 auto' }}>{title}</h2>
         {extra && extra({ reload: load })}
-        <button className="btn" onClick={() => setEdit({ ...blank })}><Icon name="plus" size={18} cls="cur" /> নতুন যোগ করুন</button>
+        {csv && <button className="btn outline" onClick={() => downloadCsv(csv.file, csv.cols.map((c) => c[0]), shown.map((r) => csv.cols.map((c) => c[1](r, maps))))}><Icon name="upload" size={18} cls="cur" /> Excel এক্সপোর্ট</button>}
+        <button className="btn" onClick={() => setEdit({ ...blank })}><Icon name="plus" size={18} cls="cur" /> {addLabel}</button>
       </div>
+      {(searchFields || filters.length > 0) && (
+        <div className="toolbar" style={{ marginTop: -4 }}>
+          {searchFields && <input className="search-in" placeholder="খুঁজুন…" value={q} onChange={(e) => setQ(e.target.value)} />}
+          {filters.map((f) => (
+            <div key={f.name} style={{ minWidth: 170 }}>
+              <Select value={fv[f.name] ?? ''} onChange={(x) => setFv((o) => ({ ...o, [f.name]: x }))} options={[['', f.label], ...(f.options || opts[`f:${f.name}`] || [])]} />
+            </div>
+          ))}
+          <span className="muted">{shown.length} / {rows.length} জন</span>
+        </div>
+      )}
       {hint && <p className="muted" style={{ marginTop: -6 }}>{hint}</p>}
       {msg && <div className="alert err" style={{ marginBottom: 12 }}>{msg}</div>}
-      {loading ? <p>লোড হচ্ছে…</p> : rows.length === 0 ? <div className="card muted">এখনো কিছু যোগ করা হয়নি।</div> : (
+      {loading ? <p>লোড হচ্ছে…</p> : shown.length === 0 ? <div className="card muted">{rows.length ? 'কোনো ফল পাওয়া যায়নি।' : 'এখনো কিছু যোগ করা হয়নি।'}</div> : (
         <div className="stack">
-          {rows.map((r) => (
+          {shown.map((r) => (
             <div className="card row-card" key={r.id}>
-              <div style={{ minWidth: 0, flex: '1 1 240px' }}>{summary(r)}</div>
+              <div style={{ minWidth: 0, flex: '1 1 240px' }}>{summary(r, maps)}</div>
               <div className="row-actions">
                 {toggle && <><span className="muted" style={{ fontSize: '.8rem' }}>{toggleLabel}</span>
                 <Switch checked={r[toggle]} onChange={(v) => flip(r, v)} /></>}
@@ -67,7 +129,7 @@ export default function Crud({ table, title, hint, fields, order = 'created_at',
           ))}
         </div>
       )}
-      {edit && <Form table={table} fields={fields} initial={edit} beforeSave={beforeSave} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load() }} />}
+      {edit && <Form table={table} fields={fields} opts={opts} initial={edit} beforeSave={beforeSave} onClose={() => setEdit(null)} onSaved={(row) => { setEdit(null); load(); afterSave && afterSave(row) }} />}
     </>
   )
 }
@@ -110,7 +172,7 @@ function ItemsEditor({ value, onChange, itemFields, tab }) {
   )
 }
 
-function Form({ table, fields, initial, beforeSave, onClose, onSaved }) {
+function Form({ table, fields, opts = {}, initial, beforeSave, onClose, onSaved }) {
   const [v, setV] = useState(initial)
   const [tab, setTab] = useState('bn')
   const [busy, setBusy] = useState(false)
@@ -149,11 +211,11 @@ function Form({ table, fields, initial, beforeSave, onClose, onSaved }) {
               {f.type !== 'bool' && <label>{f.label}{f.i18n ? ` (${LANGS.find((l) => l.code === tab).label})` : ''}{f.required && (!f.i18n || tab === 'bn') ? ' *' : ''}</label>}
               {f.type === 'textarea' && <textarea rows={f.rows} value={v[name] || ''} onChange={(e) => set(name, e.target.value)} />}
               {(f.type === 'text' || !f.type) && <input required={f.required && (!f.i18n || tab === 'bn')} value={v[name] || ''} onChange={(e) => set(name, e.target.value)} placeholder={f.placeholder} />}
-              {f.type === 'date' && <input type="date" required value={v[name] || ''} onChange={(e) => set(name, e.target.value)} />}
+              {f.type === 'date' && <input type="date" required={f.required !== false} value={v[name] || ''} onChange={(e) => set(name, e.target.value)} />}
               {f.type === 'datetime' && <input type="datetime-local" value={toLocal(v[name])} onChange={(e) => set(name, e.target.value ? new Date(e.target.value).toISOString() : null)} />}
-              {f.type === 'number' && <input type="number" value={v[name] ?? 0} onChange={(e) => set(name, Number(e.target.value))} />}
+              {f.type === 'number' && <input type="number" value={v[name] ?? (f.nullable ? '' : 0)} placeholder={f.placeholder} onChange={(e) => set(name, e.target.value === '' ? (f.nullable ? null : 0) : Number(e.target.value))} />}
               {f.type === 'image' && <ImageUpload folder={table} value={v[name]} onChange={(x) => set(name, x)} shape={f.shape} />}
-              {f.type === 'select' && <Select value={v[name] ?? ''} onChange={(x) => set(name, x)} options={f.options} />}
+              {f.type === 'select' && <Select value={v[name] ?? ''} onChange={(x) => set(name, x)} options={f.optionsFrom ? [['', f.blankLabel || '— বাছাই করুন —'], ...(opts[f.name] || [])] : f.options} />}
               {f.type === 'items' && <ItemsEditor value={v[name]} onChange={(x) => set(name, x)} itemFields={f.itemFields} tab={tab} />}
               {f.type === 'bool' && (
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

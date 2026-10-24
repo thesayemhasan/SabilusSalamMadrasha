@@ -300,5 +300,172 @@ select * from (values
 ) as v(name_bn,name_en,text_bn,text_en,icon,sort)
 where not exists (select 1 from public.departments);
 
+-- =====================================================================
+-- ধাপ ২: ছাত্র, শ্রেণি, শিক্ষক-কর্মচারী, হাজিরা, মেশিন (আবার চালালেও ক্ষতি নেই)
+-- এই সব তথ্য শুধু অ্যাডমিন দেখতে ও বদলাতে পারবে
+-- =====================================================================
+
+-- তালিকার ধরন (আবাসিক/অনাবাসিক, হাজিরার সময়/ওয়াক্ত ইত্যাদি) — অ্যাডমিন বদলাতে পারবে
+create table if not exists public.lookups (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null,                 -- 'residence' | 'session'
+  code text,
+  name_bn text, name_en text,
+  sort int not null default 0,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create sequence if not exists public.student_seq;
+create sequence if not exists public.staff_seq;
+
+create table if not exists public.staff (
+  id uuid primary key default gen_random_uuid(),
+  staff_no text,
+  name_bn text, name_en text,
+  photo_url text,
+  kind text not null default 'teacher',   -- teacher | staff
+  designation_bn text, designation_en text,
+  phone text, address text, nid text,
+  join_date date,
+  device_user_id text,                    -- হাজিরা মেশিনে এই মানুষের আইডি
+  status text not null default 'active',  -- active | inactive | left
+  note text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.classes (
+  id uuid primary key default gen_random_uuid(),
+  name_bn text, name_en text,
+  department_id uuid references public.departments(id) on delete set null,
+  teacher_id uuid references public.staff(id) on delete set null,
+  sort int not null default 0,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.students (
+  id uuid primary key default gen_random_uuid(),
+  student_no text,
+  name_bn text, name_en text,
+  photo_url text,
+  gender text,                            -- male | female
+  dob date,
+  father_name text, mother_name text,
+  guardian_phone text, phone2 text,
+  address text,
+  department_id uuid references public.departments(id) on delete set null,
+  class_id uuid references public.classes(id) on delete set null,
+  residence text,                         -- lookups(kind='residence') এর নাম
+  admission_date date default current_date,
+  device_user_id text,                    -- হাজিরা মেশিনে এই ছাত্রের আইডি
+  application_id uuid,
+  status text not null default 'active',  -- active | inactive | left | graduated
+  note text,
+  created_at timestamptz not null default now()
+);
+create index if not exists students_class_idx on public.students(class_id);
+create index if not exists students_dept_idx on public.students(department_id);
+
+create or replace function public.set_person_no() returns trigger language plpgsql as $$
+begin
+  if tg_table_name = 'students' and coalesce(new.student_no, '') = '' then
+    new.student_no := to_char(coalesce(new.admission_date, current_date), 'YY') || lpad(nextval('public.student_seq')::text, 4, '0');
+  elsif tg_table_name = 'staff' and coalesce(new.staff_no, '') = '' then
+    new.staff_no := 'T' || lpad(nextval('public.staff_seq')::text, 3, '0');
+  end if;
+  return new;
+end $$;
+drop trigger if exists students_no on public.students;
+create trigger students_no before insert on public.students for each row execute function public.set_person_no();
+drop trigger if exists staff_no on public.staff;
+create trigger staff_no before insert on public.staff for each row execute function public.set_person_no();
+
+-- হাজিরা: একজন মানুষ, একদিন, একটি সময় = একটি সারি
+create table if not exists public.attendance (
+  id uuid primary key default gen_random_uuid(),
+  person_type text not null check (person_type in ('student','staff')),
+  person_id uuid not null,
+  date date not null,
+  session text not null default 'day',
+  status text not null default 'present' check (status in ('present','absent','late','leave')),
+  in_time timestamptz,
+  out_time timestamptz,
+  source text not null default 'manual',  -- manual | device
+  note text,
+  created_at timestamptz not null default now(),
+  unique (person_type, person_id, date, session)
+);
+create index if not exists attendance_date_idx on public.attendance(date);
+
+-- মেশিনের কাঁচা পাঞ্চ লগ
+create table if not exists public.device_punches (
+  id uuid primary key default gen_random_uuid(),
+  serial_no text,
+  device_user_id text,
+  punched_at timestamptz not null,
+  matched_type text,
+  matched_id uuid,
+  created_at timestamptz not null default now()
+);
+create index if not exists punches_time_idx on public.device_punches(punched_at desc);
+
+-- সবকিছু শুধু অ্যাডমিনের জন্য
+do $$
+declare t text;
+begin
+  foreach t in array array['lookups','staff','classes','students','attendance','device_punches'] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists "%1$s_admin" on public.%1$I', t);
+    execute format('create policy "%1$s_admin" on public.%1$I for all using (public.is_admin()) with check (public.is_admin())', t);
+  end loop;
+end $$;
+
+-- ZKTeco: মেশিন/ব্রিজ প্রোগ্রাম এই ফাংশন ডেকে পাঞ্চ পাঠালে হাজিরা নিজে থেকে বসে যায়।
+-- শর্ত: অ্যাডমিন > "মেশিন ও বাইরের সেবা" এ ZKTeco "চালু" এবং "পুশ সার্ভার কী" দেওয়া থাকতে হবে।
+create or replace function public.ingest_device_punch(p_key text, p_serial text, p_user text, p_time timestamptz)
+returns text language plpgsql security definer set search_path = public as $$
+declare cfg jsonb; en boolean; pid uuid; ptype text; d date;
+begin
+  select enabled, config into en, cfg from public.integrations where key = 'zkteco';
+  if en is not true or coalesce(cfg->>'push_key', '') = '' or cfg->>'push_key' <> p_key then
+    return 'denied';
+  end if;
+  d := (p_time at time zone 'Asia/Dhaka')::date;
+  select id into pid from public.students where device_user_id = p_user and status = 'active' limit 1;
+  if pid is not null then ptype := 'student'; else
+    select id into pid from public.staff where device_user_id = p_user and status = 'active' limit 1;
+    if pid is not null then ptype := 'staff'; end if;
+  end if;
+  insert into public.device_punches (serial_no, device_user_id, punched_at, matched_type, matched_id)
+  values (p_serial, p_user, p_time, ptype, pid);
+  if pid is null then return 'unmatched'; end if;
+  insert into public.attendance (person_type, person_id, date, session, status, in_time, source)
+  values (ptype, pid, d, 'day', 'present', p_time, 'device')
+  on conflict (person_type, person_id, date, session) do update set
+    status = case when public.attendance.status = 'leave' then 'leave' else 'present' end,
+    in_time = least(coalesce(public.attendance.in_time, excluded.in_time), excluded.in_time),
+    out_time = case when excluded.in_time > coalesce(public.attendance.in_time, excluded.in_time) + interval '10 minutes'
+                    then greatest(coalesce(public.attendance.out_time, excluded.in_time), excluded.in_time)
+                    else public.attendance.out_time end,
+    source = 'device';
+  return 'ok';
+end $$;
+revoke all on function public.ingest_device_punch(text, text, text, timestamptz) from public;
+grant execute on function public.ingest_device_punch(text, text, text, timestamptz) to anon, authenticated;
+
+-- শুরুর তালিকা (শুধু ফাঁকা থাকলে একবার)
+insert into public.lookups (kind, code, name_bn, name_en, sort)
+select * from (values
+  ('residence', null, 'আবাসিক', 'Resident', 1),
+  ('residence', null, 'অনাবাসিক', 'Non-resident', 2),
+  ('residence', null, 'ডে-কেয়ার', 'Day care', 3)
+) v(kind, code, name_bn, name_en, sort)
+where not exists (select 1 from public.lookups where kind = 'residence');
+
+insert into public.lookups (kind, code, name_bn, name_en, sort)
+select 'session', 'day', 'দৈনিক', 'Daily', 1
+where not exists (select 1 from public.lookups where kind = 'session');
+
 -- নতুন টেবিল/কলাম সঙ্গে সঙ্গে চালু করতে (স্কিমা ক্যাশ রিফ্রেশ)
 notify pgrst, 'reload schema';
