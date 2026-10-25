@@ -4,7 +4,7 @@ import { fetchAll } from '../../lib/db'
 import { Select } from '../../components/Ui'
 import Icon from '../../components/Icon'
 import { downloadCsv } from './Crud'
-import { PrintDoc, addDays, dateBn, monthName, monthStr, nm, num, taka, todayStr, useMethods } from './fin'
+import { printNode, addDays, dateBn, monthName, monthStr, nm, num, taka, todayStr, useMethods } from './fin'
 
 const all = (t, order) => fetchAll((a, b) => supabase.from(t).select('*').order(order || 'created_at', { ascending: true }).range(a, b)).then((r) => r.data || [])
 const Tile = ({ label, value, tone }) => <div className="card stat"><b style={tone ? { color: tone } : undefined}>{value}</b><span className="muted">{label}</span></div>
@@ -42,7 +42,7 @@ function Summary({ M }) {
         <div style={{ minWidth: 150 }}><Select value={mode} onChange={setMode} options={[['month', 'মাসিক'], ['year', 'বার্ষিক']]} /></div>
         {mode === 'month' ? <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ maxWidth: 190 }} /> : <input type="number" value={year} onChange={(e) => setYear(e.target.value)} style={{ maxWidth: 130 }} />}
         <button className="btn outline" onClick={() => downloadCsv(`সারাংশ-${mode === 'month' ? month : year}.csv`, ['খাত', 'আয়', 'ব্যয়'], [...by((t) => t.cat).map(([k, v]) => [k, v.in, v.out]), ['মোট', inc, exp], ['উদ্বৃত্ত', inc - exp, '']])}><Icon name="upload" size={17} cls="cur" /> Excel</button>
-        <button className="btn outline" onClick={() => window.print()}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
+        <button className="btn outline" onClick={() => printNode(document.querySelector('.print-area'), 'A4')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
       </div>
       <div className="print-area">
         <div className="grid g4" style={{ marginBottom: 14 }}>
@@ -96,7 +96,7 @@ function Dues() {
         <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ maxWidth: 190 }} />
         {month && <button className="btn small outline" onClick={() => setMonth('')}>সব মাস</button>}
         <button className="btn outline" onClick={() => downloadCsv('বকেয়া-তালিকা.csv', ['আইডি', 'নাম', 'শ্রেণি', 'অভিভাবকের ফোন', 'বকেয়া বিল', 'মোট বকেয়া'], rows.map((r) => [r.s.student_no, nm(r.s), cname[r.s.class_id], r.s.guardian_phone, r.items.join('; '), r.due]))}><Icon name="upload" size={17} cls="cur" /> Excel</button>
-        <button className="btn outline" onClick={() => window.print()}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
+        <button className="btn outline" onClick={() => printNode(document.querySelector('.print-area'), 'A4')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
       </div>
       <div className="card" style={{ marginBottom: 12 }}>বকেয়া আছে এমন ছাত্র: <b>{rows.length.toLocaleString('bn-BD')}</b> জন · মোট বকেয়া: <b>{taka(rows.reduce((a, r) => a + r.due, 0))}</b></div>
       <div className="card table-wrap print-area">
@@ -128,7 +128,7 @@ function CashBook({ M }) {
         <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ maxWidth: 170 }} />
         <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} />
         <button className="btn outline" onClick={() => downloadCsv(`ক্যাশবই-${from}-${to}.csv`, ['তারিখ', 'মাধ্যম', 'খাত', 'বিবরণ', 'জমা', 'খরচ'], rows.map((t) => [t.date, methods.label(t.method), t.cat, t.desc, t.in || '', t.out || '']))}><Icon name="upload" size={17} cls="cur" /> Excel</button>
-        <button className="btn outline" onClick={() => window.print()}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
+        <button className="btn outline" onClick={() => printNode(document.querySelector('.print-area'), 'A4')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
       </div>
       <div className="print-area">
         <div className="card table-wrap" style={{ marginBottom: 14 }}>

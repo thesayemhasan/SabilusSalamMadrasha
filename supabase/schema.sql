@@ -9,7 +9,7 @@ create table if not exists public.profiles (
   full_name text,
   email text,
   role text not null default 'none'
-    check (role in ('none','super_admin','admin','accountant','teacher','parent')),
+    check (role in ('none','super_admin','admin','accountant','staff','teacher','parent')),
   permissions jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
@@ -25,6 +25,138 @@ language sql security definer set search_path = public stable as $$
   select exists (select 1 from public.profiles
     where id = auth.uid() and role = 'super_admin');
 $$;
+
+
+-- ---------- ফিচার তালিকা ও অনুমতি (সুপার অ্যাডমিন ঠিক করে) ----------
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check
+  check (role in ('none','super_admin','admin','accountant','staff','teacher','parent'));
+
+create table if not exists public.features (
+  key text primary key,
+  area text not null check (area in ('inbox','people','finance','cms','system','custom')),
+  grp text not null,
+  name_bn text not null,
+  name_en text,
+  sort int not null default 100,
+  builtin boolean not null default true
+);
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('applications','inbox','ইনবক্স','ভর্তির আবেদন','Admission applications',10),
+  ('messages','inbox','ইনবক্স','যোগাযোগের বার্তা','Contact messages',11),
+  ('students','people','ছাত্র ও হাজিরা','ছাত্র-ছাত্রী','Students',20),
+  ('classes','people','ছাত্র ও হাজিরা','শ্রেণি ও হালকা','Classes',21),
+  ('staff','people','ছাত্র ও হাজিরা','শিক্ষক ও কর্মচারী','Teachers & staff',22),
+  ('attendance','people','ছাত্র ও হাজিরা','হাজিরা','Attendance',23),
+  ('att_setup','people','ছাত্র ও হাজিরা','আবাসিক ধরন ও হাজিরার সময়','Residence & sessions',24),
+  ('fees','finance','ফি ও হিসাব','ফি আদায় ও রসিদ','Fee collection & receipts',30),
+  ('billing','finance','ফি ও হিসাব','বিল তৈরি','Billing',31),
+  ('fee_setup','finance','ফি ও হিসাব','ফি-র ধরন ও পরিমাণ','Fee setup',32),
+  ('income','finance','ফি ও হিসাব','দান ও অন্যান্য আয়','Donations & income',33),
+  ('expense','finance','ফি ও হিসাব','ব্যয়','Expenses',34),
+  ('salary','finance','ফি ও হিসাব','শিক্ষক-কর্মচারীর বেতন','Salary',35),
+  ('reports','finance','ফি ও হিসাব','হিসাব ও রিপোর্ট','Reports',36),
+  ('account_setup','finance','ফি ও হিসাব','খাত ও পেমেন্ট মাধ্যম','Accounts setup',37),
+  ('audit','finance','ফি ও হিসাব','আর্থিক লগ','Financial log',38),
+  ('texts','cms','ওয়েবসাইট','সাইটের লেখা','Site texts',40),
+  ('slides','cms','ওয়েবসাইট','হোম স্লাইড','Home slides',41),
+  ('departments','cms','ওয়েবসাইট','বিভাগসমূহ','Departments',42),
+  ('home_blocks','cms','ওয়েবসাইট','হোম সেকশন','Home sections',43),
+  ('notices','cms','ওয়েবসাইট','নোটিশ','Notices',44),
+  ('events','cms','ওয়েবসাইট','ইভেন্ট ও টাইমার','Events',45),
+  ('gallery','cms','ওয়েবসাইট','গ্যালারি','Gallery',46),
+  ('teachers','cms','ওয়েবসাইট','শিক্ষকবৃন্দ (পাবলিক)','Public teachers',47),
+  ('admission_form','cms','ওয়েবসাইট','ভর্তি ফরম','Admission form',48),
+  ('modules','system','সিস্টেম','মডিউল সুইচ','Module switches',60),
+  ('integrations','system','সিস্টেম','মেশিন ও বাইরের সেবা','Integrations',61),
+  ('settings','system','সিস্টেম','সাইটের সেটিংস','Site settings',62)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp,
+  name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+-- এলাকা অনুযায়ী অনুমতি। অনুমতি ফাঁকা থাকলে (পুরনো ব্যবহারকারী): অ্যাডমিন = সব, হিসাবরক্ষক = ফি ও হিসাব।
+create or replace function public.has_area(a text) returns boolean
+language sql security definer set search_path = public stable as $$
+  select exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid() and (
+      p.role = 'super_admin'
+      or (p.role in ('admin','accountant','staff') and (
+        (p.permissions = '{}'::jsonb and (
+          p.role = 'admin' or (p.role = 'accountant' and a = 'finance')))
+        or exists (select 1 from public.features f
+                   where f.area = a and (p.permissions ->> f.key) = 'true')
+      ))
+    )
+  );
+$$;
+
+alter table public.features enable row level security;
+drop policy if exists "features_read" on public.features;
+create policy "features_read" on public.features for select to authenticated using (true);
+drop policy if exists "features_super" on public.features;
+create policy "features_super" on public.features for all
+  using (public.is_super()) with check (public.is_super());
+
+-- ---------- সুপার অ্যাডমিনের ব্যবহারকারী তৈরি / পাসওয়ার্ড বদল ----------
+-- পাসওয়ার্ড কখনো লেখা অবস্থায় সংরক্ষিত থাকে না (শুধু হ্যাশ); সুপার অ্যাডমিন যেকোনো সময় নতুন পাসওয়ার্ড বসাতে পারে।
+create extension if not exists pgcrypto with schema extensions;
+
+create or replace function public.admin_create_user(
+  p_email text, p_password text, p_name text, p_role text, p_perms jsonb
+) returns uuid
+language plpgsql security definer set search_path = public, auth, extensions as $$
+declare uid uuid := gen_random_uuid(); em text := lower(trim(p_email));
+begin
+  if not public.is_super() then raise exception 'শুধু সুপার অ্যাডমিন পারে'; end if;
+  if em is null or em = '' then raise exception 'ইমেইল দিন'; end if;
+  if length(coalesce(p_password,'')) < 6 then raise exception 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'; end if;
+  if p_role not in ('none','admin','accountant','staff') then raise exception 'ভূমিকা সঠিক নয়'; end if;
+  if exists (select 1 from auth.users where lower(email) = em) then raise exception 'এই ইমেইলে আগেই অ্যাকাউন্ট আছে'; end if;
+
+  insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change)
+  values ('00000000-0000-0000-0000-000000000000', uid, 'authenticated', 'authenticated', em,
+    crypt(p_password, gen_salt('bf')), now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    jsonb_build_object('full_name', coalesce(nullif(trim(p_name),''), em)), now(), now(), '', '', '', '');
+
+  insert into auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
+  values (gen_random_uuid(), uid, jsonb_build_object('sub', uid::text, 'email', em, 'email_verified', true),
+    'email', uid::text, now(), now(), now());
+
+  update public.profiles set role = p_role, permissions = coalesce(p_perms, '{}'::jsonb),
+    full_name = coalesce(nullif(trim(p_name),''), em) where id = uid;
+  return uid;
+end; $$;
+
+create or replace function public.admin_set_password(p_user uuid, p_password text) returns void
+language plpgsql security definer set search_path = public, auth, extensions as $$
+begin
+  if not public.is_super() then raise exception 'শুধু সুপার অ্যাডমিন পারে'; end if;
+  if length(coalesce(p_password,'')) < 6 then raise exception 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'; end if;
+  update auth.users set encrypted_password = crypt(p_password, gen_salt('bf')), updated_at = now() where id = p_user;
+end; $$;
+
+create or replace function public.admin_set_email(p_user uuid, p_email text) returns void
+language plpgsql security definer set search_path = public, auth, extensions as $$
+declare em text := lower(trim(p_email));
+begin
+  if not public.is_super() then raise exception 'শুধু সুপার অ্যাডমিন পারে'; end if;
+  if em = '' then raise exception 'ইমেইল দিন'; end if;
+  if exists (select 1 from auth.users where lower(email) = em and id <> p_user) then raise exception 'এই ইমেইল অন্য অ্যাকাউন্টে আছে'; end if;
+  update auth.users set email = em, updated_at = now() where id = p_user;
+  update auth.identities set identity_data = identity_data || jsonb_build_object('email', em) where user_id = p_user and provider = 'email';
+  update public.profiles set email = em where id = p_user;
+end; $$;
+
+revoke all on function public.admin_create_user(text,text,text,text,jsonb) from public, anon;
+revoke all on function public.admin_set_password(uuid,text) from public, anon;
+revoke all on function public.admin_set_email(uuid,text) from public, anon;
+grant execute on function public.admin_create_user(text,text,text,text,jsonb) to authenticated;
+grant execute on function public.admin_set_password(uuid,text) to authenticated;
+grant execute on function public.admin_set_email(uuid,text) to authenticated;
 
 -- প্রথম যে ব্যবহারকারী তৈরি হবে সে নিজে থেকে super_admin হবে; পরেরা 'none' (কোনো অ্যাক্সেস নেই)
 create or replace function public.handle_new_user() returns trigger
@@ -43,7 +175,7 @@ create trigger on_auth_user_created after insert on auth.users
 alter table public.profiles enable row level security;
 drop policy if exists "profiles_select" on public.profiles;
 create policy "profiles_select" on public.profiles for select
-  using (id = auth.uid() or public.is_admin());
+  using (id = auth.uid() or public.is_super());
 drop policy if exists "profiles_update_super" on public.profiles;
 create policy "profiles_update_super" on public.profiles for update
   using (public.is_super()) with check (public.is_super());
@@ -224,23 +356,23 @@ begin
     execute format('drop policy if exists "%1$s_read" on public.%1$I', t);
     execute format('create policy "%1$s_read" on public.%1$I for select using (true)', t);
     execute format('drop policy if exists "%1$s_admin" on public.%1$I', t);
-    execute format('create policy "%1$s_admin" on public.%1$I for all using (public.is_admin()) with check (public.is_admin())', t);
+    execute format('create policy "%1$s_admin" on public.%1$I for all using (public.has_area(case when ''%1$s'' = ''site_texts'' then ''cms'' else ''system'' end)) with check (public.has_area(case when ''%1$s'' = ''site_texts'' then ''cms'' else ''system'' end))', t);
   end loop;
 
   -- প্রকাশিত হলে সবাই দেখবে, অ্যাডমিন সব দেখবে ও বদলাবে
   foreach t in array array['notices','events','gallery','public_teachers','hero_slides','home_blocks','admission_fields','departments'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "%1$s_read" on public.%1$I', t);
-    execute format('create policy "%1$s_read" on public.%1$I for select using (published or public.is_admin())', t);
+    execute format('create policy "%1$s_read" on public.%1$I for select using (published or public.has_area(''cms''))', t);
     execute format('drop policy if exists "%1$s_admin" on public.%1$I', t);
-    execute format('create policy "%1$s_admin" on public.%1$I for all using (public.is_admin()) with check (public.is_admin())', t);
+    execute format('create policy "%1$s_admin" on public.%1$I for all using (public.has_area(''cms'')) with check (public.has_area(''cms''))', t);
   end loop;
 end $$;
 
 alter table public.integrations enable row level security;
 drop policy if exists "integrations_admin" on public.integrations;
 create policy "integrations_admin" on public.integrations for all
-  using (public.is_admin()) with check (public.is_admin());
+  using (public.has_area('system')) with check (public.has_area('system'));
 
 alter table public.admission_applications enable row level security;
 drop policy if exists "applications_insert" on public.admission_applications;
@@ -248,7 +380,7 @@ create policy "applications_insert" on public.admission_applications for insert
   to anon, authenticated with check (status = 'new');
 drop policy if exists "applications_admin" on public.admission_applications;
 create policy "applications_admin" on public.admission_applications for all
-  using (public.is_admin()) with check (public.is_admin());
+  using (public.has_area('inbox')) with check (public.has_area('inbox'));
 
 alter table public.contact_messages enable row level security;
 drop policy if exists "messages_insert" on public.contact_messages;
@@ -256,7 +388,7 @@ create policy "messages_insert" on public.contact_messages for insert
   to anon, authenticated with check (is_read = false);
 drop policy if exists "messages_admin" on public.contact_messages;
 create policy "messages_admin" on public.contact_messages for all
-  using (public.is_admin()) with check (public.is_admin());
+  using (public.has_area('inbox')) with check (public.has_area('inbox'));
 
 -- ---------- ছবি রাখার বাকেট ----------
 insert into storage.buckets (id, name, public)
@@ -267,13 +399,13 @@ drop policy if exists "media_read" on storage.objects;
 create policy "media_read" on storage.objects for select using (bucket_id = 'media');
 drop policy if exists "media_admin_write" on storage.objects;
 create policy "media_admin_write" on storage.objects for insert to authenticated
-  with check (bucket_id = 'media' and public.is_admin());
+  with check (bucket_id = 'media' and public.has_area('cms'));
 drop policy if exists "media_admin_update" on storage.objects;
 create policy "media_admin_update" on storage.objects for update to authenticated
-  using (bucket_id = 'media' and public.is_admin());
+  using (bucket_id = 'media' and public.has_area('cms'));
 drop policy if exists "media_admin_delete" on storage.objects;
 create policy "media_admin_delete" on storage.objects for delete to authenticated
-  using (bucket_id = 'media' and public.is_admin());
+  using (bucket_id = 'media' and public.has_area('cms'));
 
 -- ---------- ভর্তির কাগজপত্র (ছবি, জন্ম সনদ) রাখার ব্যক্তিগত বাকেট: সর্বোচ্চ ৫ MB, শুধু ছবি ও PDF; শুধু অ্যাডমিন দেখতে পারেন ----------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -286,10 +418,10 @@ create policy "applications_upload" on storage.objects for insert to anon, authe
   with check (bucket_id = 'applications');
 drop policy if exists "applications_admin_read" on storage.objects;
 create policy "applications_admin_read" on storage.objects for select to authenticated
-  using (bucket_id = 'applications' and public.is_admin());
+  using (bucket_id = 'applications' and public.has_area('inbox'));
 drop policy if exists "applications_admin_delete" on storage.objects;
 create policy "applications_admin_delete" on storage.objects for delete to authenticated
-  using (bucket_id = 'applications' and public.is_admin());
+  using (bucket_id = 'applications' and public.has_area('inbox'));
 
 -- ---------- শুরুর তিনটি বিভাগ (শুধু টেবিল ফাঁকা থাকলে একবার বসবে) ----------
 insert into public.departments (name_bn, name_en, text_bn, text_en, icon, sort)
@@ -417,7 +549,7 @@ begin
   foreach t in array array['lookups','staff','classes','students','attendance','device_punches'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "%1$s_admin" on public.%1$I', t);
-    execute format('create policy "%1$s_admin" on public.%1$I for all using (public.is_admin()) with check (public.is_admin())', t);
+    execute format('create policy "%1$s_admin" on public.%1$I for all using (public.has_area(''people'')) with check (public.has_area(''people''))', t);
   end loop;
 end $$;
 
@@ -475,8 +607,7 @@ where not exists (select 1 from public.lookups where kind = 'session');
 
 create or replace function public.is_finance() returns boolean
 language sql security definer set search_path = public stable as $$
-  select exists (select 1 from public.profiles
-    where id = auth.uid() and role in ('super_admin','admin','accountant'));
+  select public.has_area('finance');
 $$;
 
 alter table public.students add column if not exists blood_group text;
@@ -783,4 +914,72 @@ select * from (values
 where not exists (select 1 from public.lookups where kind = 'method');
 
 -- নতুন টেবিল/কলাম সঙ্গে সঙ্গে চালু করতে (স্কিমা ক্যাশ রিফ্রেশ)
+
+-- =====================================================================
+-- ধাপ ৪: পরীক্ষা ও ফলাফল, হিফজ ট্র্যাকিং, আইডি কার্ড (আবার চালালেও ক্ষতি নেই)
+-- =====================================================================
+create table if not exists public.exams (
+  id uuid primary key default gen_random_uuid(),
+  name_bn text, name_en text,
+  year text,
+  date_from date, date_to date,
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.exam_subjects (
+  id uuid primary key default gen_random_uuid(),
+  exam_id uuid not null references public.exams(id) on delete cascade,
+  class_id uuid not null references public.classes(id) on delete cascade,
+  name_bn text, name_en text,
+  full_marks numeric not null default 100,
+  pass_marks numeric not null default 33,
+  sort int not null default 0
+);
+create index if not exists exam_subjects_idx on public.exam_subjects(exam_id, class_id);
+
+create table if not exists public.exam_marks (
+  id uuid primary key default gen_random_uuid(),
+  exam_id uuid not null references public.exams(id) on delete cascade,
+  subject_id uuid not null references public.exam_subjects(id) on delete cascade,
+  student_id uuid not null references public.students(id) on delete cascade,
+  marks numeric,
+  absent boolean not null default false,
+  updated_at timestamptz not null default now(),
+  unique (subject_id, student_id)
+);
+create index if not exists exam_marks_exam_idx on public.exam_marks(exam_id);
+
+-- হিফজ: kind = sabaq (সবক) | sabaqi (সাত সবক) | manzil (আমুখতা/শবিনা)
+create table if not exists public.hifz_logs (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.students(id) on delete cascade,
+  log_date date not null default current_date,
+  kind text not null check (kind in ('sabaq','sabaqi','manzil')),
+  para int check (para between 1 and 30),
+  detail text,
+  pages numeric not null default 0,
+  quality text check (quality in ('excellent','good','average','weak')),
+  note text,
+  created_by uuid default auth.uid(),
+  created_at timestamptz not null default now()
+);
+create index if not exists hifz_student_idx on public.hifz_logs(student_id, log_date desc);
+
+do $$
+declare t text;
+begin
+  foreach t in array array['exams','exam_subjects','exam_marks','hifz_logs'] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists "%1$s_admin" on public.%1$I', t);
+    execute format('create policy "%1$s_admin" on public.%1$I for all using (public.has_area(''people'')) with check (public.has_area(''people''))', t);
+  end loop;
+end $$;
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('exams','people','পরীক্ষা ও হিফজ','পরীক্ষা ও ফলাফল','Exams & results',25),
+  ('hifz','people','পরীক্ষা ও হিফজ','হিফজ ট্র্যাকিং','Hifz tracking',26),
+  ('idcards','people','পরীক্ষা ও হিফজ','আইডি কার্ড','ID cards',27)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
 notify pgrst, 'reload schema';

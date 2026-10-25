@@ -5,16 +5,18 @@ import { useAuth, useSite } from '../../lib/store'
 import { ScrollToTop } from '../../components/ScrollTools'
 import Icon from '../../components/Icon'
 import { MODULES, MODULE_GROUPS, BUILT } from '../../lib/modules'
+import { PATH_FEATURE } from '../../lib/features'
 
 const MENU = [
   ['প্রধান', [['/admin', 'dashboard', 'ড্যাশবোর্ড', true], ['/admin/applications', 'clipboard', 'ভর্তির আবেদন'], ['/admin/messages', 'mail', 'যোগাযোগের বার্তা']]],
   ['ছাত্র ও হাজিরা', [['/admin/students', 'users', 'ছাত্র-ছাত্রী'], ['/admin/classes', 'books', 'শ্রেণি ও হালকা'], ['/admin/staff', 'teacher', 'শিক্ষক ও কর্মচারী'], ['/admin/attendance', 'clipboard', 'হাজিরা'], ['/admin/residence', 'building', 'আবাসিক/অনাবাসিক ধরন'], ['/admin/sessions', 'clock', 'হাজিরার সময়']]],
+  ['পরীক্ষা ও হিফজ', [['/admin/exams', 'clipboard', 'পরীক্ষা ও ফলাফল'], ['/admin/hifz', 'books', 'হিফজ ট্র্যাকিং'], ['/admin/idcards', 'users', 'আইডি কার্ড']]],
   ['ফি ও হিসাব', [['/admin/fees', 'wallet', 'ফি আদায় ও রসিদ'], ['/admin/billing', 'clipboard', 'বিল তৈরি'], ['/admin/fee-setup', 'sliders', 'ফি-র ধরন ও পরিমাণ'], ['/admin/income', 'coins', 'দান ও অন্যান্য আয়'], ['/admin/expense', 'coins', 'ব্যয়'], ['/admin/salary', 'users', 'শিক্ষক-কর্মচারীর বেতন'], ['/admin/reports', 'chart', 'হিসাব ও রিপোর্ট'], ['/admin/account-setup', 'gear', 'খাত ও পেমেন্ট মাধ্যম'], ['/admin/audit', 'shield', 'আর্থিক লগ']]],
   ['ওয়েবসাইট', [['/admin/texts', 'edit', 'সাইটের লেখা'], ['/admin/slides', 'image', 'হোম স্লাইড'], ['/admin/departments', 'books', 'বিভাগসমূহ'], ['/admin/home-blocks', 'building', 'হোম সেকশন (নতুন রো)'], ['/admin/notices', 'megaphone', 'নোটিশ'], ['/admin/events', 'calendar', 'ইভেন্ট ও টাইমার'], ['/admin/gallery', 'video', 'গ্যালারি'], ['/admin/teachers', 'teacher', 'শিক্ষকবৃন্দ (পাবলিক)'], ['/admin/admission-form', 'apply', 'ভর্তি ফরম']]],
   ['সিস্টেম', [['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'সাইটের সেটিংস (হেডার, ফুটার…)'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
 ]
 
-const PATH_MOD = { '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance', '/admin/fees': 'fees', '/admin/billing': 'fees', '/admin/fee-setup': 'fees', '/admin/income': 'accounts_basic', '/admin/expense': 'accounts_basic', '/admin/account-setup': 'accounts_basic', '/admin/salary': 'hr_payroll', '/admin/reports': 'reports', '/admin/audit': 'activity_log' }
+const PATH_MOD = { '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance', '/admin/fees': 'fees', '/admin/billing': 'fees', '/admin/fee-setup': 'fees', '/admin/income': 'accounts_basic', '/admin/expense': 'accounts_basic', '/admin/account-setup': 'accounts_basic', '/admin/salary': 'hr_payroll', '/admin/reports': 'reports', '/admin/audit': 'activity_log', '/admin/exams': 'exams', '/admin/hifz': 'hifz', '/admin/idcards': 'id_print' }
 
 function Login() {
   const { signIn } = useAuth()
@@ -52,7 +54,7 @@ function Login() {
 }
 
 export default function AdminShell() {
-  const { session, profile, loading, isFinance, isAccountant, signOut } = useAuth()
+  const { session, profile, loading, isStaff, isSuper, can, signOut } = useAuth()
   const { settings, theme, setTheme, modules } = useSite()
   const [open, setOpen] = useState(false)
   const { pathname } = useLocation()
@@ -71,17 +73,21 @@ export default function AdminShell() {
   }
   if (loading) return <div className="login-wrap"><p>লোড হচ্ছে…</p></div>
   if (!session) return <Login />
-  if (!isFinance) {
+  if (!isStaff) {
     return (
       <div className="login-wrap">
         <div className="card login-box">
           <h2>অ্যাক্সেস নেই</h2>
-          <p>{profile ? 'আপনার অ্যাকাউন্টে এখনো অ্যাডমিন অনুমতি দেওয়া হয়নি। সুপার অ্যাডমিনকে বলুন আপনার ভূমিকা ঠিক করে দিতে।' : 'প্রোফাইল পাওয়া যায়নি। schema.sql চালানো হয়েছে কিনা দেখুন।'}</p>
+          <p>{profile ? 'এই অ্যাকাউন্টে অ্যাডমিন প্যানেলের অনুমতি নেই। সুপার অ্যাডমিনের সাথে যোগাযোগ করুন।' : 'প্রোফাইল পাওয়া যায়নি। schema.sql চালানো হয়েছে কিনা দেখুন।'}</p>
           <button className="btn outline" onClick={signOut}>লগআউট</button>
         </div>
       </div>
     )
   }
+
+  const seg = pathname.replace(/\/$/, '')
+  const featKey = PATH_FEATURE[seg] || (seg.startsWith('/admin/m/') ? PATH_FEATURE['/admin/m'] : null)
+  const allowed = seg === '/admin/users' ? isSuper : !featKey || can(featKey)
 
   return (
     <div className="adm">
@@ -92,18 +98,18 @@ export default function AdminShell() {
           <img src={settings.logo_url} alt="" style={{ background: '#fff', borderRadius: '50%', padding: 2 }} />
           <span>অ্যাডমিন প্যানেল</span>
         </div>
-        {MENU.filter(([title]) => !isAccountant || ['প্রধান', 'ফি ও হিসাব'].includes(title)).map(([title, items]) => (
+        {MENU.map(([title, items]) => [title, items.filter(([to]) => (to === '/admin/users' ? isSuper : !PATH_FEATURE[to] || can(PATH_FEATURE[to])) && modules[PATH_MOD[to]] !== false)]).filter(([, items]) => items.length > 0).map(([title, items]) => (
           <div key={title}>
             <h5>{title}</h5>
-            {items.filter(([to]) => modules[PATH_MOD[to]] !== false).map(([to, ic, label, end]) => (
+            {items.map(([to, ic, label, end]) => (
               <NavLink key={to} to={to} end={end} onClick={() => setOpen(false)} className={({ isActive }) => (isActive ? 'active' : '')}>
                 <span className="ic"><Icon name={ic} size={20} cls="cur" /></span>{label}
               </NavLink>
             ))}
           </div>
         ))}
-        {!isAccountant && <h5>ম্যানেজমেন্ট মডিউল</h5>}
-        {!isAccountant && MODULE_GROUPS.map((g) => (
+        {can('modules') && <h5>ম্যানেজমেন্ট মডিউল</h5>}
+        {can('modules') && MODULE_GROUPS.map((g) => (
           <details key={g.id} style={{ margin: '2px 0' }}>
             <summary style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '.95rem' }}>{g.label}</summary>
             {MODULES.filter((m) => m.group === g.id).map((m) => (
@@ -127,7 +133,13 @@ export default function AdminShell() {
           <button className="btn small outline" onClick={signOut}><Icon name="logout" size={15} cls="cur" /> লগআউট</button>
         </div>
         <div className="adm-body">
-          <Outlet />
+          {allowed ? <Outlet /> : (
+            <div className="card center" style={{ padding: 28 }}>
+              <h2>এই পেজের অনুমতি নেই</h2>
+              <p className="muted">সুপার অ্যাডমিন আপনাকে এই ফিচারটি চালু করে দিলে এখানে কাজ করতে পারবেন।</p>
+              <Link to="/admin" className="btn">ড্যাশবোর্ডে ফিরুন</Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

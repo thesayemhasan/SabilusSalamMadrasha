@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth, useSite } from '../../lib/store'
 import Icon from '../../components/Icon'
 
-const ROLE_BN = { none: 'সাধারণ সদস্য', super_admin: 'সুপার অ্যাডমিন', admin: 'অ্যাডমিন', accountant: 'হিসাবরক্ষক', teacher: 'শিক্ষক', parent: 'অভিভাবক' }
+const ROLE_BN = { none: 'সাবস্ক্রাইবার', super_admin: 'সুপার অ্যাডমিন', admin: 'অ্যাডমিন', accountant: 'হিসাবরক্ষক', staff: 'কর্মী', teacher: 'শিক্ষক', parent: 'অভিভাবক' }
 
 function PwField({ label, value, onChange, auto }) {
   const [show, setShow] = useState(false)

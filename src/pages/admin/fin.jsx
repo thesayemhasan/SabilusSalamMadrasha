@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { useSite } from '../../lib/store'
+import { useAuth, useSite } from '../../lib/store'
 import { Modal } from '../../components/Ui'
 import Icon from '../../components/Icon'
 
@@ -30,12 +30,32 @@ export function useMethods() {
   return { list, open, label }
 }
 
-// প্রিন্টযোগ্য রসিদ / পে-স্লিপ
+// একটি অংশ আলাদা করে ঠিক একটি পাতায় প্রিন্ট (A5 রসিদ / A4 রিপোর্ট)
+export function printNode(node, size = 'A5') {
+  if (!node) return
+  let root = document.getElementById('print-root')
+  if (!root) { root = document.createElement('div'); root.id = 'print-root'; document.body.appendChild(root) }
+  root.innerHTML = node.outerHTML
+  let st = document.getElementById('print-page')
+  if (!st) { st = document.createElement('style'); st.id = 'print-page'; document.head.appendChild(st) }
+  st.textContent = `@page { size: ${size} portrait; margin: 8mm; }`
+  document.body.classList.add('printing')
+  const done = () => { document.body.classList.remove('printing'); root.innerHTML = ''; window.removeEventListener('afterprint', done) }
+  window.addEventListener('afterprint', done)
+  setTimeout(() => window.print(), 60)
+}
+
+export const printedAt = () => new Date().toLocaleString('bn-BD', { dateStyle: 'medium', timeStyle: 'short' })
+
+// প্রিন্টযোগ্য রসিদ / পে-স্লিপ (A5)
 export function PrintDoc({ title, no, date, rows, total, meta = [], footNote, onClose }) {
   const { settings, t } = useSite()
+  const { profile, session } = useAuth()
+  const ref = useRef(null)
+  const by = (profile && (profile.full_name || profile.email)) || session?.user?.email || ''
   return (
     <Modal onClose={onClose} wide>
-      <div className="print-area receipt">
+      <div className="receipt" ref={ref}>
         <div className="rc-head">
           {settings.logo_url && <img src={settings.logo_url} alt="" />}
           <div>
@@ -54,10 +74,11 @@ export function PrintDoc({ title, no, date, rows, total, meta = [], footNote, on
         </table>
         {footNote && <p className="muted" style={{ marginBottom: 0 }}>{footNote}</p>}
         <div className="rc-sign"><span>গ্রহীতার স্বাক্ষর</span><span>কর্তৃপক্ষের স্বাক্ষর</span></div>
+        <div className="rc-by">Printed by: <b>{by}</b> · {printedAt()}</div>
       </div>
       <div className="no-print" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 14 }}>
         <button className="btn outline" onClick={onClose}>বন্ধ করুন</button>
-        <button className="btn" onClick={() => window.print()}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট / PDF</button>
+        <button className="btn" onClick={() => printNode(ref.current, 'A5')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট / PDF (A5)</button>
       </div>
     </Modal>
   )

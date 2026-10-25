@@ -25,12 +25,12 @@ export function HBars({ data, fmt = bn, empty = 'কোনো তথ্য ন�
   const max = Math.max(1, ...data.map((d) => d.value))
   if (!data.length || data.every((d) => !d.value)) return <p className="muted">{empty}</p>
   return (
-    <div className="hbars">
+    <div className="vz-hbars">
       {data.map((d) => (
-        <div className="hb" key={d.label} title={`${d.label}: ${fmt(d.value)}`}>
-          <span className="hb-l">{d.label}</span>
-          <span className="hb-track"><span className="hb-fill" style={{ width: `${Math.max(2, (d.value / max) * 100)}%` }} /></span>
-          <span className="hb-v">{fmt(d.value)}</span>
+        <div className="vz-hb" key={d.label} title={`${d.label}: ${fmt(d.value)}`}>
+          <span className="vz-hb-l">{d.label}</span>
+          <span className="vz-hb-track"><span className="vz-hb-fill" style={{ width: `${Math.max(2, (d.value / max) * 100)}%` }} /></span>
+          <span className="vz-hb-v">{fmt(d.value)}</span>
         </div>
       ))}
     </div>
@@ -61,7 +61,7 @@ export function Donut({ data, size = 150 }) {
         <text x="70" y="66" textAnchor="middle" className="donut-n">{bn(cur ? cur.value : total)}</text>
         <text x="70" y="84" textAnchor="middle" className="donut-s">{cur ? cur.label : 'মোট'}</text>
       </svg>
-      <ul className="legend">
+      <ul className="vz-legend">
         {items.map((d, i) => <li key={d.label} onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(null)}><i style={{ background: SERIES[i] }} />{d.label} <b>{bn(d.value)}</b> <span className="muted">({Math.round((d.value / total) * 100)}%)</span></li>)}
       </ul>
     </div>
@@ -74,19 +74,19 @@ export function Columns({ labels, a, b, nameA, nameB, fmt = (n) => `৳ ${bn(Mat
   const max = Math.max(1, ...a, ...b)
   const W = 100 / labels.length
   return (
-    <div className="cols-wrap">
-      <ul className="legend row">
+    <div className="vz-cols-wrap">
+      <ul className="vz-legend row">
         <li><i style={{ background: SERIES[0] }} />{nameA}</li><li><i style={{ background: SERIES[1] }} />{nameB}</li>
       </ul>
-      <div className="cols">
+      <div className="vz-cols">
         {labels.map((l, i) => (
-          <div className="col" key={l} onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(null)} onClick={() => setHi(hi === i ? null : i)}>
-            {hi === i && <div className="tip"><b>{l}</b><div><i style={{ background: SERIES[0] }} />{nameA}: {fmt(a[i])}</div><div><i style={{ background: SERIES[1] }} />{nameB}: {fmt(b[i])}</div></div>}
-            <div className="bars">
-              <span className="bar" style={{ height: `${(a[i] / max) * 100}%`, background: SERIES[0] }} />
-              <span className="bar" style={{ height: `${(b[i] / max) * 100}%`, background: SERIES[1] }} />
+          <div className="vz-col" key={l} onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(null)} onClick={() => setHi(hi === i ? null : i)}>
+            {hi === i && <div className="vz-tip"><b>{l}</b><div><i style={{ background: SERIES[0] }} />{nameA}: {fmt(a[i])}</div><div><i style={{ background: SERIES[1] }} />{nameB}: {fmt(b[i])}</div></div>}
+            <div className="vz-bars">
+              <span className="vz-bar" style={{ height: `${(a[i] / max) * 100}%`, background: SERIES[0] }} />
+              <span className="vz-bar" style={{ height: `${(b[i] / max) * 100}%`, background: SERIES[1] }} />
             </div>
-            <span className="cl">{l}</span>
+            <span className="vz-cl">{l}</span>
           </div>
         ))}
       </div>

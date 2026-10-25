@@ -246,7 +246,7 @@ export const TEXT_GROUPS = [
       ['auth.err.login', 'ইমেইল বা পাসওয়ার্ড ঠিক নয়।', '', 'Email or password is incorrect.'],
       ['auth.profile.title', 'আমার প্রোফাইল', '', 'My profile'],
       ['auth.status', 'অ্যাকাউন্টের অবস্থা', '', 'Account status'],
-      ['auth.status.none', 'আপনার অ্যাকাউন্ট তৈরি আছে। অভিভাবক/শিক্ষার্থী পোর্টাল চালু হলে মাদরাসা কর্তৃপক্ষ আপনার অ্যাকাউন্ট সক্রিয় করে দেবে।', '', 'Your account is ready. When the guardian/student portal opens, the madrasa will activate your account.', true],
+      ['auth.status.none', 'আপনি মাদরাসার সাবস্ক্রাইবার। নতুন খবর ও বিজ্ঞপ্তি আপনার ইমেইলে পাঠানো হবে।', '', 'You are a subscriber of the madrasa. News and announcements will be sent to your email.', true],
       ['auth.admin.btn', 'ব্যবস্থাপনা প্যানেলে যান', '', 'Open management panel'],
       ['auth.pw.change', 'পাসওয়ার্ড বদলান', '', 'Change password'],
       ['auth.pw.saved', 'পাসওয়ার্ড বদলানো হয়েছে।', '', 'Password changed.'],

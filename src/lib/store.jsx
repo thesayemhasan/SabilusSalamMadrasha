@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { supabase, configured } from './supabase'
 import { DEFAULTS, LANGS } from './texts'
+import { STAFF_ROLES, FEATURE_BY_KEY, AREA_KEYS } from './features'
 
 const SiteCtx = createContext(null)
 const AuthCtx = createContext(null)
@@ -159,13 +160,27 @@ export function AuthProvider({ children }) {
   const signUp = (email, password, full_name) => supabase.auth.signUp({ email, password, options: { data: { full_name } } })
   const resetPassword = (email) => (supabase.auth.resetPasswordForEmail ? supabase.auth.resetPasswordForEmail(email) : Promise.resolve({ error: null }))
   const changePassword = (password) => (supabase.auth.updateUser ? supabase.auth.updateUser({ password }) : Promise.resolve({ error: null }))
-  const isAdmin = Boolean(profile && ['super_admin', 'admin'].includes(profile.role))
   const isSuper = Boolean(profile && profile.role === 'super_admin')
-  const isFinance = Boolean(profile && ['super_admin', 'admin', 'accountant'].includes(profile.role))
+  const isStaff = Boolean(profile && STAFF_ROLES.includes(profile.role))
+  const isAdmin = isStaff
+  // কোন ফিচার চালু আছে: সুপার অ্যাডমিন সব; অন্যদের জন্য সুপার অ্যাডমিন যা দিয়েছে। অনুমতি ফাঁকা থাকলে (পুরনো ব্যবহারকারী) ভূমিকার ডিফল্ট।
+  const can = (key) => {
+    if (!profile) return false
+    if (profile.role === 'super_admin') return true
+    if (!STAFF_ROLES.includes(profile.role)) return false
+    const p = profile.permissions || {}
+    if (Object.keys(p).length === 0) {
+      if (profile.role === 'admin') return true
+      if (profile.role === 'accountant') return FEATURE_BY_KEY[key]?.area === 'finance'
+      return false
+    }
+    return p[key] === true
+  }
+  const isFinance = isStaff && AREA_KEYS('finance').some(can)
   const isAccountant = Boolean(profile && profile.role === 'accountant')
 
   return (
-    <AuthCtx.Provider value={{ session, profile, loading, signIn, signOut, signUp, resetPassword, changePassword, isAdmin, isSuper, isFinance, isAccountant }}>
+    <AuthCtx.Provider value={{ session, profile, loading, signIn, signOut, signUp, resetPassword, changePassword, isAdmin, isStaff, isSuper, isFinance, isAccountant, can }}>
       {children}
     </AuthCtx.Provider>
   )

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
-import { useSite } from '../../lib/store'
+import { useAuth, useSite } from '../../lib/store'
+import { PATH_FEATURE } from '../../lib/features'
 import { MODULES, BUILT } from '../../lib/modules'
 import Icon from '../../components/Icon'
 import { Select } from '../../components/Ui'
@@ -118,6 +119,7 @@ function FinanceCharts({ onTiles }) {
 
 export default function Dashboard() {
   const { modules } = useSite()
+  const { can, isFinance, isSuper } = useAuth()
   const c = useCounts()
   const [cnt, setCnt] = useState({})
   const [fin, setFin] = useState(null)
@@ -134,6 +136,7 @@ export default function Dashboard() {
     ...(fin ? [['আজকের আদায়', taka(fin.todayIn), '/admin/fees'], ['এই মাসের ফি আদায়', taka(fin.monthFee), '/admin/fees'], ['মোট বকেয়া', taka(fin.dueTotal), '/admin/reports']] : []),
   ]
   const quick = [['wallet', 'ফি আদায়', '/admin/fees'], ['clipboard', 'আজকের হাজিরা', '/admin/attendance'], ['users', 'ছাত্র-ছাত্রী', '/admin/students'], ['coins', 'নতুন ব্যয়', '/admin/expense'], ['apply', 'ভর্তির আবেদন', '/admin/applications'], ['chart', 'রিপোর্ট', '/admin/reports'], ['megaphone', 'নোটিশ', '/admin/notices'], ['image', 'হোম স্লাইড', '/admin/slides'], ['gear', 'সেটিংস', '/admin/settings']]
+  const ok = ([, , to]) => !PATH_FEATURE[to] || can(PATH_FEATURE[to])
   return (
     <>
       <div className="dash-top">
@@ -141,25 +144,25 @@ export default function Dashboard() {
         <Link to="/" className="btn outline"><Icon name="globe" size={18} cls="cur" /> ওয়েবসাইট দেখুন</Link>
       </div>
       <div className="quick">
-        {quick.map(([ic, label, to]) => (
+        {quick.filter((q) => ok([0, 0, q[2]])).map(([ic, label, to]) => (
           <Link to={to} key={to}><span className="big"><Icon name={ic} size={34} /></span>{label}</Link>
         ))}
       </div>
       <div className="grid g4" style={{ marginBottom: 20 }}>
-        {tiles.map(([label, n, to]) => (
+        {tiles.filter((x) => ok([0, 0, x[2]])).map(([label, n, to]) => (
           <Link to={to} className="card stat" key={label}>
             <b>{n ?? '…'}</b>
             <span className="muted">{label}</span>
           </Link>
         ))}
       </div>
-      <StudentCharts />
-      <FinanceCharts onTiles={setFin} />
-      <div className="card" style={{ marginTop: 22 }}>
+      {can('students') && <StudentCharts />}
+      {isFinance && <FinanceCharts onTiles={setFin} />}
+      {isSuper && <div className="card" style={{ marginTop: 22 }}>
         <h3>সিস্টেমের অবস্থা</h3>
         <p>ধাপ ১, ২ ও ৩ চালু: ওয়েবসাইট, ভর্তি, ছাত্র-ছাত্রী, শিক্ষক-কর্মচারী, হাজিরা, ফি ও রসিদ, দান ও আয়-ব্যয়, বেতন, রিপোর্ট।</p>
         <p className="muted" style={{ margin: 0 }}>চালু মডিউল: {enabled} / {MODULES.length}। বাকি মডিউল (পরীক্ষা, হিফজ, এসএমএস ইত্যাদি) পরের ধাপগুলোতে যোগ হবে।</p>
-      </div>
+      </div>}
     </>
   )
 }

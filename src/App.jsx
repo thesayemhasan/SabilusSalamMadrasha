@@ -11,6 +11,9 @@ import { AdmissionFieldsAdmin, DepartmentsAdmin, EventsAdmin, GalleryAdmin, Hero
 import { Applications, Messages } from './pages/admin/Inbox'
 import { Integrations, Modules } from './pages/admin/Controls'
 import Users from './pages/admin/Users'
+import Exams from './pages/admin/Exams'
+import Hifz from './pages/admin/Hifz'
+import IdCards from './pages/admin/IdCards'
 import ModulePage from './pages/admin/ModulePage'
 import { ClassesAdmin, ResidenceAdmin, SessionsAdmin, StaffAdmin, StudentsAdmin } from './pages/admin/People'
 import Attendance, { Gate } from './pages/admin/Attendance'
@@ -54,6 +57,9 @@ export default function App() {
         <Route path="attendance" element={<Gate mod="attendance" name="হাজিরা"><Attendance /></Gate>} />
         <Route path="residence" element={<ResidenceAdmin />} />
         <Route path="sessions" element={<SessionsAdmin />} />
+        <Route path="exams" element={<Gate mod="exams" name="পরীক্ষা ও রেজাল্ট"><Exams /></Gate>} />
+        <Route path="hifz" element={<Gate mod="hifz" name="হিফজ ট্র্যাকিং"><Hifz /></Gate>} />
+        <Route path="idcards" element={<Gate mod="id_print" name="আইডি কার্ড ও প্রিন্ট"><IdCards /></Gate>} />
         <Route path="fees" element={<Gate mod="fees" name="বেতন ও চাঁদা"><FeesPage /></Gate>} />
         <Route path="billing" element={<Gate mod="fees" name="বেতন ও চাঁদা"><Billing /></Gate>} />
         <Route path="fee-setup" element={<Gate mod="fees" name="বেতন ও চাঁদা"><FeeSetup /></Gate>} />
