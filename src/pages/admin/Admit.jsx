@@ -35,13 +35,12 @@ export default function Admit() {
     supabase.rpc('student_dues').then(({ data }) => setDues(data || []))
   }, [])
   useEffect(() => {
-    if (!cls) { setStudents([]); return }
-    supabase.from('students').select('*').eq('class_id', cls).eq('status', 'active').order('student_no').then(({ data }) => setStudents(data || []))
+    fetchAll((a, b) => { let q = supabase.from('students').select('*').eq('status', 'active').order('student_no'); if (cls) q = q.eq('class_id', cls); return q.range(a, b) }).then(({ data }) => setStudents(data || []))
   }, [cls])
   useEffect(() => {
-    if (!exam || !cls) { setRoutine([]); return }
-    supabase.from('exam_subjects').select('*').eq('exam_id', exam).eq('class_id', cls).order('exam_date', { ascending: true }).then(({ data }) => setRoutine(data || []))
-  }, [exam, cls])
+    if (!exam) { setRoutine([]); return }
+    supabase.from('exam_subjects').select('*').eq('exam_id', exam).order('exam_date', { ascending: true }).then(({ data }) => setRoutine(data || []))
+  }, [exam])
   // নির্বাচিত পরীক্ষার নাম ডিজাইনে না বদলে থাকলে স্বয়ংক্রিয়ভাবে নেওয়া যায়
   const ex = exams.find((e) => e.id === exam)
 
@@ -52,17 +51,17 @@ export default function Admit() {
   const eligible = (s) => cfg.rule === 'none' || dueOf(s.id) <= num(cfg.max_due)
   useEffect(() => { setPick(Object.fromEntries(students.filter(eligible).map((s) => [s.id, true]))) }, [students, dues, cfg.rule, cfg.head_id, cfg.max_due]) // eslint-disable-line
   const chosen = students.filter((s) => pick[s.id])
-  const clsName = nm(classes.find((c) => c.id === cls))
+  const clsNameOf = (id) => (id ? nm(classes.find((c) => c.id === id)) : '')
   const school = t('site.name') || 'সাবিলুস সালাম মাদরাসা'
   const eff = { ...cfg, exam_name: cfg.exam_name || nm(ex), year: cfg.year || ex?.year || '' }
   const up = (k, v) => setCfg((c) => ({ ...c, [k]: v }))
   async function doSave() { const e = await save(cfg); setMsg(e ? `ত্রুটি: ${e.message}` : 'সংরক্ষিত হয়েছে') }
   if (!ready) return <p>লোড হচ্ছে…</p>
   const inst = instData(settings, t)
-  const routineText = routine.map((r) => `${nm(r)}${r.exam_date ? ` — ${dateBn(r.exam_date)}` : ''}${r.exam_time ? ` ${r.exam_time}` : ''}`).join('\n')
+  const routineOf = (classId) => routine.filter((x) => x.class_id === classId).map((r) => `${nm(r)}${r.exam_date ? ` — ${dateBn(r.exam_date)}` : ''}${r.exam_time ? ` ${r.exam_time}` : ''}`)  .join('\n')
   const common = { ...inst, ...(cfg.school_title ? { inst_name: cfg.school_title } : {}), doc_title: eff.doc_title, exam_name: eff.exam_name, year: eff.year, instructions: cfg.instructions, sign_left: cfg.sign_left, sign_right: cfg.sign_right }
-  const items = chosen.map((s) => ({ ...common, ...studentData(s, clsName), routine: routineText }))
-  const sample = { ...common, ...studentData({ name_bn: 'নমুনা ছাত্র', student_no: '260001', father_name: 'নমুনা পিতা' }, 'নমুনা শ্রেণি'), routine: routineText || 'কুরআন — ১ নভেম্বর\nআরবি — ২ নভেম্বর' }
+  const items = chosen.map((s) => ({ ...common, ...studentData(s, clsNameOf(s.class_id)), routine: routineOf(s.class_id) }))
+  const sample = { ...common, ...studentData({ name_bn: 'নমুনা ছাত্র', student_no: '260001', father_name: 'নমুনা পিতা' }, 'নমুনা শ্রেণি'), routine: 'কুরআন — ১ নভেম্বর\nআরবি — ২ নভেম্বর' }
   const eff2 = mode || lay.cfg.print || 'front'
   return (
     <>
@@ -100,7 +99,7 @@ export default function Admit() {
         <>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
             <div style={{ minWidth: 220 }}><Select placeholder="পরীক্ষা (রুটিনের জন্য, ঐচ্ছিক)" value={exam} onChange={setExam} options={[['', '— ছাড়া —'], ...exams.map((e) => [e.id, `${nm(e)}${e.year ? ` (${e.year})` : ''}`])]} /></div>
-            <div style={{ minWidth: 200 }}><Select placeholder="শ্রেণি বাছুন" value={cls} onChange={setCls} options={classes.map((c) => [c.id, nm(c)])} /></div>
+            <div style={{ minWidth: 200 }}><Select placeholder="শ্রেণি" value={cls} onChange={setCls} options={[['', 'সব শ্রেণি'], ...classes.map((c) => [c.id, nm(c)])]} /></div>
             <div style={{ minWidth: 200 }}><Select value={eff2} onChange={setMode} options={[['front', 'শুধু সামনের পাশ'], ['back', 'শুধু পেছনের পাশ'], ['both', 'দুই পাশ']]} /></div>
             <button className="btn" disabled={!chosen.length} onClick={() => printNode(ref.current, 'A4', '0', 'landscape')}>প্রিন্ট ({bn(chosen.length)}টি, A4 ল্যান্ডস্কেপ)</button>
           </div>
@@ -115,7 +114,7 @@ export default function Admit() {
                   <td>{eligible(s) ? <span className="pill ok">যোগ্য</span> : <span className="pill">বকেয়া {taka(dueOf(s.id))}</span>}</td>
                 </tr>
               ))}
-              {!students.length && <tr><td colSpan={4} className="muted">শ্রেণি বাছুন</td></tr>}
+              {!students.length && <tr><td colSpan={4} className="muted">{cls ? 'এই শ্রেণিতে কোনো সক্রিয় ছাত্র নেই (ছাত্র-ছাত্রী পেজে ছাত্রের শ্রেণি ঠিক আছে কিনা দেখুন)' : 'কোনো সক্রিয় ছাত্র নেই'}</td></tr>}
             </tbody>
           </table></div>
           <h3 style={{ marginTop: 18 }}>প্রিভিউ</h3>

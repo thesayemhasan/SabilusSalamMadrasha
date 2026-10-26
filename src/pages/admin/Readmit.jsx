@@ -196,7 +196,7 @@ export default function Readmit() {
         <>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
             <div style={{ minWidth: 200 }}><Select placeholder="শ্রেণি (সব)" value={cls} onChange={setCls} options={[['', 'সব শ্রেণি'], ...classes.map((c) => [c.id, nm(c)])]} /></div>
-            <div style={{ minWidth: 220 }}><Select placeholder="ফলাফলের পরীক্ষা" value={exam} onChange={setExam} options={exams.map((e) => [e.id, `${nm(e)}${e.year ? ` (${e.year})` : ''}`])} /></div>
+            <div style={{ minWidth: 220 }}><Select placeholder="ফলাফলের পরীক্ষা (পাশ-ফেল দেখতে)" value={exam} onChange={setExam} options={exams.map((e) => [e.id, `${nm(e)}${e.year ? ` (${e.year})` : ''}`])} /></div>
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ maxWidth: 170 }} title="উপস্থিতি গণনার শুরু" />
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} title="উপস্থিতি গণনার শেষ" />
           </div>
