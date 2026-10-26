@@ -5,6 +5,7 @@ export const FEATURES = [
   ['students', 'people', 'ছাত্র ও হাজিরা', 'ছাত্র-ছাত্রী', '/admin/students'],
   ['classes', 'people', 'ছাত্র ও হাজিরা', 'শ্রেণি ও হালকা', '/admin/classes'],
   ['staff', 'people', 'ছাত্র ও হাজিরা', 'শিক্ষক ও কর্মচারী', '/admin/staff'],
+  ['import', 'people', 'ছাত্র ও হাজিরা', 'এক্সেল ইম্পোর্ট', '/admin/import'],
   ['attendance', 'people', 'ছাত্র ও হাজিরা', 'হাজিরা', '/admin/attendance'],
   ['att_setup', 'people', 'ছাত্র ও হাজিরা', 'আবাসিক ধরন ও হাজিরার সময়', '/admin/residence', '/admin/sessions'],
   ['exams', 'people', 'পরীক্ষা ও হিফজ', 'পরীক্ষা ও ফলাফল', '/admin/exams'],

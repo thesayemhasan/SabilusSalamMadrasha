@@ -891,3 +891,27 @@ html[lang='en'] .apply-title { font-size: 1rem; }
 .ld-insp { position: sticky; top: 76px; max-height: calc(100vh - 100px); overflow: auto; }
 @media (max-width: 900px) { .ld-insp { position: static; max-height: none; } .ld-canvas + .ld-insp, .adm-body .grid[style*='300px'] { grid-template-columns: 1fr !important; } }
 @media print { #print-root .ld-doc { width: auto; } }
+
+/* ---- এক্সেল ইম্পোর্ট ---- */
+.ei-sec { background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-bottom: 14px; }
+.ei-step { font-weight: 700; margin-bottom: 10px; color: var(--head); display: flex; align-items: center; gap: 8px; }
+.ei-step b { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--primary); color: #fff; font-size: .85rem; }
+.ei-order { font-size: .88rem; color: var(--muted, #667); }
+.ei-cols { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.ei-file { display: block; padding: 10px; border: 1px dashed var(--line); border-radius: 12px; width: 100%; background: transparent; color: inherit; font: inherit; }
+.ei-alert { border-radius: 12px; padding: 10px 14px; margin-top: 10px; font-size: .94rem; border: 1px solid var(--line); }
+.ei-alert.err { background: rgba(220, 38, 38, .10); border-color: rgba(220, 38, 38, .35); }
+.ei-alert.warn { background: rgba(217, 119, 6, .12); border-color: rgba(217, 119, 6, .35); }
+.ei-alert.ok { background: rgba(22, 163, 74, .12); border-color: rgba(22, 163, 74, .35); }
+.ei-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.ei-stats div { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; }
+.ei-stats b { font-size: 1.4rem; }
+.ei-stats span { font-size: .8rem; opacity: .8; }
+.ei-stats .ok b { color: #16a34a; } .ei-stats .warn b { color: #d97706; } .ei-stats .skip b { color: #6b7280; } .ei-stats .err b { color: #dc2626; }
+.ei-chk { display: flex; gap: 8px; align-items: center; margin: 6px 0; font-size: .92rem; cursor: pointer; }
+.ei-issues { max-height: 380px; overflow: auto; }
+.ei-tag { display: inline-block; border-radius: 999px; padding: 0 10px; font-size: .78rem; }
+.ei-tag.err { background: rgba(220, 38, 38, .15); color: #b91c1c; } .ei-tag.warn { background: rgba(217, 119, 6, .16); color: #b45309; } .ei-tag.skip { background: rgba(107, 114, 128, .18); }
+.ei-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.ei-bar { height: 8px; border-radius: 99px; background: var(--line); margin-top: 10px; overflow: hidden; }
+.ei-bar i { display: block; height: 100%; background: var(--primary); transition: width .3s; }

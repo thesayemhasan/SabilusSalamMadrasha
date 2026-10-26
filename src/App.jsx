@@ -13,6 +13,7 @@ import { Integrations, Modules } from './pages/admin/Controls'
 import Users from './pages/admin/Users'
 import Exams from './pages/admin/Exams'
 import Hifz from './pages/admin/Hifz'
+import ExcelImport from './pages/admin/ExcelImport'
 import IdCards from './pages/admin/IdCards'
 import Admit from './pages/admin/Admit'
 import Readmit from './pages/admin/Readmit'
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="residence" element={<ResidenceAdmin />} />
         <Route path="sessions" element={<SessionsAdmin />} />
         <Route path="exams" element={<Gate mod="exams" name="পরীক্ষা ও রেজাল্ট"><Exams /></Gate>} />
+        <Route path="import" element={<ExcelImport />} />
         <Route path="hifz" element={<Gate mod="hifz" name="হিফজ ট্র্যাকিং"><Hifz /></Gate>} />
         <Route path="idcards" element={<Gate mod="id_print" name="আইডি কার্ড ও প্রিন্ট"><IdCards /></Gate>} />
         <Route path="admit" element={<Gate mod="admit_card" name="প্রবেশপত্র"><Admit /></Gate>} />

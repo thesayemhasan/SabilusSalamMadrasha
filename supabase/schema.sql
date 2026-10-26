@@ -1066,7 +1066,8 @@ grant execute on function public.student_attendance_stats(date, date) to authent
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('admit','people','পরীক্ষা ও হিফজ','প্রবেশপত্র','Admit cards',28),
   ('readmit','people','পরীক্ষা ও হিফজ','পুনঃভর্তি ও ভর্তি ফরম','Re-admission & forms',29),
-  ('receipt_cfg','finance','ফি ও হিসাব','রসিদের লেখা ও ডিজাইন','Receipt design',39)
+  ('receipt_cfg','finance','ফি ও হিসাব','রসিদের লেখা ও ডিজাইন','Receipt design',39),
+  ('import','people','ছাত্র ও হাজিরা','এক্সেল ইম্পোর্ট','Excel import',25)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
 
 notify pgrst, 'reload schema';
