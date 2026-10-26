@@ -20,6 +20,10 @@ const L = [
   ['exams', 'পরীক্ষা ও রেজাল্ট', 'exam', 4, false, 'নম্বর এন্ট্রি, মার্কশিট, মেধাতালিকা'],
   ['hifz', 'হিফজ ট্র্যাকিং', 'exam', 4, false, 'সবক, সাত সবক, আমুখতা, শবিনা'],
   ['id_print', 'আইডি কার্ড ও প্রিন্ট', 'exam', 4, false, 'আইডি কার্ড, প্রশংসাপত্র, রশিদ'],
+  ['receipt_online', 'অনলাইন রসিদ (ওয়েবসাইটের ডিজাইনে)', 'money', 3, false, 'প্যাড না থাকলে সম্পূর্ণ ডিজাইনসহ রসিদ প্রিন্ট'],
+  ['receipt_pad', 'কাস্টমাইজ রসিদ (প্যাডের কাগজে শুধু তথ্য)', 'money', 3, false, 'প্রেসের ছাপানো A5 প্যাডে শুধু তথ্য বসে'],
+  ['admit_card', 'প্রবেশপত্র', 'exam', 4, false, 'ফি পরিশোধিত ছাত্রদের প্রবেশপত্র, A4-এ ৪টি'],
+  ['readmission', 'পুনঃভর্তি ও ভর্তি ফরম', 'admin', 4, false, 'আগামী বছরের যোগ্যতা যাচাই ও ফরম প্রিন্ট'],
   ['sms', 'এসএমএস', 'comm', 5, false, 'হাজিরা, বেতন, ফলাফল ও নোটিশের এসএমএস'],
   ['apps', 'অভিভাবক ও শিক্ষক অ্যাপ', 'comm', 5, false, 'মোবাইল অ্যাপ (পরের পর্যায়ে)'],
   ['settings', 'সিস্টেম সেটিংস', 'comm', 1, false, 'ব্যবহারকারী, অনুমতি, প্রতিষ্ঠানের তথ্য'],
@@ -55,7 +59,7 @@ const L = [
 export const MODULES = L.map(([key, name, group, step, free, desc]) => ({ key, name, group, step, free, desc }))
 
 // যেগুলো ধাপ ১ এ ইতিমধ্যে তৈরি
-export const BUILT = new Set(['settings', 'events', 'website', 'students', 'teachers', 'attendance', 'fees', 'accounts_basic', 'reports', 'hr_payroll', 'activity_log', 'exams', 'hifz', 'id_print'])
+export const BUILT = new Set(['settings', 'events', 'website', 'students', 'teachers', 'attendance', 'fees', 'accounts_basic', 'reports', 'hr_payroll', 'activity_log', 'exams', 'hifz', 'id_print', 'receipt_online', 'receipt_pad', 'admit_card', 'readmission'])
 
 // বাইরের সেবা, যেগুলো চালু করলে সংশ্লিষ্ট মডিউল নিজে থেকে কাজ শুরু করবে
 export const INTEGRATIONS = [

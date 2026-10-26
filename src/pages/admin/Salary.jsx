@@ -99,7 +99,7 @@ function Pay({ P, methods }) {
           </tbody>
         </table>
       </div>
-      {doc && <PrintDoc title={doc.title} date={doc.date} rows={doc.rows} total={doc.total} meta={doc.meta} onClose={() => setDoc(null)} />}
+      {doc && <PrintDoc kind="salary" titleSuffix={doc.title.replace(/^[^—]*— ?/, '')} date={doc.date} rows={doc.rows} total={doc.total} meta={doc.meta} onClose={() => setDoc(null)} />}
     </>
   )
 }

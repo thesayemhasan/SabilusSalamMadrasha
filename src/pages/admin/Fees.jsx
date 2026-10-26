@@ -231,7 +231,7 @@ function Collect() {
           </div>
         </>
       )}
-      {doc && <PrintDoc title="ফি আদায়ের রসিদ" no={doc.no} date={doc.date} rows={doc.rows} total={doc.total} meta={doc.meta} onClose={() => setDoc(null)} />}
+      {doc && <PrintDoc kind="fee" no={doc.no} date={doc.date} rows={doc.rows} total={doc.total} meta={doc.meta} onClose={() => setDoc(null)} />}
       {extra && (
         <Modal onClose={() => setExtra(null)}>
           <h3>অতিরিক্ত বিল</h3>
@@ -303,7 +303,7 @@ function Receipts() {
           </tbody>
         </table>
       </div>
-      {doc && <PrintDoc title="ফি আদায়ের রসিদ" no={doc.no} date={doc.date} rows={doc.rows} total={doc.total} meta={doc.meta} footNote={doc.note} onClose={() => setDoc(null)} />}
+      {doc && <PrintDoc kind="fee" no={doc.no} date={doc.date} rows={doc.rows} total={doc.total} meta={doc.meta} footNote={doc.note} onClose={() => setDoc(null)} />}
       {vd && <VoidDialog name={`রসিদ ${vd.receipt_no} (${taka(vd.amount)})`} onClose={() => setVd(null)} onDone={async (why) => { const { error } = await supabase.from('payments').update(voidPatch(why)).eq('id', vd.id); if (error) window.alert(error.message); setVd(null); load() }} />}
     </>
   )

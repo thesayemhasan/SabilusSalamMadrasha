@@ -817,3 +817,64 @@ html[lang='en'] .apply-title { font-size: 1rem; }
   #print-root .idc { border: 1px solid #000; }
   #print-root .ms-doc th, #print-root .ms-doc td { border: 1px solid #555; }
 }
+
+/* রসিদ: প্যাড মোডের অবস্থান-রেখা (শুধু স্ক্রিনে) */
+.pad-wrap .pad { outline: 1px dashed var(--line); background: #fff; color: #000; }
+.pad-wrap { overflow-x: auto; }
+
+/* প্রবেশপত্র: A4 ল্যান্ডস্কেপ, পাতায় ৪টি (২×২), প্রতিটি ১৪০.৫ × ৯৬.৫ মিমি; পাতার মার্জিন ৮ মিমি */
+.adm-doc { background: #fff; color: #000; }
+.adm-page { width: 281mm; height: 193mm; display: grid; grid-template-columns: 140.5mm 140.5mm; grid-template-rows: 96.5mm 96.5mm; break-after: page; page-break-after: always; }
+.adm-page:last-child { break-after: auto; page-break-after: auto; }
+.adm-cell { width: 140.5mm; height: 96.5mm; box-sizing: border-box; border: .2mm dashed #999; padding: 3mm; overflow: hidden; }
+.adm-card { width: 100%; height: 100%; box-sizing: border-box; padding: 3mm; display: flex; flex-direction: column; gap: 1.5mm; font-size: 9.5pt; line-height: 1.3; background-size: cover; background-position: center; overflow: hidden; }
+.ac-head { display: flex; align-items: center; gap: 3mm; border-bottom: .4mm solid #000; padding-bottom: 1.5mm; }
+.ac-head img { width: 11mm; height: 11mm; object-fit: contain; }
+.ac-head b { font-size: 11pt; }
+.ac-title { font-weight: 700; font-size: 10pt; }
+.ac-exam { font-size: 8.5pt; }
+.ac-mid { display: flex; justify-content: space-between; gap: 3mm; }
+.ac-info { min-width: 0; }
+.ac-photo { width: 20mm; height: 24mm; border: .3mm solid #000; display: grid; place-items: center; overflow: hidden; flex: none; font-size: 7pt; }
+.ac-photo img { width: 100%; height: 100%; object-fit: cover; }
+.ac-routine { columns: 2; column-gap: 4mm; font-size: 8pt; border: .2mm solid #888; padding: 1mm 2mm; }
+.ac-routine div { break-inside: avoid; }
+.ac-inst { font-size: 8pt; flex: 1; min-height: 0; overflow: hidden; }
+.ac-sign { display: flex; justify-content: space-between; font-size: 7.5pt; margin-top: auto; }
+.ac-sign span { border-top: .3mm solid #000; padding-top: .5mm; min-width: 35mm; text-align: center; }
+.adm-preview, .adm-scroll { overflow-x: auto; }
+.adm-preview .adm-cell { background: #fff; color: #000; }
+.adm-scroll .adm-doc { width: max-content; }
+@media print {
+  #print-root .adm-doc { width: auto; }
+  #print-root .adm-cell { border: .2mm dashed #888; }
+  #print-root .adm-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* ভর্তি ফরম (A4) */
+.fm-doc { background: #fff; color: #000; width: max-content; }
+.fm-sheet { break-after: page; page-break-after: always; }
+.fm-sheet:last-child { break-after: auto; page-break-after: auto; }
+.fm-page { box-sizing: border-box; background-size: cover; background-position: center; overflow: hidden; font-size: 11pt; line-height: 1.5; break-inside: avoid; }
+.fm-page + .fm-page { break-before: page; }
+.fm-body { height: 100%; display: flex; flex-direction: column; gap: 2.2mm; }
+.fm-head { display: flex; align-items: center; gap: 4mm; border-bottom: .5mm solid #000; padding-bottom: 2mm; }
+.fm-head img { width: 18mm; height: 18mm; object-fit: contain; }
+.fm-head h2 { margin: 0; font-size: 16pt; }
+.fm-title { text-align: center; font-size: 13pt; margin: 1mm 0; }
+.fm-top { display: flex; gap: 6mm; align-items: flex-start; }
+.fm-photo { width: 30mm; height: 36mm; border: .3mm solid #000; display: grid; place-items: center; font-size: 9pt; flex: none; }
+.fm-row { display: flex; gap: 3mm; align-items: flex-end; }
+.fm-l { flex: none; min-width: 38mm; }
+.fm-v { flex: 1; border-bottom: .3mm dotted #000; min-height: 6.5mm; }
+.fm-office { border: .3mm solid #000; padding: 2mm 3mm; font-size: 10pt; margin-top: 2mm; }
+.fm-policy { font-size: 10pt; }
+.fm-policy ol, .fm-body ol { margin: 1mm 0; padding-inline-start: 6mm; }
+.fm-decl { font-size: 10pt; margin: 2mm 0 0; }
+.fm-sign { display: flex; justify-content: space-between; margin-top: auto; padding-top: 14mm; }
+.fm-sign span { border-top: .3mm solid #000; padding-top: 1mm; min-width: 50mm; text-align: center; }
+@media print {
+  #print-root .fm-doc { width: auto; }
+  #print-root .fm-page { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #print-root .fm-v { border-bottom: .3mm dotted #000; }
+}

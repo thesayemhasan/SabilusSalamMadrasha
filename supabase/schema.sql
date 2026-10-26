@@ -982,4 +982,86 @@ insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('idcards','people','পরীক্ষা ও হিফজ','আইডি কার্ড','ID cards',27)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
 
+
+-- =====================================================================
+-- রসিদ/প্রবেশপত্র/ভর্তি ফরমের ডিজাইন, পুনঃভর্তির যোগ্যতা (আবার চালালেও ক্ষতি নেই)
+-- =====================================================================
+create table if not exists public.print_configs (
+  key text primary key,
+  value jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.print_configs enable row level security;
+drop policy if exists "print_configs_read" on public.print_configs;
+create policy "print_configs_read" on public.print_configs for select
+  using (public.has_area('finance') or public.has_area('people') or public.has_area('system') or public.has_area('cms'));
+drop policy if exists "print_configs_write" on public.print_configs;
+create policy "print_configs_write" on public.print_configs for all
+  using ((key like 'receipt%' and public.has_area('finance')) or (key not like 'receipt%' and public.has_area('people')))
+  with check ((key like 'receipt%' and public.has_area('finance')) or (key not like 'receipt%' and public.has_area('people')));
+
+alter table public.exam_subjects add column if not exists exam_date date;
+alter table public.exam_subjects add column if not exists exam_time text;
+
+create table if not exists public.student_incidents (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.students(id) on delete cascade,
+  incident_date date not null default current_date,
+  title text not null,
+  detail text,
+  severity int not null default 1 check (severity between 1 and 3),
+  created_by uuid default auth.uid(),
+  created_at timestamptz not null default now()
+);
+create index if not exists incidents_student_idx on public.student_incidents(student_id);
+
+create table if not exists public.readmissions (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.students(id) on delete cascade,
+  year text not null,
+  decision text not null check (decision in ('eligible','conditional','ineligible')),
+  note text,
+  decided_by uuid default auth.uid(),
+  updated_at timestamptz not null default now(),
+  unique (student_id, year)
+);
+
+do $$
+declare t text;
+begin
+  foreach t in array array['student_incidents','readmissions'] loop
+    execute format('alter table public.%I enable row level security', t);
+    execute format('drop policy if exists "%1$s_admin" on public.%1$I', t);
+    execute format('create policy "%1$s_admin" on public.%1$I for all using (public.has_area(''people'')) with check (public.has_area(''people''))', t);
+  end loop;
+end $$;
+
+-- ছাত্র-ভিত্তিক বকেয়া (প্রবেশপত্র ও পুনঃভর্তির যোগ্যতা যাচাইয়ে); যাদের ছাত্র-অনুমতি আছে তারা শুধু এই যোগফল দেখে, আর্থিক খাতা নয়
+create or replace function public.student_dues() returns table(student_id uuid, head_id uuid, due numeric)
+language sql security definer set search_path = public stable as $$
+  select i.student_id, i.head_id, sum(i.amount - i.paid)
+  from public.invoices i
+  where not i.cancelled and public.has_area('people')
+  group by i.student_id, i.head_id
+  having sum(i.amount - i.paid) > 0;
+$$;
+
+create or replace function public.student_attendance_stats(p_from date, p_to date)
+returns table(student_id uuid, present bigint, total bigint)
+language sql security definer set search_path = public stable as $$
+  select a.person_id, count(*) filter (where a.status in ('present','late')),
+         count(*) filter (where a.status <> 'leave')
+  from public.attendance a
+  where a.person_type = 'student' and a.date between p_from and p_to and public.has_area('people')
+  group by a.person_id;
+$$;
+grant execute on function public.student_dues() to authenticated;
+grant execute on function public.student_attendance_stats(date, date) to authenticated;
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('admit','people','পরীক্ষা ও হিফজ','প্রবেশপত্র','Admit cards',28),
+  ('readmit','people','পরীক্ষা ও হিফজ','পুনঃভর্তি ও ভর্তি ফরম','Re-admission & forms',29),
+  ('receipt_cfg','finance','ফি ও হিসাব','রসিদের লেখা ও ডিজাইন','Receipt design',39)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
 notify pgrst, 'reload schema';

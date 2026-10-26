@@ -114,14 +114,14 @@ function Subjects({ exams, classes }) {
   const [exam, setExam] = useState('')
   const [cls, setCls] = useState('')
   const [subs, reload] = useSubjects(exam, cls)
-  const [f, setF] = useState({ name_bn: '', full_marks: 100, pass_marks: 33 })
+  const [f, setF] = useState({ name_bn: '', full_marks: 100, pass_marks: 33, exam_date: '', exam_time: '' })
   const [err, setErr] = useState('')
   async function add(e) {
     e.preventDefault()
     setErr('')
-    const { error } = await supabase.from('exam_subjects').insert({ exam_id: exam, class_id: cls, name_bn: f.name_bn, full_marks: num(f.full_marks), pass_marks: num(f.pass_marks), sort: subs.length })
+    const { error } = await supabase.from('exam_subjects').insert({ exam_id: exam, class_id: cls, name_bn: f.name_bn, full_marks: num(f.full_marks), pass_marks: num(f.pass_marks), exam_date: f.exam_date || null, exam_time: f.exam_time || null, sort: subs.length })
     if (error) return setErr(error.message)
-    setF({ name_bn: '', full_marks: f.full_marks, pass_marks: f.pass_marks })
+    setF({ name_bn: '', full_marks: f.full_marks, pass_marks: f.pass_marks, exam_date: '', exam_time: '' })
     reload()
   }
   async function del(s) {
@@ -149,15 +149,17 @@ function Subjects({ exams, classes }) {
               <div className="field"><label>বিষয়ের নাম</label><input required value={f.name_bn} onChange={(e) => setF({ ...f, name_bn: e.target.value })} /></div>
               <div className="field"><label>পূর্ণমান</label><input type="number" min="1" step="any" value={f.full_marks} onChange={(e) => setF({ ...f, full_marks: e.target.value })} /></div>
               <div className="field"><label>পাশ নম্বর</label><input type="number" min="0" step="any" value={f.pass_marks} onChange={(e) => setF({ ...f, pass_marks: e.target.value })} /></div>
+              <div className="field"><label>পরীক্ষার তারিখ (প্রবেশপত্রের রুটিনে যাবে)</label><input type="date" value={f.exam_date} onChange={(e) => setF({ ...f, exam_date: e.target.value })} /></div>
+              <div className="field"><label>সময়</label><input value={f.exam_time} onChange={(e) => setF({ ...f, exam_time: e.target.value })} placeholder="সকাল ১০টা" /></div>
             </div>
             {err && <div className="alert err">{err}</div>}
             <div className="row-actions"><button className="btn">বিষয় যোগ</button><button type="button" className="btn outline" onClick={copyFrom}>অন্য শ্রেণি থেকে কপি</button></div>
           </form>
           <div className="table-wrap"><table>
-            <thead><tr><th>বিষয়</th><th>পূর্ণমান</th><th>পাশ নম্বর</th><th></th></tr></thead>
+            <thead><tr><th>বিষয়</th><th>পূর্ণমান</th><th>পাশ নম্বর</th><th>তারিখ ও সময়</th><th></th></tr></thead>
             <tbody>
-              {subs.map((s) => <tr key={s.id}><td>{nm(s)}</td><td>{bn(s.full_marks)}</td><td>{bn(s.pass_marks)}</td><td><button className="btn small danger" onClick={() => del(s)}>মুছুন</button></td></tr>)}
-              {!subs.length && <tr><td colSpan={4} className="muted">এই শ্রেণির জন্য এখনো বিষয় দেওয়া হয়নি</td></tr>}
+              {subs.map((s) => <tr key={s.id}><td>{nm(s)}</td><td>{bn(s.full_marks)}</td><td>{bn(s.pass_marks)}</td><td>{s.exam_date ? `${dateBn(s.exam_date)} ${s.exam_time || ''}` : '—'}</td><td><button className="btn small danger" onClick={() => del(s)}>মুছুন</button></td></tr>)}
+              {!subs.length && <tr><td colSpan={5} className="muted">এই শ্রেণির জন্য এখনো বিষয় দেওয়া হয়নি</td></tr>}
             </tbody>
           </table></div>
         </>

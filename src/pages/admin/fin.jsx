@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth, useSite } from '../../lib/store'
 import { Modal } from '../../components/Ui'
 import Icon from '../../components/Icon'
+import { useConfig, RECEIPT_DEFAULTS } from '../../lib/config'
 
 export const num = (n) => Number(n || 0)
 export const taka = (n) => `৳ ${Math.round(num(n)).toLocaleString('bn-BD')}`
@@ -31,14 +32,14 @@ export function useMethods() {
 }
 
 // একটি অংশ আলাদা করে ঠিক একটি পাতায় প্রিন্ট (A5 রসিদ / A4 রিপোর্ট)
-export function printNode(node, size = 'A5') {
+export function printNode(node, size = 'A5', margin = '8mm', orient = 'portrait') {
   if (!node) return
   let root = document.getElementById('print-root')
   if (!root) { root = document.createElement('div'); root.id = 'print-root'; document.body.appendChild(root) }
   root.innerHTML = node.outerHTML
   let st = document.getElementById('print-page')
   if (!st) { st = document.createElement('style'); st.id = 'print-page'; document.head.appendChild(st) }
-  st.textContent = `@page { size: ${size} portrait; margin: 8mm; }`
+  st.textContent = `@page { size: ${size} ${orient}; margin: ${margin}; }`
   document.body.classList.add('printing')
   const done = () => { document.body.classList.remove('printing'); root.innerHTML = ''; window.removeEventListener('afterprint', done) }
   window.addEventListener('afterprint', done)
@@ -47,38 +48,83 @@ export function printNode(node, size = 'A5') {
 
 export const printedAt = () => new Date().toLocaleString('bn-BD', { dateStyle: 'medium', timeStyle: 'short' })
 
-// প্রিন্টযোগ্য রসিদ / পে-স্লিপ (A5)
-export function PrintDoc({ title, no, date, rows, total, meta = [], footNote, onClose }) {
-  const { settings, t } = useSite()
+// প্রিন্টযোগ্য রসিদ / পে-স্লিপ (A5)। শিরোনাম রসিদের ধরন (kind) অনুযায়ী নিজে বসে; লেখা ও লে-আউট "রসিদের লেখা ও ডিজাইন" থেকে বদলানো যায়।
+// দুই মোড: online = ওয়েবসাইটের পূর্ণ ডিজাইন; pad = প্রেসের ছাপানো A5 প্যাডে শুধু তথ্য।
+export function ReceiptBody({ cfg, mode, kind = 'fee', titleSuffix, title, no, date, rows, total, meta = [], footNote, by, hdr }) {
+  const L = cfg.labels
+  const ttl = title || `${cfg.titles[kind] || cfg.titles.fee}${titleSuffix ? ` — ${titleSuffix}` : ''}`
+  if (mode === 'pad') {
+    const mm = Math.round(cfg.margin_in * 25.4 * 10) / 10
+    const B = cfg.pad.blocks
+    const pos = (k) => ({ position: 'absolute', left: `${B[k].x + cfg.pad.dx}mm`, top: `${B[k].y + cfg.pad.dy}mm`, width: `${B[k].w}mm` })
+    return (
+      <div className="receipt pad" style={{ position: 'relative', width: `${148 - 2 * mm}mm`, height: `${210 - 2 * mm - 1}mm`, fontSize: `${cfg.font_pt}pt`, overflow: 'hidden' }}>
+        {B.title.show && <div style={{ ...pos('title'), fontWeight: 700, fontSize: '1.15em' }}>{ttl}</div>}
+        {B.no.show && no && <div style={pos('no')}>{L.no}: <b>{no}</b></div>}
+        {B.date.show && <div style={pos('date')}>{L.date}: <b>{dateBn(date)}</b></div>}
+        {B.meta.show && meta.length > 0 && <div style={pos('meta')}>{meta.map(([k, v]) => (v ? <div key={k}>{k}: <b>{v}</b></div> : null))}</div>}
+        {B.items.show && (
+          <div style={pos('items')}>
+            {rows.map(([a, b], i) => <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}><span>{a}</span><span>{taka(b)}</span></div>)}
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontWeight: 700, marginTop: 4 }}><span>{L.total}</span><span>{taka(total)}</span></div>
+            {(footNote || cfg.note) && <div style={{ marginTop: 6, fontSize: '.85em' }}>{footNote || cfg.note}</div>}
+          </div>
+        )}
+        {B.by.show && cfg.show_printed_by && <div style={{ ...pos('by'), fontSize: '.8em' }}>{L.printed_by}: <b>{by}</b> · {printedAt()}</div>}
+      </div>
+    )
+  }
+  return (
+    <div className="receipt" style={{ fontSize: `${cfg.font_pt}pt` }}>
+      <div className="rc-head">
+        {hdr.logo && <img src={hdr.logo} alt="" />}
+        <div>
+          <h3>{hdr.name}</h3>
+          <div className="muted">{hdr.addr}</div>
+        </div>
+      </div>
+      <div className="rc-title"><b>{ttl}</b>{no && <span>{L.no}: {no}</span>}<span>{L.date}: {dateBn(date)}</span></div>
+      {meta.length > 0 && <div className="rc-meta">{meta.map(([k, v]) => v ? <div key={k}><span className="muted">{k}:</span> <b>{v}</b></div> : null)}</div>}
+      <table>
+        <thead><tr><th>{L.desc}</th><th style={{ textAlign: 'end' }}>{L.amount}</th></tr></thead>
+        <tbody>
+          {rows.map(([a, b], i) => <tr key={i}><td>{a}</td><td style={{ textAlign: 'end' }}>{taka(b)}</td></tr>)}
+          <tr className="rc-total"><td>{L.total}</td><td style={{ textAlign: 'end' }}>{taka(total)}</td></tr>
+        </tbody>
+      </table>
+      {(footNote || cfg.note) && <p className="muted" style={{ marginBottom: 0 }}>{footNote || cfg.note}</p>}
+      <div className="rc-sign"><span>{L.receiver}</span><span>{L.authority}</span></div>
+      {cfg.show_printed_by && <div className="rc-by">{L.printed_by}: <b>{by}</b> · {printedAt()}</div>}
+    </div>
+  )
+}
+
+export function PrintDoc({ kind = 'fee', title, titleSuffix, no, date, rows, total, meta = [], footNote, onClose }) {
+  const { settings, t, modules } = useSite()
   const { profile, session } = useAuth()
+  const { cfg } = useConfig('receipt', RECEIPT_DEFAULTS)
+  const onlineOn = modules.receipt_online !== false
+  const padOn = modules.receipt_pad !== false
+  const [mode, setMode] = useState(onlineOn ? 'online' : 'pad')
   const ref = useRef(null)
   const by = (profile && (profile.full_name || profile.email)) || session?.user?.email || ''
+  const hdr = { logo: settings.logo_url, name: t('site.name') || 'সাবিলুস সালাম মাদরাসা', addr: `${t('site.address')}${settings.phone ? ` · ${settings.phone}` : ''}` }
+  const shown = mode === 'pad' && padOn ? 'pad' : 'online'
   return (
     <Modal onClose={onClose} wide>
-      <div className="receipt" ref={ref}>
-        <div className="rc-head">
-          {settings.logo_url && <img src={settings.logo_url} alt="" />}
-          <div>
-            <h3>{t('site.name') || 'সাবিলুস সালাম মাদরাসা'}</h3>
-            <div className="muted">{t('site.address')}{settings.phone ? ` · ${settings.phone}` : ''}</div>
-          </div>
+      {onlineOn && padOn && (
+        <div className="tabs no-print">
+          <button className={shown === 'online' ? 'on' : ''} onClick={() => setMode('online')}>অনলাইন রসিদ (পূর্ণ ডিজাইন)</button>
+          <button className={shown === 'pad' ? 'on' : ''} onClick={() => setMode('pad')}>প্যাডে প্রিন্ট (শুধু তথ্য)</button>
         </div>
-        <div className="rc-title"><b>{title}</b>{no && <span>নং: {no}</span>}<span>তারিখ: {dateBn(date)}</span></div>
-        {meta.length > 0 && <div className="rc-meta">{meta.map(([k, v]) => v ? <div key={k}><span className="muted">{k}:</span> <b>{v}</b></div> : null)}</div>}
-        <table>
-          <thead><tr><th>বিবরণ</th><th style={{ textAlign: 'end' }}>টাকা</th></tr></thead>
-          <tbody>
-            {rows.map(([a, b], i) => <tr key={i}><td>{a}</td><td style={{ textAlign: 'end' }}>{taka(b)}</td></tr>)}
-            <tr className="rc-total"><td>মোট</td><td style={{ textAlign: 'end' }}>{taka(total)}</td></tr>
-          </tbody>
-        </table>
-        {footNote && <p className="muted" style={{ marginBottom: 0 }}>{footNote}</p>}
-        <div className="rc-sign"><span>গ্রহীতার স্বাক্ষর</span><span>কর্তৃপক্ষের স্বাক্ষর</span></div>
-        <div className="rc-by">Printed by: <b>{by}</b> · {printedAt()}</div>
+      )}
+      <div ref={ref} className={shown === 'pad' ? 'pad-wrap' : ''}>
+        <ReceiptBody cfg={cfg} mode={shown} kind={kind} title={title} titleSuffix={titleSuffix} no={no} date={date} rows={rows} total={total} meta={meta} footNote={footNote} by={by} hdr={hdr} />
       </div>
+      {shown === 'pad' && <p className="muted no-print" style={{ marginTop: 8 }}>প্রেসের ছাপানো A5 প্যাডের কাগজ প্রিন্টারে দিন। লেখা ঠিক জায়গায় না বসলে “রসিদের লেখা ও ডিজাইন” থেকে অবস্থান মিলিয়ে নিন।</p>}
       <div className="no-print" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 14 }}>
         <button className="btn outline" onClick={onClose}>বন্ধ করুন</button>
-        <button className="btn" onClick={() => printNode(ref.current, 'A5')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট / PDF (A5)</button>
+        <button className="btn" onClick={() => printNode(ref.current.firstElementChild, 'A5', `${cfg.margin_in}in`)}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট / PDF (A5)</button>
       </div>
     </Modal>
   )

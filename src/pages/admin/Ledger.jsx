@@ -45,7 +45,7 @@ export default function Ledger({ kind }) {
     if (income && data) showReceipt(data)
   }
 
-  const showReceipt = (r) => setDoc({ no: r.receipt_no, date: r.date, rows: [[`${r.category_name || 'আয়'}${r.note ? ` — ${r.note}` : ''}`, r.amount]], total: r.amount, meta: [['দাতা', r.party], ['ফোন', r.phone], ['মাধ্যম', methods.label(r.method)]], note: r.void ? `বাতিল: ${r.void_reason}` : 'আল্লাহ আপনার দান কবুল করুন।' })
+  const showReceipt = (r) => setDoc({ kind: /দান|donat/i.test(r.category_name || '') ? 'donation' : 'income', no: r.receipt_no, date: r.date, rows: [[`${r.category_name || 'আয়'}${r.note ? ` — ${r.note}` : ''}`, r.amount]], total: r.amount, meta: [['দাতা', r.party], ['ফোন', r.phone], ['মাধ্যম', methods.label(r.method)]], note: r.void ? `বাতিল: ${r.void_reason}` : 'আল্লাহ আপনার দান কবুল করুন।' })
 
   return (
     <>
@@ -103,7 +103,7 @@ export default function Ledger({ kind }) {
           </div>
         </Modal>
       )}
-      {doc && <PrintDoc title="দান / আয়ের রসিদ" no={doc.no} date={doc.date} rows={doc.rows} total={doc.total} meta={doc.meta} footNote={doc.note} onClose={() => setDoc(null)} />}
+      {doc && <PrintDoc kind={doc.kind} no={doc.no} date={doc.date} rows={doc.rows} total={doc.total} meta={doc.meta} footNote={doc.note} onClose={() => setDoc(null)} />}
       {vd && <VoidDialog name={`${vd.category_name} (${taka(vd.amount)})`} onClose={() => setVd(null)} onDone={async (why) => { const { error } = await supabase.from('ledger').update(voidPatch(why)).eq('id', vd.id); if (error) window.alert(error.message); setVd(null); load() }} />}
     </>
   )
