@@ -499,19 +499,24 @@ create table if not exists public.students (
 create index if not exists students_class_idx on public.students(class_id);
 create index if not exists students_dept_idx on public.students(department_id);
 
-create or replace function public.set_person_no() returns trigger language plpgsql as $$
+create or replace function public.set_student_no() returns trigger language plpgsql as $$
 begin
-  if tg_table_name = 'students' and coalesce(new.student_no, '') = '' then
+  if coalesce(new.student_no, '') = '' then
     new.student_no := to_char(coalesce(new.admission_date, current_date), 'YY') || lpad(nextval('public.student_seq')::text, 4, '0');
-  elsif tg_table_name = 'staff' and coalesce(new.staff_no, '') = '' then
+  end if;
+  return new;
+end $$;
+create or replace function public.set_staff_no() returns trigger language plpgsql as $$
+begin
+  if coalesce(new.staff_no, '') = '' then
     new.staff_no := 'T' || lpad(nextval('public.staff_seq')::text, 3, '0');
   end if;
   return new;
 end $$;
 drop trigger if exists students_no on public.students;
-create trigger students_no before insert on public.students for each row execute function public.set_person_no();
+create trigger students_no before insert on public.students for each row execute function public.set_student_no();
 drop trigger if exists staff_no on public.staff;
-create trigger staff_no before insert on public.staff for each row execute function public.set_person_no();
+create trigger staff_no before insert on public.staff for each row execute function public.set_staff_no();
 
 -- হাজিরা: একজন মানুষ, একদিন, একটি সময় = একটি সারি
 create table if not exists public.attendance (

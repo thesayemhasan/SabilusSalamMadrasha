@@ -728,7 +728,7 @@ html[lang='en'] .apply-title { font-size: 1rem; }
   body.printing > *:not(#print-root) { display: none !important; }
   body.printing #print-root { display: block !important; }
   html, body { background: #fff !important; height: auto !important; }
-  #print-root, #print-root * { color: #000 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; animation: none !important; }
+  #print-root, #print-root *:not(.ld-card):not(.ld-card *) { color: #000 !important; box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; animation: none !important; }
   #print-root { padding: 0; font-size: 12pt; line-height: 1.5; }
   #print-root .receipt { width: 100%; }
   #print-root .receipt .rc-head { border-bottom: 2px solid #000; }
@@ -878,3 +878,16 @@ html[lang='en'] .apply-title { font-size: 1rem; }
   #print-root .fm-page { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   #print-root .fm-v { border-bottom: .3mm dotted #000; }
 }
+
+/* লেআউট ইঞ্জিন (আইডি কার্ড, প্রবেশপত্র, ফরম) */
+.ld-doc { background: #fff; width: max-content; }
+.ld-sheet { break-after: page; page-break-after: always; overflow: hidden; }
+.ld-sheet:last-child { break-after: auto; page-break-after: auto; }
+.ld-card, .ld-card * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.ld-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.ld-inline { white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; font-size: .9rem; }
+.ld-canvas { overflow: auto; background: repeating-conic-gradient(#e5e7eb 0 25%, #f3f4f6 0 50%) 0 0 / 16px 16px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); min-height: 200px; }
+.ld-canvas .ld-card { box-shadow: 0 4px 18px rgba(0,0,0,.18); }
+.ld-insp { position: sticky; top: 76px; max-height: calc(100vh - 100px); overflow: auto; }
+@media (max-width: 900px) { .ld-insp { position: static; max-height: none; } .ld-canvas + .ld-insp, .adm-body .grid[style*='300px'] { grid-template-columns: 1fr !important; } }
+@media print { #print-root .ld-doc { width: auto; } }

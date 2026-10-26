@@ -3,7 +3,10 @@ import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
 import { useSite } from '../../lib/store'
 import { FORM_DEFAULTS, useConfig } from '../../lib/config'
-import { ImageUpload, Modal, Select, Switch, useConfirm } from '../../components/Ui'
+import LayoutDesigner, { useLayout } from '../../components/LayoutDesigner'
+import { PageSheets } from '../../lib/layout'
+import { instData, studentData } from './IdCards'
+import { Modal, Select, Switch, useConfirm } from '../../components/Ui'
 import { dateBn, nm, num, printNode, taka, todayStr } from './fin'
 import { useClassList } from './Exams'
 
@@ -59,67 +62,6 @@ function Incidents({ s, onClose, onChange }) {
   )
 }
 
-// একটি ফরম পাতা (A4)। s = ছাত্র (নতুন ফাঁকা ফরমে null)
-function FormPage({ s, cfg, info, hdr, page }) {
-  const F = cfg.fields
-  const mm = Math.round(cfg.margin_in * 25.4 * 10) / 10
-  const line = (label, val) => <div className="fm-row"><span className="fm-l">{label}</span><span className="fm-v">{val || ''}</span></div>
-  const style = { width: '210mm', height: '296.5mm', padding: `${mm}mm`, backgroundImage: cfg.bg_url ? `url(${cfg.bg_url})` : undefined }
-  if (page === 'policy') {
-    return (
-      <div className="fm-page" style={style}>
-        <div className="fm-body">
-          <h3 style={{ textAlign: 'center' }}>{cfg.policy_title}</h3>
-          <ol>{cfg.policy.split('\n').filter(Boolean).map((l, i) => <li key={i}>{l}</li>)}</ol>
-          <p>{cfg.declaration}</p>
-          <div className="fm-sign"><span>{cfg.sign_guardian}</span><span>{cfg.sign_authority}</span></div>
-        </div>
-      </div>
-    )
-  }
-  return (
-    <div className="fm-page" style={style}>
-      <div className="fm-body">
-        {cfg.show_header && (
-          <div className="fm-head">
-            {hdr.logo && <img src={hdr.logo} alt="" />}
-            <div><h2>{hdr.name}</h2><div>{hdr.addr}</div></div>
-          </div>
-        )}
-        <div className="fm-title"><b>{cfg.title}</b> — শিক্ষাবর্ষ {cfg.year}</div>
-        <div className="fm-top">
-          <div style={{ flex: 1 }}>
-            {F.name && line('নাম', s && nm(s))}
-            {F.father && line('পিতার নাম', s?.father_name)}
-            {F.mother && line('মাতার নাম', s?.mother_name)}
-            {F.dob && line('জন্ম তারিখ', s?.dob && dateBn(s.dob))}
-            {F.gender && line('লিঙ্গ', s && (s.gender === 'female' ? 'মেয়ে' : s.gender === 'male' ? 'ছেলে' : ''))}
-          </div>
-          {cfg.show_photo_box && <div className="fm-photo">ছবি</div>}
-        </div>
-        {F.address && line('ঠিকানা', s?.address)}
-        {F.phone && line('অভিভাবকের ফোন', s?.guardian_phone)}
-        {F.blood && line('রক্তের গ্রুপ', s?.blood_group)}
-        {F.residence && line('আবাসিক / অনাবাসিক', s?.residence)}
-        {F.prev_class && line('আগের শ্রেণি', info?.prevClass)}
-        {F.prev_result && line('আগের ফলাফল', info?.result)}
-        {F.admit_class && line('ভর্তির শ্রেণি', info?.nextClass)}
-        {info?.decision && (
-          <div className="fm-office">
-            <b>অফিস ব্যবহারের জন্য — পুনঃভর্তির যোগ্যতা: {DEC[info.decision]}</b>
-            {info.reasons?.length > 0 && <div>কারণ/শর্ত: {info.reasons.join('; ')}</div>}
-            {info.note && <div>মন্তব্য: {info.note}</div>}
-          </div>
-        )}
-        {cfg.show_policy && cfg.pages === 1 && (
-          <div className="fm-policy"><b>{cfg.policy_title}</b><ol>{cfg.policy.split('\n').filter(Boolean).map((l, i) => <li key={i}>{l}</li>)}</ol></div>
-        )}
-        {(cfg.pages === 1 || !cfg.show_policy) && <><p className="fm-decl">{cfg.declaration}</p><div className="fm-sign"><span>{cfg.sign_guardian}</span><span>{cfg.sign_authority}</span></div></>}
-      </div>
-    </div>
-  )
-}
-
 export default function Readmit() {
   const { settings, t } = useSite()
   const classes = useClassList()
@@ -142,6 +84,8 @@ export default function Readmit() {
   const [blank, setBlank] = useState(0)
   const [msg, setMsg] = useState('')
   const ref = useRef(null)
+  const lay = useLayout('form')
+  const [pmode, setPmode] = useState('')
   const year = cfg.year
 
   useEffect(() => { supabase.from('exams').select('*').order('created_at', { ascending: false }).then(({ data }) => { setExams(data || []); if (data?.[0]) setExam(data[0].id) }) }, [])
@@ -201,48 +145,32 @@ export default function Readmit() {
   const upF = (k, v) => setCfg((c) => ({ ...c, fields: { ...c.fields, [k]: v } }))
   const upR = (k, v) => setCfg((c) => ({ ...c, rules: { ...c.rules, [k]: v } }))
   async function doSave() { const e = await save(cfg); setMsg(e ? `ত্রুটি: ${e.message}` : 'সংরক্ষিত হয়েছে'); loadStatic() }
-  const hdr = { logo: settings.logo_url, name: t('site.name') || 'সাবিলুস সালাম মাদরাসা', addr: `${t('site.address')}${settings.phone ? ` · ${settings.phone}` : ''}` }
+  if (!ready) return <p>লোড হচ্ছে…</p>
+  const inst = instData(settings, t)
   const chosen = rows.filter((r) => pick[r.s.id])
   const RES = { pass: 'উত্তীর্ণ', fail: 'অকৃতকার্য', none: '' }
-  const infoOf = (r) => ({ prevClass: nm(clsById[r.s.class_id]), nextClass: nextClass(r.s.class_id), result: RES[r.result], decision: r.decision, reasons: r.reasons, note: r.override?.note })
-  const sheets = [...chosen.map((r) => ({ s: r.s, info: infoOf(r) })), ...Array.from({ length: blank }, () => ({ s: null, info: null }))]
-  if (!ready) return <p>লোড হচ্ছে…</p>
-  const doc = (
-    <div className="fm-doc" ref={ref}>
-      {sheets.map((x, i) => (
-        <div key={i} className="fm-sheet">
-          <FormPage s={x.s} cfg={cfg} info={x.info} hdr={hdr} />
-          {cfg.pages === 2 && cfg.show_policy && <FormPage s={x.s} cfg={cfg} info={x.info} hdr={hdr} page="policy" />}
-        </div>
-      ))}
-    </div>
-  )
-  const FL = [['name', 'নাম'], ['father', 'পিতার নাম'], ['mother', 'মাতার নাম'], ['dob', 'জন্ম তারিখ'], ['gender', 'লিঙ্গ'], ['address', 'ঠিকানা'], ['phone', 'অভিভাবকের ফোন'], ['blood', 'রক্তের গ্রুপ'], ['residence', 'আবাসিক/অনাবাসিক'], ['prev_class', 'আগের শ্রেণি'], ['prev_result', 'আগের ফলাফল'], ['admit_class', 'ভর্তির শ্রেণি']]
+  const policy = cfg.policy.split('\n').filter(Boolean).map((l, i) => `${(i + 1).toLocaleString('bn-BD')}. ${l}`).join('\n')
+  const common = { ...inst, form_heading: `${cfg.title} — শিক্ষাবর্ষ ${cfg.year}`, form_year: cfg.year, policy_title: cfg.policy_title, policy, declaration: cfg.declaration, sign_guardian: cfg.sign_guardian, sign_authority: cfg.sign_authority }
+  const dataOf = (r) => ({ ...common, ...studentData(r.s, nm(clsById[r.s.class_id])), prev_class: nm(clsById[r.s.class_id]), prev_result: RES[r.result], next_class: nextClass(r.s.class_id), decision: DEC[r.decision], reasons: [...r.reasons, r.override?.note].filter(Boolean).join('; ') })
+  const items = [...chosen.map(dataOf), ...Array.from({ length: blank }, () => ({ ...common }))]
+  const sample = { ...common, ...studentData({ name_bn: 'নমুনা ছাত্র', father_name: 'নমুনা পিতা', mother_name: 'নমুনা মাতা', guardian_phone: '01700000000', blood_group: 'A+', address: 'ঢাকা', gender: 'male', dob: '2015-01-01' }, 'নমুনা শ্রেণি'), prev_class: 'নমুনা শ্রেণি', prev_result: 'উত্তীর্ণ', next_class: 'পরবর্তী শ্রেণি', decision: 'উপযুক্ত', reasons: '' }
+  const pm = pmode || lay.cfg.print || 'both'
   return (
     <>
       <h2>পুনঃভর্তি ও ভর্তি ফরম</h2>
       <div className="tabs">
         <button className={tab === 'list' ? 'on' : ''} onClick={() => setTab('list')}>যোগ্যতা তালিকা ও ফরম প্রিন্ট</button>
-        <button className={tab === 'design' ? 'on' : ''} onClick={() => setTab('design')}>ফরমের ডিজাইন ও শর্ত</button>
+        <button className={tab === 'design' ? 'on' : ''} onClick={() => setTab('design')}>লেখা ও যোগ্যতার শর্ত</button>
+        <button className={tab === 'layout' ? 'on' : ''} onClick={() => setTab('layout')}>ফরমের ডিজাইন (নিজের নকশা বসান)</button>
       </div>
 
       {tab === 'design' && (
         <div className="card form">
-          <div className="grid g3">
+          <div className="grid g2">
             <div className="field"><label>ভর্তির শিক্ষাবর্ষ</label><input value={cfg.year} onChange={(e) => up('year', e.target.value)} /></div>
             <div className="field"><label>ফরমের শিরোনাম</label><input value={cfg.title} onChange={(e) => up('title', e.target.value)} /></div>
-            <div className="field"><label>মার্জিন (ইঞ্চি, চারদিকে)</label><input type="number" step="0.05" min="0" value={cfg.margin_in} onChange={(e) => up('margin_in', num(e.target.value))} /></div>
           </div>
-          <div className="grid g3">
-            <div className="field"><label>ফরম কত পৃষ্ঠার</label><Select value={cfg.pages} onChange={(v) => up('pages', Number(v))} options={[[1, '১ পৃষ্ঠা'], [2, '২ পৃষ্ঠা (২য় পৃষ্ঠায় নীতিমালা)']]} /></div>
-            <label className="toggle-row"><Switch checked={cfg.show_header} onChange={(v) => up('show_header', v)} /><span>উপরে প্রতিষ্ঠানের নাম ও লোগো</span></label>
-            <label className="toggle-row"><Switch checked={cfg.show_photo_box} onChange={(v) => up('show_photo_box', v)} /><span>ছবির ঘর</span></label>
-          </div>
-          <div className="field"><label>ব্যাকগ্রাউন্ড / ব্ল্যাংক ডিজাইন (সব ফরমে বসবে)</label><ImageUpload folder="admit" value={cfg.bg_url} onChange={(v) => up('bg_url', v || '')} /></div>
-          <h3>ফরমে কী কী থাকবে</h3>
-          <div className="grid g3">{FL.map(([k, l]) => <label key={k} className="toggle-row"><Switch checked={cfg.fields[k]} onChange={(v) => upF(k, v)} /><span>{l}</span></label>)}</div>
           <h3>নীতিমালা ও স্বাক্ষর</h3>
-          <label className="toggle-row"><Switch checked={cfg.show_policy} onChange={(v) => up('show_policy', v)} /><span>নীতিমালা থাকবে</span></label>
           <div className="field"><label>নীতিমালার শিরোনাম</label><input value={cfg.policy_title} onChange={(e) => up('policy_title', e.target.value)} /></div>
           <div className="field"><label>নীতিমালা (প্রতি লাইনে একটি)</label><textarea rows={5} value={cfg.policy} onChange={(e) => up('policy', e.target.value)} /></div>
           <div className="field"><label>অঙ্গীকার</label><textarea rows={2} value={cfg.declaration} onChange={(e) => up('declaration', e.target.value)} /></div>
@@ -259,10 +187,10 @@ export default function Readmit() {
           </div>
           <button className="btn" onClick={doSave}>সংরক্ষণ</button>
           {msg && <div className="alert info">{msg}</div>}
-          <h3>প্রিভিউ</h3>
-          <div className="adm-scroll"><div className="fm-doc"><FormPage s={{ name_bn: 'নমুনা ছাত্র', father_name: 'নমুনা পিতা', guardian_phone: '০১৭০০০০০০০০' }} cfg={cfg} info={{ prevClass: 'নমুনা শ্রেণি', nextClass: 'পরবর্তী শ্রেণি', result: 'উত্তীর্ণ', decision: 'eligible', reasons: [] }} hdr={hdr} />{cfg.pages === 2 && cfg.show_policy && <FormPage s={null} cfg={cfg} info={null} hdr={hdr} page="policy" />}</div></div>
         </div>
       )}
+
+      {tab === 'layout' && <LayoutDesigner type="form" sample={sample} layoutHook={lay} />}
 
       {tab === 'list' && (
         <>
@@ -273,10 +201,11 @@ export default function Readmit() {
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} title="উপস্থিতি গণনার শেষ" />
           </div>
           <div className="row-actions" style={{ marginBottom: 12 }}>
+            <div style={{ minWidth: 200 }}><Select value={pm} onChange={setPmode} options={[['front', 'শুধু সামনের পাশ'], ['back', 'শুধু পেছনের পাশ'], ['both', 'দুই পাশ (সামনে-পেছনে পরপর)']]} /></div>
             <button className="btn outline" onClick={() => setPick(Object.fromEntries(rows.filter((r) => r.decision !== 'ineligible').map((r) => [r.s.id, true])))}>যোগ্য/শর্তসাপেক্ষ সবাইকে বাছুন</button>
             <button className="btn outline" onClick={() => setPick({})}>বাছাই বাদ</button>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>ফাঁকা (নতুন) ফরম <input type="number" min="0" max="200" value={blank} onChange={(e) => setBlank(Number(e.target.value) || 0)} style={{ width: 80 }} /></label>
-            <button className="btn" disabled={!sheets.length} onClick={() => printNode(ref.current, 'A4', '0')}>ফরম প্রিন্ট ({bn(sheets.length)}টি, A4)</button>
+            <button className="btn" disabled={!items.length} onClick={() => printNode(ref.current, 'A4', '0')}>ফরম প্রিন্ট ({bn(items.length)}টি, A4)</button>
           </div>
           <div className="table-wrap"><table>
             <thead><tr><th></th><th>ছাত্র</th><th>ফল</th><th>উপস্থিতি</th><th>বকেয়া</th><th>ঘটনা</th><th>অবস্থা</th><th>সিদ্ধান্ত বদলান</th></tr></thead>
@@ -297,7 +226,7 @@ export default function Readmit() {
             </tbody>
           </table></div>
           <p className="muted">শর্ত বদলাতে “ফরমের ডিজাইন ও শর্ত” ট্যাবে যান। ফরমে ছাত্রের আগের তথ্য নিজে থেকে বসে এবং পরবর্তী শ্রেণি শ্রেণির ক্রম অনুযায়ী দেওয়া হয়।</p>
-          {sheets.length > 0 && <><h3>প্রিভিউ</h3><div className="adm-scroll">{doc}</div></>}
+          {items.length > 0 && <><h3>প্রিভিউ</h3><div className="adm-scroll" ref={ref}><PageSheets layout={lay.cfg} items={items} mode={pm} /></div></>}
         </>
       )}
       {incOf && <Incidents s={incOf} onClose={() => setIncOf(null)} onChange={loadStatic} />}
