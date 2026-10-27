@@ -163,8 +163,8 @@ export const HeroSlidesAdmin = () => (
   />
 )
 
-const PLACES = [['top', 'সবার উপরে (স্লাইডের আগে)'], ['after_slide', 'স্লাইড ও নোটিশ বোর্ডের পরে'], ['after_why', '"কেন সাবিলুস সালাম" এর পরে'], ['after_events', 'নোটিশ/ইভেন্টের পরে'], ['bottom', 'একদম নিচে']]
-const KINDS = [['announce', 'ঘোষণা বার (বোতামসহ)'], ['text', 'লেখা'], ['cards', 'কার্ড সারি (নতুন শাখা/বৈশিষ্ট্য)'], ['image_text', 'ছবি + লেখা']]
+const PLACES = [['top', 'সবার উপরে (স্লাইডের আগে)'], ['after_slide', 'স্লাইড ও নোটিশ বোর্ডের পরে'], ['after_stats', 'প্রতিষ্ঠার সাল/বিভাগ/শিক্ষক সংখ্যার রো-এর পরে'], ['after_why', '"কেন সাবিলুস সালাম" এর পরে'], ['after_events', 'নোটিশ/ইভেন্টের পরে'], ['bottom', 'একদম নিচে']]
+const KINDS = [['announce', 'ঘোষণা বার (বোতামসহ)'], ['text', 'লেখা'], ['cards', 'কার্ড সারি (নতুন শাখা/বৈশিষ্ট্য)'], ['image_text', 'ছবি + লেখা'], ['stats', 'পরিসংখ্যান রো (সংখ্যা + নাম, যেমন মোট শিক্ষার্থী)']]
 export const HomeBlocksAdmin = () => (
   <Crud
     table="home_blocks"
@@ -179,10 +179,11 @@ export const HomeBlocksAdmin = () => (
       { name: 'place', label: 'কোথায় দেখাবে', type: 'select', options: PLACES },
       { name: 'title', label: 'শিরোনাম', i18n: true },
       { name: 'body', label: 'লেখা', type: 'textarea', i18n: true },
+      { name: 'items', label: 'পরিসংখ্যান (সংখ্যা ও নাম) — যত খুশি যোগ/মুছা/পরিবর্তন করুন', type: 'items', showIf: (v) => v.kind === 'stats', itemFields: [{ name: 'value', label: 'সংখ্যা/মান (যেমন ৯২%, ১২০০+) — মোট শিক্ষার্থী নিজে থেকে গুনতে লিখুন {students}, শিক্ষক সংখ্যা হলে {teachers}' }, { name: 'label', label: 'নাম (যেমন মোট শিক্ষার্থী, পাশের হার)', i18n: true }] },
       { name: 'items', label: 'কার্ডসমূহ', type: 'items', showIf: (v) => v.kind === 'cards', itemFields: [{ name: 'icon', label: 'আইকন', type: 'icon' }, { name: 'title', label: 'কার্ডের শিরোনাম', i18n: true }, { name: 'text', label: 'কার্ডের লেখা', i18n: true, type: 'textarea' }] },
       { name: 'image_url', label: 'ছবি', type: 'image', showIf: (v) => v.kind === 'image_text' },
-      { name: 'btn', label: 'বোতামের লেখা (ঐচ্ছিক)', i18n: true, showIf: (v) => v.kind !== 'cards' },
-      { name: 'link', label: 'বোতামের লিংক', placeholder: '/admission অথবা https://…', showIf: (v) => v.kind !== 'cards' },
+      { name: 'btn', label: 'বোতামের লেখা (ঐচ্ছিক)', i18n: true, showIf: (v) => v.kind !== 'cards' && v.kind !== 'stats' },
+      { name: 'link', label: 'বোতামের লিংক', placeholder: '/admission অথবা https://…', showIf: (v) => v.kind !== 'cards' && v.kind !== 'stats' },
       { name: 'sort', label: 'ক্রম (ছোট সংখ্যা আগে)', type: 'number' },
       { name: 'published', label: 'প্রকাশিত', type: 'bool' },
     ]}
