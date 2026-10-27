@@ -269,7 +269,7 @@ const DATASETS = [
       r.need('name_bn')
       const deptId = refDept(r, 'dept', c)
       const sort = r.num('sort', { int: true, def: st.i })
-      st.i += 1
+      if (blank(r.raw('sort'))) st.i += 1
       const key = `${nk(r.text('name_bn'))}|${deptId || ''}`
       if (r.text('name_bn')) {
         const inDb = (c.classByName[nk(r.text('name_bn'))] || []).some((x) => (x.department_id || '') === (deptId || ''))
@@ -278,7 +278,7 @@ const DATASETS = [
       }
       return [{ name_bn: r.text('name_bn'), name_en: r.text('name_en') || null, department_id: deptId, sort: sort ?? 0, published: true }]
     },
-    newState: () => ({ seen: new Set(), i: 1 }),
+    newState: (c) => ({ seen: new Set(), i: c.classes.reduce((m, k) => Math.max(m, Number(k.sort) || 0), 0) + 1 }),
   },
   {
     id: 'exams', title: 'পরীক্ষা', table: 'exams', file: 'পরীক্ষা',
@@ -496,7 +496,7 @@ function analyze(ds, sheets, ctx) {
   if (ds.dynamic) dyn = hm.extra.map((d) => ({ k: `dyn${d.ci}`, l: d.l, ci: d.ci }))
   else if (hm.extra.length) head.push({ n: hm.at + 1, col: hm.extra.map((e) => e.l).join(', '), level: 'warn', msg: 'চেনা যায়নি এমন কলাম — এগুলো বাদ দেওয়া হয়েছে' })
   const cols = [...ds.cols, ...dyn]
-  const st = ds.newState()
+  const st = ds.newState(ctx)
   const out = []
   for (let i = hm.at + 1; i < sheet.rows.length; i++) {
     const cells = sheet.rows[i] || []
