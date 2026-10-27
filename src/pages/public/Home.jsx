@@ -31,8 +31,10 @@ function StatsBlock({ b }) {
     return { v, label: pick(it, 'label', lang) }
   }).filter((x) => x.v && x.label)
   if (!shown.length) return null
+  // আগের পরিসংখ্যান রো-এর ঠিক নিচে বসলে মাঝের ফাঁক কমিয়ে কাছাকাছি আনা হয়
+  const snug = b.place === 'after_stats' && !title
   return (
-    <section className="section">
+    <section className="section" style={snug ? { paddingTop: 0, marginTop: -28 } : undefined}>
       <div className="container">
         {title && <SecTitle>{title}</SecTitle>}
         <div className="stats">
