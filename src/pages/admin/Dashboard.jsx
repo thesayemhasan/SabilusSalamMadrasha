@@ -98,7 +98,14 @@ function FinanceCharts({ onTiles }) {
     const catIn = {}
     d.led.filter((l) => !l.void && l.kind === 'income' && String(l.date).slice(0, 7) === mNow).forEach((l) => { catIn[l.category_name || 'আয়'] = (catIn[l.category_name || 'আয়'] || 0) + num(l.amount) })
     if (monthFee) catIn['ছাত্র ফি'] = monthFee
-    return { months, inc, exp, dueBy: Object.entries(dueBy).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 8), dueTotal, todayIn, monthFee, catIn: Object.entries(catIn).map(([label, value]) => ({ label, value })), balance: months.reduce((a, m) => a + inc[m] - exp[m], 0) }
+    // এই মাসের ব্যয়ের খাত: খরচের খাতসমূহ + শিক্ষক-কর্মচারীর বেতন + অগ্রিম
+    const catEx = {}
+    d.led.filter((l) => !l.void && l.kind === 'expense' && String(l.date).slice(0, 7) === mNow).forEach((l) => { catEx[l.category_name || 'ব্যয়'] = (catEx[l.category_name || 'ব্যয়'] || 0) + num(l.amount) })
+    const salNow = d.sal.filter((x) => !x.void && String(x.paid_at).slice(0, 7) === mNow).reduce((a, x) => a + num(x.net), 0)
+    const advNow = d.adv.filter((x) => !x.void && String(x.date).slice(0, 7) === mNow).reduce((a, x) => a + num(x.amount), 0)
+    if (salNow) catEx['শিক্ষক-কর্মচারীর বেতন'] = (catEx['শিক্ষক-কর্মচারীর বেতন'] || 0) + salNow
+    if (advNow) catEx['অগ্রিম'] = (catEx['অগ্রিম'] || 0) + advNow
+    return { months, inc, exp, dueBy: Object.entries(dueBy).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 8), dueTotal, todayIn, monthFee, catIn: Object.entries(catIn).map(([label, value]) => ({ label, value })), catEx: Object.entries(catEx).map(([label, value]) => ({ label, value })), balance: months.reduce((a, m) => a + inc[m] - exp[m], 0) }
   }, [d])
   useEffect(() => { if (model) onTiles({ todayIn: model.todayIn, monthFee: model.monthFee, dueTotal: model.dueTotal }) }, [model]) // eslint-disable-line
   if (!model) return null
@@ -112,6 +119,7 @@ function FinanceCharts({ onTiles }) {
         </ChartCard>
         <ChartCard title="শ্রেণি অনুযায়ী বকেয়া" sub={`মোট বকেয়া ${fm(model.dueTotal)}`} table={model.dueBy.map((x) => [x.label, fm(x.value)])}><HBars data={model.dueBy} fmt={fm} empty="কোনো বকেয়া নেই" /></ChartCard>
         <ChartCard title="এই মাসের আয়ের উৎস" table={model.catIn.map((x) => [x.label, fm(x.value)])}><Donut data={model.catIn} /></ChartCard>
+        <ChartCard title="এই মাসের ব্যয়ের খাত" table={model.catEx.map((x) => [x.label, fm(x.value)])}><Donut data={model.catEx} /></ChartCard>
       </div>
     </>
   )
