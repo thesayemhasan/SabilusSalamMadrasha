@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useRows, useSite, useDepartments, pick } from '../../lib/store'
+import { supabase } from '../../lib/supabase'
 import { dig, fmtDate } from '../../lib/util'
 import Icon from '../../components/Icon'
 import SmartLink from '../../components/SmartLink'
@@ -11,11 +12,43 @@ export const eventEnd = (e) => e.end_at || e.start_at || `${e.event_date}T23:59:
 export const isUpcoming = (e) => new Date(eventEnd(e)).getTime() >= Date.now()
 
 /* ---------- অ্যাডমিনের যোগ করা অতিরিক্ত রো ---------- */
+// পরিসংখ্যান রো: অ্যাডমিনের দেওয়া সংখ্যা ও নাম; {students} / {teachers} লিখলে নিজে থেকে গুনে বসে
+function StatsBlock({ b }) {
+  const { lang } = useSite()
+  const [c, setC] = useState({})
+  const items = Array.isArray(b.items) ? b.items : []
+  const needs = items.some((it) => /\{(students|teachers)\}/.test(String(it.value || '')))
+  useEffect(() => {
+    if (!needs) return
+    let live = true
+    Promise.resolve(supabase.rpc('public_counts')).then(({ data }) => { if (live && data) setC(data) }).catch(() => {})
+    return () => { live = false }
+  }, [needs])
+  const title = pick(b, 'title', lang)
+  const shown = items.map((it) => {
+    let v = String(it.value ?? '').trim()
+    v = v.replace(/\{students\}/g, c.students ? String(c.students) : '').replace(/\{teachers\}/g, c.teachers ? String(c.teachers) : '').trim()
+    return { v, label: pick(it, 'label', lang) }
+  }).filter((x) => x.v && x.label)
+  if (!shown.length) return null
+  return (
+    <section className="section">
+      <div className="container">
+        {title && <SecTitle>{title}</SecTitle>}
+        <div className="stats">
+          {shown.map((x, i) => <div className="stat-item" key={i}><b className="count">{dig(x.v, lang)}</b><span>{x.label}</span></div>)}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export function Block({ b }) {
   const { lang } = useSite()
   const title = pick(b, 'title', lang)
   const body = pick(b, 'body', lang)
   const btn = pick(b, 'btn', lang)
+  if (b.kind === 'stats') return <StatsBlock b={b} />
   if (b.kind === 'announce') {
     return (
       <section className="container block-wrap">
@@ -250,6 +283,8 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      {at('after_stats')}
 
       <section className="section">
         <div className="container">
