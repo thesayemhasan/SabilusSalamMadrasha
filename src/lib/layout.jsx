@@ -2,6 +2,8 @@
 // একটি নকশা = { size:{w,h}, print:'front|back|both', mirror:'none|cols|rows', sides:{ front:{bg_url, els:[]}, back:{...} } }
 // উপাদান (el) = { id, kind:'field|text|image|box', key, text, src, x,y,w,h, size(pt), bold, align, color, prefix, underline, border, fill, multi }
 
+import { RECEIPT_DEFAULTS } from './config'
+
 export const PT = 0.3528 // ১ pt = ০.৩৫২৮ মিমি
 
 const INST = [['inst_name', 'প্রতিষ্ঠানের নাম'], ['inst_addr', 'প্রতিষ্ঠানের ঠিকানা'], ['inst_phone', 'প্রতিষ্ঠানের ফোন'], ['logo', 'লোগো', 'image']]
@@ -10,13 +12,16 @@ const STAFF = [['name_bn', 'নাম (বাংলা)'], ['name_en', 'না�
 const ADMIT = [['doc_title', 'কার্ডের শিরোনাম'], ['exam_name', 'পরীক্ষার নাম'], ['year', 'সাল'], ['routine', 'পরীক্ষার রুটিন', 'multi'], ['instructions', 'নির্দেশনা', 'multi'], ['sign_left', 'বাঁ স্বাক্ষরের লেখা'], ['sign_right', 'ডান স্বাক্ষরের লেখা']]
 const FORM = [['form_heading', 'ফরমের শিরোনাম (সালসহ)'], ['form_year', 'ভর্তির শিক্ষাবর্ষ'], ['prev_class', 'আগের শ্রেণি'], ['prev_result', 'আগের ফলাফল'], ['next_class', 'ভর্তির শ্রেণি (পরবর্তী)'], ['decision', 'পুনঃভর্তির যোগ্যতা'], ['reasons', 'যোগ্যতার কারণ/শর্ত'], ['policy_title', 'নীতিমালার শিরোনাম'], ['policy', 'নীতিমালা', 'multi'], ['declaration', 'অঙ্গীকার', 'multi'], ['sign_guardian', 'অভিভাবকের স্বাক্ষরের লেখা'], ['sign_authority', 'কর্তৃপক্ষের স্বাক্ষরের লেখা']]
 
+// রসিদ-প্যাড: প্রেসের ছাপানো A5 কাগজে শুধু তথ্য ছাপার নকশা
+const RPAD = [['title', 'রসিদের শিরোনাম'], ['no', 'রসিদ নং'], ['date', 'তারিখ'], ['meta', 'নাম/মাধ্যম ইত্যাদি (সব লাইন একসাথে)', 'multi'], ['meta_ছাত্র', 'ছাত্র (নাম ও আইডি)'], ['meta_নাম', 'নাম (শিক্ষক-কর্মচারী)'], ['meta_দাতা', 'দাতা'], ['meta_প্রদানকারী', 'প্রদানকারী'], ['meta_পদবি', 'পদবি'], ['meta_আইডি', 'আইডি'], ['meta_ফোন', 'ফোন'], ['meta_মাধ্যম', 'পেমেন্টের মাধ্যম'], ['meta_রেফারেন্স', 'রেফারেন্স / ট্রান্স. নং'], ['items_desc', 'বিবরণ (প্রতি লাইনে একটি)', 'multi'], ['items_amt', 'টাকার অঙ্ক (প্রতি লাইনে একটি)', 'multi'], ['total', 'মোট টাকা'], ['note', 'নিচের লেখা/নোট', 'multi'], ['printed_by', 'Printed by (কে ছাপাল)']]
 export const FIELD_SETS = {
+  receipt_pad: RPAD,
   idcard_student: [...STU, ...INST],
   idcard_staff: [...STAFF, ...INST],
   admit: [...STU, ...ADMIT, ...INST],
   form: [...STU, ...FORM, ...INST],
 }
-export const TYPE_TITLE = { idcard_student: 'ছাত্র আইডি কার্ড', idcard_staff: 'শিক্ষক-কর্মচারী আইডি কার্ড', admit: 'প্রবেশপত্র', form: 'ভর্তি ফরম' }
+export const TYPE_TITLE = { receipt_pad: 'রসিদ প্যাড', idcard_student: 'ছাত্র আইডি কার্ড', idcard_staff: 'শিক্ষক-কর্মচারী আইডি কার্ড', admit: 'প্রবেশপত্র', form: 'ভর্তি ফরম' }
 export const fieldLabel = (type, key) => (FIELD_SETS[type].find((f) => f[0] === key) || [key, key])[1]
 export const fieldKind = (type, key) => (FIELD_SETS[type].find((f) => f[0] === key) || [])[2] || 'text'
 
@@ -53,7 +58,30 @@ function idcard(staff) {
   }
 }
 
+// পুরোনো মিমি-অবস্থান থেকে প্যাডের ডিফল্ট নকশা (পাতার কোণ থেকে মাপা)
+export function receiptPadDefault(cfg = RECEIPT_DEFAULTS) {
+  const m = Math.round(cfg.margin_in * 25.4 * 10) / 10
+  const B = cfg.pad.blocks
+  const ox = m + (cfg.pad.dx || 0)
+  const oy = m + (cfg.pad.dy || 0)
+  const sz = cfg.font_pt || 11
+  const els = []
+  const add = (blk, e) => { if (B[blk].show) els.push(e) }
+  add('title', F('title', ox + B.title.x, oy + B.title.y, B.title.w, 7, { size: Math.round(sz * 1.15 * 2) / 2, bold: true }))
+  add('no', F('no', ox + B.no.x, oy + B.no.y, B.no.w, 6, { size: sz, prefix: 'নং: ' }))
+  add('date', F('date', ox + B.date.x, oy + B.date.y, B.date.w, 6, { size: sz, prefix: 'তারিখ: ' }))
+  add('meta', F('meta', ox + B.meta.x, oy + B.meta.y, B.meta.w, 20, { size: sz, multi: true }))
+  const w = B.items.w
+  add('items', F('items_desc', ox + B.items.x, oy + B.items.y, Math.round(w * 0.74 * 2) / 2, 64, { size: sz, multi: true }))
+  add('items', F('items_amt', ox + B.items.x + Math.round(w * 0.74 * 2) / 2, oy + B.items.y, w - Math.round(w * 0.74 * 2) / 2, 64, { size: sz, multi: true, align: 'right' }))
+  add('items', F('total', ox + B.items.x, oy + B.items.y + 66, w, 7, { size: sz, bold: true, align: 'right', prefix: 'মোট: ৳ ' }))
+  add('items', F('note', ox + B.items.x, oy + B.items.y + 75, w, 12, { size: Math.round(sz * 0.85 * 2) / 2, multi: true }))
+  if (cfg.show_printed_by) add('by', F('printed_by', ox + B.by.x, oy + B.by.y, B.by.w, 5, { size: Math.round(sz * 0.8 * 2) / 2 }))
+  return { size: { w: 148, h: 210 }, print: 'front', mirror: 'none', bg_noprint: true, sides: { front: { bg_url: '', els }, back: { bg_url: '', els: [] } } }
+}
+
 export function defaultLayout(type) {
+  if (type === 'receipt_pad') return receiptPadDefault(RECEIPT_DEFAULTS)
   if (type === 'idcard_student') return idcard(false)
   if (type === 'idcard_staff') return idcard(true)
   if (type === 'admit') {
@@ -102,14 +130,16 @@ export function defaultLayout(type) {
 }
 
 // ডিজাইন দেখানো। px = প্রতি মিমিতে পিক্সেল (এডিটরে); না দিলে মিমি ইউনিটে (প্রিন্টে)।
-export function Design({ layout, side = 'front', data = {}, px, select, onElDown }) {
+export function Design({ layout, side = 'front', data = {}, px, select, onElDown, shift }) {
+  const sx = (shift && shift.dx) || 0
+  const sy = (shift && shift.dy) || 0
   const S = layout.sides[side] || { els: [] }
   const L = (v) => (px ? v * px : `${v}mm`)
   const fs = (pt) => (px ? pt * PT * px : `${pt}pt`)
   return (
-    <div className="ld-card" style={{ position: 'relative', width: L(layout.size.w), height: L(layout.size.h), overflow: 'hidden', background: '#fff', backgroundImage: S.bg_url ? `url(${S.bg_url})` : undefined, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#000' }}>
+    <div className="ld-card" style={{ position: 'relative', width: L(layout.size.w), height: L(layout.size.h), overflow: 'hidden', background: '#fff', backgroundImage: S.bg_url && (px || !layout.bg_noprint) ? `url(${S.bg_url})` : undefined, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: '#000' }}>
       {(S.els || []).map((el) => {
-        const base = { position: 'absolute', left: L(el.x), top: L(el.y), width: L(el.w), height: L(el.h), boxSizing: 'border-box' }
+        const base = { position: 'absolute', left: L(el.x + sx), top: L(el.y + sy), width: L(el.w), height: L(el.h), boxSizing: 'border-box' }
         const sel = select === el.id
         const wrap = (child, extra = {}) => (
           <div key={el.id} data-el={el.id} onPointerDown={onElDown ? (e) => onElDown(e, el, 'move') : undefined} style={{ ...base, ...extra, outline: sel ? '1.5px solid #2563eb' : onElDown ? '1px dashed rgba(37,99,235,.35)' : undefined, cursor: onElDown ? 'move' : undefined, touchAction: onElDown ? 'none' : undefined }}>
@@ -125,7 +155,7 @@ export function Design({ layout, side = 'front', data = {}, px, select, onElDown
         const val = el.kind === 'text' ? el.text : data[el.key]
         const has = el.kind === 'text' || (val !== undefined && val !== null && String(val) !== '')
         const text = el.kind === 'text' ? el.text : `${has ? el.prefix || '' : el.underline ? el.prefix || '' : ''}${has ? val : ''}`
-        return wrap(<span style={{ display: 'block', width: '100%', height: '100%', fontSize: fs(el.size || 9), fontWeight: el.bold ? 700 : 400, textAlign: el.align || 'left', color: el.color || '#000', lineHeight: 1.3, whiteSpace: el.multi || el.kind === 'text' ? 'pre-wrap' : 'nowrap', overflow: 'hidden', textOverflow: 'clip', borderBottom: el.underline ? `${L(0.25)} dotted #000` : undefined }}>{text}</span>)
+        return wrap(<span style={{ display: 'block', width: '100%', height: '100%', fontSize: fs(el.size || 9), fontWeight: el.bold ? 700 : 400, textAlign: el.align || 'left', color: el.color || '#000', lineHeight: el.lh ? (px ? `${el.lh * px}px` : `${el.lh}mm`) : 1.3, whiteSpace: el.multi || el.kind === 'text' ? 'pre-wrap' : 'nowrap', overflow: 'hidden', textOverflow: 'clip', borderBottom: el.underline ? `${L(0.25)} dotted #000` : undefined }}>{text}</span>)
       })}
     </div>
   )

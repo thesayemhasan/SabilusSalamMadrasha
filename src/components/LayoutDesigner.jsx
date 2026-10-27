@@ -83,12 +83,14 @@ export default function LayoutDesigner({ type, sample, layoutHook }) {
   return (
     <div>
       <div className="alert info" style={{ marginBottom: 12 }}>
-        আপনার নিজের ব্ল্যাংক ডিজাইন ছবি আপলোড করুন, তারপর তথ্যের বাক্সগুলো মাউস/আঙুল দিয়ে টেনে ঠিক জায়গায় বসান। বাক্সের নিচের ডান কোণ টেনে মাপ বদলান। সামনে ও পেছন আলাদা সাজানো যায়। ছবির মাপ নকশার মাপের সাথে মিল রাখলে (যেমন {layout.size.w}×{layout.size.h} মিমি অনুপাত) সবচেয়ে ভালো আসে।
+        {type === 'receipt_pad'
+          ? 'প্রেসের ছাপানো রসিদ-প্যাডের একটি পাতার স্ক্যান বা ফটো (A5) নিচের ব্যাকগ্রাউন্ডে দিন — এটি শুধু মেলানোর জন্য, প্রিন্টে আসবে না। তারপর নাম, তারিখ, টাকা ইত্যাদির বাক্স টেনে প্যাডের ঘরের ঠিক ওপরে বসান। যা ছাপতে চান না তা মুছে দিন, যা চান তা “তথ্য যোগ করুন” থেকে যোগ করুন। এখানে শুধু একটি (সামনের) পাশ।'
+          : <>আপনার নিজের ব্ল্যাংক ডিজাইন ছবি আপলোড করুন, তারপর তথ্যের বাক্সগুলো মাউস/আঙুল দিয়ে টেনে ঠিক জায়গায় বসান। বাক্সের নিচের ডান কোণ টেনে মাপ বদলান। সামনে ও পেছন আলাদা সাজানো যায়। ছবির মাপ নকশার মাপের সাথে মিল রাখলে (যেমন {layout.size.w}×{layout.size.h} মিমি অনুপাত) সবচেয়ে ভালো আসে।</>}
       </div>
       <div className="ld-bar">
         <div className="tabs" style={{ marginBottom: 0 }}>
           <button className={side === 'front' ? 'on' : ''} onClick={() => setSide('front')}>সামনের পাশ</button>
-          <button className={side === 'back' ? 'on' : ''} onClick={() => setSide('back')}>পেছনের পাশ</button>
+          {type !== 'receipt_pad' && <button className={side === 'back' ? 'on' : ''} onClick={() => setSide('back')}>পেছনের পাশ</button>}
         </div>
         <label className="ld-inline">মাপ (মিমি) প্রস্থ <input type="number" step="0.1" value={layout.size.w} onChange={(e) => setLayout({ ...layout, size: { ...layout.size, w: num(e.target.value) } })} style={{ width: 80 }} /> উচ্চতা <input type="number" step="0.1" value={layout.size.h} onChange={(e) => setLayout({ ...layout, size: { ...layout.size, h: num(e.target.value) } })} style={{ width: 80 }} /></label>
         <label className="ld-inline">জুম <input type="range" min="2" max="10" step="0.5" value={px} onChange={(e) => setPx(Number(e.target.value))} /></label>
@@ -104,9 +106,10 @@ export default function LayoutDesigner({ type, sample, layoutHook }) {
           <Design layout={layout} side={side} data={sample} px={px} select={sel} onElDown={onElDown} />
         </div>
         <div className="card form ld-insp">
-          <div className="field"><label>{side === 'front' ? 'সামনের' : 'পেছনের'} ব্যাকগ্রাউন্ড (আপনার ব্ল্যাংক ডিজাইন)</label>
+          <div className="field"><label>{type === 'receipt_pad' ? 'প্যাডের স্ক্যান/ছবি (মেলানোর জন্য)' : `${side === 'front' ? 'সামনের' : 'পেছনের'} ব্যাকগ্রাউন্ড (আপনার ব্ল্যাংক ডিজাইন)`}</label>
             <ImageUpload folder="designs" value={S.bg_url} onChange={(v) => patchSide((s) => { s.bg_url = v || '' })} />
           </div>
+          {type === 'receipt_pad' && <label className="toggle-row"><Switch checked={layout.bg_noprint !== false} onChange={(v) => setLayout({ ...layout, bg_noprint: v })} /><span>প্রিন্টে ব্যাকগ্রাউন্ড ছাপবে না (প্যাডে আগে থেকেই ছাপা আছে)</span></label>}
           {!el && <p className="muted" style={{ margin: 0 }}>কোনো বাক্সে চাপুন ও টানুন। এখানে তার সেটিং আসবে।</p>}
           {el && (
             <>
@@ -126,6 +129,7 @@ export default function LayoutDesigner({ type, sample, layoutHook }) {
                   <div className="field"><label>সাজানো</label><Select value={el.align || 'left'} onChange={(v) => patchEl(el.id, { align: v })} options={[['left', 'বামে'], ['center', 'মাঝে'], ['right', 'ডানে']]} /></div>
                   <label className="toggle-row"><Switch checked={!!el.bold} onChange={(v) => patchEl(el.id, { bold: v })} /><span>বোল্ড</span></label>
                   {el.kind === 'field' && <label className="toggle-row"><Switch checked={!!el.underline} onChange={(v) => patchEl(el.id, { underline: v })} /><span>নিচে ডটেড লাইন (হাতে লেখার ফাঁকা ঘর)</span></label>}
+                  {el.multi && <div className="field"><label>লাইনের ফাঁক (মিমি) — প্যাডের ঘরের মাপ অনুযায়ী</label><input type="number" step="0.1" min="0" value={el.lh || ''} placeholder="অটো" onChange={(e) => patchEl(el.id, { lh: num(e.target.value) || undefined })} /></div>}
                   {el.kind === 'field' && <label className="toggle-row"><Switch checked={!!el.multi} onChange={(v) => patchEl(el.id, { multi: v })} /><span>একাধিক লাইন</span></label>}
                 </>
               )}
@@ -154,7 +158,7 @@ export default function LayoutDesigner({ type, sample, layoutHook }) {
         <button className="btn outline" onClick={reset}>ডিফল্টে ফিরুন</button>
       </div>
       {msg && <div className="alert info" style={{ marginTop: 10 }}>{msg}</div>}
-      <p className="muted">প্রিন্টের পাশ (সামনে/পেছনে/দুই পাশ) প্রিন্টের ট্যাবে বেছে নেওয়া যায়।</p>
+      {type !== 'receipt_pad' && <p className="muted">প্রিন্টের পাশ (সামনে/পেছনে/দুই পাশ) প্রিন্টের ট্যাবে বেছে নেওয়া যায়।</p>}
     </div>
   )
 }
