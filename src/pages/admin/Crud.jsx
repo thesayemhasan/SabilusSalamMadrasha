@@ -99,7 +99,7 @@ export default function Crud({ table, title, hint, fields, order = 'created_at',
         <h2 style={{ margin: 0, flex: '1 1 auto' }}>{title}</h2>
         {extra && extra({ reload: load })}
         {csv && <button className="btn outline" onClick={() => downloadCsv(csv.file, csv.cols.map((c) => c[0]), shown.map((r) => csv.cols.map((c) => c[1](r, maps))))}><Icon name="upload" size={18} cls="cur" /> Excel এক্সপোর্ট</button>}
-        <button className="btn" onClick={() => setEdit({ ...blank })}><Icon name="plus" size={18} cls="cur" /> {addLabel}</button>
+        <button className="btn" onClick={() => { const nx = fields.some((f) => f.name === 'sort') && !blank.sort ? rows.reduce((m, r) => Math.max(m, Number(r.sort) || 0), 0) + 1 : blank.sort; setEdit(fields.some((f) => f.name === 'sort') ? { ...blank, sort: nx } : { ...blank }) }}><Icon name="plus" size={18} cls="cur" /> {addLabel}</button>
       </div>
       {(searchFields || filters.length > 0) && (
         <div className="toolbar" style={{ marginTop: -4 }}>
@@ -172,6 +172,12 @@ function ItemsEditor({ value, onChange, itemFields, tab }) {
   )
 }
 
+// সংখ্যার ঘর: লেখার সময় ফাঁকা করা যায় (আগে মুছলেই ০ ফিরে আসত)
+function NumField({ value, onChange, nullable, placeholder, step }) {
+  const [t, setT] = useState(value === null || value === undefined ? (nullable ? '' : '0') : String(value))
+  return <input type="number" step={step} value={t} placeholder={placeholder} onChange={(e) => { const x = e.target.value; setT(x); onChange(x === '' ? (nullable ? null : 0) : Number(x)) }} />
+}
+
 function Form({ table, fields, opts = {}, initial, beforeSave, onClose, onSaved }) {
   const [v, setV] = useState(initial)
   const [tab, setTab] = useState('bn')
@@ -215,7 +221,7 @@ function Form({ table, fields, opts = {}, initial, beforeSave, onClose, onSaved 
               {(f.type === 'text' || !f.type) && <input required={f.required && (!f.i18n || tab === 'bn')} value={v[name] || ''} onChange={(e) => set(name, e.target.value)} placeholder={f.placeholder} />}
               {f.type === 'date' && <input type="date" required={f.required !== false} value={v[name] || ''} onChange={(e) => set(name, e.target.value)} />}
               {f.type === 'datetime' && <input type="datetime-local" value={toLocal(v[name])} onChange={(e) => set(name, e.target.value ? new Date(e.target.value).toISOString() : null)} />}
-              {f.type === 'number' && <input type="number" value={v[name] ?? (f.nullable ? '' : 0)} placeholder={f.placeholder} onChange={(e) => set(name, e.target.value === '' ? (f.nullable ? null : 0) : Number(e.target.value))} />}
+              {f.type === 'number' && <NumField value={v[name]} nullable={f.nullable} placeholder={f.placeholder} step={f.step} onChange={(x) => set(name, x)} />}
               {f.type === 'image' && <ImageUpload folder={table} value={v[name]} onChange={(x) => set(name, x)} shape={f.shape} />}
               {f.type === 'select' && <Select value={v[name] ?? ''} onChange={(x) => set(name, x)} options={f.optionsFrom ? [['', f.blankLabel || '— বাছাই করুন —'], ...(opts[f.name] || [])] : f.options} />}
               {f.type === 'items' && <ItemsEditor value={v[name]} onChange={(x) => set(name, x)} itemFields={f.itemFields} tab={tab} />}
