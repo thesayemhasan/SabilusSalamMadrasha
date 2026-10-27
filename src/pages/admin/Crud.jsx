@@ -185,6 +185,8 @@ function Form({ table, fields, opts = {}, initial, beforeSave, onClose, onSaved 
     setBusy(true)
     setErr('')
     let { id, created_at, ...payload } = v
+    // ফাঁকা বাছাই ("") ডাটাবেজের uuid ঘরে গেলে ত্রুটি হয় — তাই ফাঁকা হলে null পাঠানো হয়
+    fields.forEach((f) => { if ((f.optionsFrom || /_id$/.test(f.name || '')) && payload[f.name] === '') payload[f.name] = null })
     if (beforeSave) payload = beforeSave(payload)
     const q = id ? supabase.from(table).update(payload).eq('id', id) : supabase.from(table).insert(payload)
     const { error } = await q
