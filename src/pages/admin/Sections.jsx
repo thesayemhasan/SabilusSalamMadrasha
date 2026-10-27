@@ -12,18 +12,22 @@ export const NoticesAdmin = () => (
   <Crud
     table="notices"
     title="নোটিশ বোর্ড"
-    hint="এখানকার নোটিশ নোটিশ পেইজে এবং হোম পেইজের জরুরি নোটিশ বোর্ডে দেখা যায়। পিন করা নোটিশ আগে আসে।"
+    hint="এখানকার নোটিশ নোটিশ পেইজে এবং হোম পেইজের জরুরি নোটিশ বোর্ডে দেখা যায়। পিন করা নোটিশ আগে আসে। চাইলে শুরু/শেষের সময় দিয়ে টাইমার চালু করা যায়: শুরুর আগে 'শুরু হতে বাকি', চলাকালে 'শেষ হতে বাকি' দেখাবে।"
     order="date"
     nameOf={(r) => bn(r, 'title')}
-    blank={{ date: new Date().toISOString().slice(0, 10), published: true, pinned: false }}
+    blank={{ date: new Date().toISOString().slice(0, 10), published: true, pinned: false, show_start_timer: false, show_end_timer: false }}
     fields={[
       { name: 'title', label: 'শিরোনাম', i18n: true, required: true },
       { name: 'body', label: 'বিস্তারিত', type: 'textarea', i18n: true },
       { name: 'date', label: 'তারিখ', type: 'date' },
+      { name: 'start_at', label: 'শুরুর সময় (ঐচ্ছিক, টাইমারের জন্য)', type: 'datetime' },
+      { name: 'end_at', label: 'শেষের সময় (ঐচ্ছিক, টাইমারের জন্য)', type: 'datetime' },
+      { name: 'show_start_timer', label: 'টাইমার: "শুরু হতে বাকি" দেখান', type: 'bool' },
+      { name: 'show_end_timer', label: 'টাইমার: "শেষ হতে বাকি" দেখান', type: 'bool' },
       { name: 'pinned', label: 'গুরুত্বপূর্ণ (উপরে পিন করুন)', type: 'bool' },
       { name: 'published', label: 'প্রকাশিত', type: 'bool' },
     ]}
-    summary={(r) => (<><b>{bn(r, 'title')}</b>{r.pinned && <span className="tag built">পিন</span>}{sub(r.date)}</>)}
+    summary={(r) => (<><b>{bn(r, 'title')}</b>{r.pinned && <span className="tag built">পিন</span>}{(r.show_start_timer || r.show_end_timer) && <span className="tag built">টাইমার</span>}{sub(r.date)}</>)}
   />
 )
 

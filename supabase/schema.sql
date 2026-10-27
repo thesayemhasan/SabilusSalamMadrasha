@@ -340,6 +340,11 @@ alter table public.events add column if not exists start_at timestamptz;
 alter table public.events add column if not exists end_at timestamptz;
 alter table public.events add column if not exists show_start_timer boolean not null default false;
 alter table public.events add column if not exists show_end_timer boolean not null default false;
+-- নোটিশেও টাইমার (শুরু/শেষ হতে বাকি)
+alter table public.notices add column if not exists start_at timestamptz;
+alter table public.notices add column if not exists end_at timestamptz;
+alter table public.notices add column if not exists show_start_timer boolean not null default false;
+alter table public.notices add column if not exists show_end_timer boolean not null default false;
 alter table public.public_teachers add column if not exists facebook text;
 alter table public.public_teachers add column if not exists whatsapp text;
 alter table public.public_teachers add column if not exists phone text;

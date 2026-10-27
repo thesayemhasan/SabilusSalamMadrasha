@@ -292,6 +292,7 @@ export function Home() {
                 <Link to="/notices" className="list-item" key={n.id}>
                   <span className="date-chip">{fmtDate(n.date, lang)}</span>
                   <h3>{pick(n, 'title', lang)}</h3>
+                  <Countdown start={n.start_at} end={n.end_at} showStart={n.show_start_timer} showEnd={n.show_end_timer} />
                 </Link>
               ))}
             </div>

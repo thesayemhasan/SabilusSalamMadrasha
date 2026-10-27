@@ -222,6 +222,7 @@ export function Notices() {
               {n.pinned && <span className="date-chip pin">{t('common.pinned')}</span>}
               <h3>{pick(n, 'title', lang)}</h3>
               <p className="pre muted" style={{ margin: 0 }}>{pick(n, 'body', lang)}</p>
+              <Countdown start={n.start_at} end={n.end_at} showStart={n.show_start_timer} showEnd={n.show_end_timer} />
             </article>
           ))}
         </div>
