@@ -4,6 +4,7 @@ import { fetchAll } from '../../lib/db'
 import { ImageUpload, Modal, Select, useConfirm } from '../../components/Ui'
 import Icon from '../../components/Icon'
 import { downloadCsv } from './Crud'
+import { useYearDates } from '../../lib/year'
 import { PrintDoc, VoidDialog, dateBn, monthStr, nm, num, taka, todayStr, useMethods, voidPatch } from './fin'
 
 // kind = 'income' (দান ও অন্যান্য আয়) অথবা 'expense' (ব্যয়)
@@ -13,8 +14,7 @@ export default function Ledger({ kind }) {
   const methods = useMethods()
   const [cats, setCats] = useState([])
   const [rows, setRows] = useState([])
-  const [from, setFrom] = useState(`${monthStr()}-01`)
-  const [to, setTo] = useState(todayStr())
+  const { from, to, setFrom, setTo, min: yMin, max: yMax } = useYearDates()
   const [cat, setCat] = useState('')
   const [form, setForm] = useState(null)
   const [vd, setVd] = useState(null)
@@ -55,8 +55,8 @@ export default function Ledger({ kind }) {
         <button className="btn" onClick={() => setForm({ category_id: '', amount: '', method: 'cash', date: todayStr(), party: '', phone: '', note: '', voucher_url: '' })}><Icon name="plus" size={18} cls="cur" /> {income ? 'নতুন আয়' : 'নতুন ব্যয়'}</button>
       </div>
       <div className="toolbar" style={{ marginTop: -4 }}>
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ maxWidth: 170 }} />
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} />
+        <input type="date" value={from} min={yMin} max={yMax} onChange={(e) => setFrom(e.target.value)} style={{ maxWidth: 170 }} />
+        <input type="date" value={to} min={yMin} max={yMax} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} />
         <div style={{ minWidth: 200 }}><Select value={cat} onChange={setCat} options={[['', 'সব খাত'], ...cats.map((c) => [c.id, nm(c)])]} /></div>
       </div>
       <div className="card" style={{ marginBottom: 12 }}>মোট {income ? 'আয়' : 'ব্যয়'} (বাতিল বাদে): <b>{taka(total)}</b> · এন্ট্রি {shown.length}টি</div>

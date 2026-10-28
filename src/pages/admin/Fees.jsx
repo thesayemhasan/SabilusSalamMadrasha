@@ -4,6 +4,7 @@ import { fetchAll } from '../../lib/db'
 import { Select, useConfirm, Modal } from '../../components/Ui'
 import Icon from '../../components/Icon'
 import { downloadCsv } from './Crud'
+import { useYearDates } from '../../lib/year'
 import { PrintDoc, VoidDialog, addDays, dateBn, monthName, monthStr, nm, num, taka, todayStr, useMethods, voidPatch } from './fin'
 
 /* ---------------- বিল তৈরি ---------------- */
@@ -247,8 +248,7 @@ function Collect() {
 /* ---------------- রসিদ তালিকা ---------------- */
 function Receipts() {
   const methods = useMethods()
-  const [from, setFrom] = useState(`${monthStr()}-01`)
-  const [to, setTo] = useState(todayStr())
+  const { from, to, setFrom, setTo, min: yMin, max: yMax } = useYearDates()
   const [m, setM] = useState('')
   const [q, setQ] = useState('')
   const [rows, setRows] = useState([])
@@ -278,8 +278,8 @@ function Receipts() {
   return (
     <>
       <div className="toolbar">
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ maxWidth: 170 }} />
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} />
+        <input type="date" value={from} min={yMin} max={yMax} onChange={(e) => setFrom(e.target.value)} style={{ maxWidth: 170 }} />
+        <input type="date" value={to} min={yMin} max={yMax} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} />
         <div style={{ minWidth: 170 }}><Select value={m} onChange={setM} options={[['', 'সব মাধ্যম'], ...methods.list]} /></div>
         <input className="search-in" placeholder="রসিদ নং বা ছাত্রের নাম" value={q} onChange={(e) => setQ(e.target.value)} />
         <button className="btn outline" onClick={() => downloadCsv(`রসিদ-${from}-${to}.csv`, ['রসিদ নং', 'তারিখ', 'ছাত্র', 'আইডি', 'মাধ্যম', 'টাকা', 'অবস্থা'], shown.map((r) => [r.receipt_no, r.paid_at, nm(stu[r.student_id]), stu[r.student_id]?.student_no, methods.label(r.method), r.amount, r.void ? `বাতিল: ${r.void_reason}` : 'সক্রিয়']))}><Icon name="upload" size={17} cls="cur" /> Excel</button>

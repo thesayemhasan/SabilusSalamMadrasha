@@ -19,7 +19,7 @@ import Admit from './pages/admin/Admit'
 import Readmit from './pages/admin/Readmit'
 import ReceiptSettings from './pages/admin/ReceiptSettings'
 import ModulePage from './pages/admin/ModulePage'
-import { ClassesAdmin, ResidenceAdmin, SessionsAdmin, StaffAdmin, StudentsAdmin } from './pages/admin/People'
+import { ClassesAdmin, ResidenceAdmin, SessionsAdmin, YearsAdmin, StaffAdmin, StudentsAdmin } from './pages/admin/People'
 import Attendance, { Gate } from './pages/admin/Attendance'
 import FeesPage, { Billing } from './pages/admin/Fees'
 import { AccountSetup, FeeSetup } from './pages/admin/FinSetup'
@@ -63,6 +63,7 @@ export default function App() {
         <Route path="sessions" element={<SessionsAdmin />} />
         <Route path="exams" element={<Gate mod="exams" name="পরীক্ষা ও রেজাল্ট"><Exams /></Gate>} />
         <Route path="import" element={<ExcelImport />} />
+        <Route path="years" element={<YearsAdmin />} />
         <Route path="hifz" element={<Gate mod="hifz" name="হিফজ ট্র্যাকিং"><Hifz /></Gate>} />
         <Route path="idcards" element={<Gate mod="id_print" name="আইডি কার্ড ও প্রিন্ট"><IdCards /></Gate>} />
         <Route path="admit" element={<Gate mod="admit_card" name="প্রবেশপত্র"><Admit /></Gate>} />

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
+import { useYear, useYearDates } from '../../lib/year'
 import { Select } from '../../components/Ui'
 import Icon from '../../components/Icon'
 import { downloadCsv } from './Crud'
@@ -27,11 +28,14 @@ function useMoney() {
 }
 
 function Summary({ M }) {
+  const { year: ay } = useYear()
+  const yd = useYearDates()
   const [mode, setMode] = useState('month')
-  const [month, setMonth] = useState(monthStr())
-  const [year, setYear] = useState(String(new Date().getFullYear()))
-  const from = mode === 'month' ? `${month}-01` : `${year}-01-01`
-  const to = mode === 'month' ? `${month}-31` : `${year}-12-31`
+  const [monthPick, setMonth] = useState('')
+  const month = monthPick && (!ay || (monthPick >= ay.start_date.slice(0, 7) && monthPick <= ay.end_date.slice(0, 7))) ? monthPick : yd.to.slice(0, 7)
+  const year = ay ? ay.name_bn : String(new Date().getFullYear())
+  const from = mode === 'month' ? `${month}-01` : (ay ? ay.start_date : `${year}-01-01`)
+  const to = mode === 'month' ? `${month}-31` : (ay ? ay.end_date : `${year}-12-31`)
   const rows = M.tx.filter((t) => t.date >= from && t.date <= to)
   const inc = rows.reduce((a, t) => a + t.in, 0)
   const exp = rows.reduce((a, t) => a + t.out, 0)
@@ -39,8 +43,8 @@ function Summary({ M }) {
   return (
     <>
       <div className="toolbar">
-        <div style={{ minWidth: 150 }}><Select value={mode} onChange={setMode} options={[['month', 'মাসিক'], ['year', 'বার্ষিক']]} /></div>
-        {mode === 'month' ? <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ maxWidth: 190 }} /> : <input type="number" value={year} onChange={(e) => setYear(e.target.value)} style={{ maxWidth: 130 }} />}
+        <div style={{ minWidth: 150 }}><Select value={mode} onChange={setMode} options={[['month', 'মাসিক'], ['year', ay ? 'পুরো শিক্ষাবর্ষ' : 'বার্ষিক']]} /></div>
+        {mode === 'month' ? <input type="month" value={month} min={ay ? ay.start_date.slice(0, 7) : undefined} max={ay ? ay.end_date.slice(0, 7) : undefined} onChange={(e) => setMonth(e.target.value)} style={{ maxWidth: 190 }} /> : <b style={{ padding: '0 8px' }}>{year}</b>}
         <button className="btn outline" onClick={() => downloadCsv(`সারাংশ-${mode === 'month' ? month : year}.csv`, ['খাত', 'আয়', 'ব্যয়'], [...by((t) => t.cat).map(([k, v]) => [k, v.in, v.out]), ['মোট', inc, exp], ['উদ্বৃত্ত', inc - exp, '']])}><Icon name="upload" size={17} cls="cur" /> Excel</button>
         <button className="btn outline" onClick={() => printNode(document.querySelector('.print-area'), 'A4')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
       </div>
@@ -73,6 +77,7 @@ function Dues() {
   const [classes, setClasses] = useState([])
   const [cls, setCls] = useState('')
   const [month, setMonth] = useState('')
+  const { year: ay } = useYear()
   useEffect(() => {
     all('invoices').then(setInv)
     all('students').then((s) => setStu(Object.fromEntries(s.map((x) => [x.id, x]))))
@@ -80,20 +85,20 @@ function Dues() {
   }, [])
   const rows = useMemo(() => {
     const o = {}
-    inv.filter((i) => !i.cancelled && num(i.amount) - num(i.paid) > 0 && (!month || i.period === month)).forEach((i) => {
+    inv.filter((i) => !i.cancelled && num(i.amount) - num(i.paid) > 0 && (!month || i.period === month) && (!ay || (String(i.period).slice(0, 7) >= ay.start_date.slice(0, 7) && String(i.period).slice(0, 7) <= ay.end_date.slice(0, 7)))).forEach((i) => {
       const s = stu[i.student_id]
       if (!s || (cls && s.class_id !== cls)) return
       o[s.id] = o[s.id] || { s, due: 0, items: [] }
       o[s.id].due += num(i.amount) - num(i.paid); o[s.id].items.push(i.title || i.period)
     })
     return Object.values(o).sort((a, b) => b.due - a.due)
-  }, [inv, stu, cls, month])
+  }, [inv, stu, cls, month, ay])
   const cname = Object.fromEntries(classes)
   return (
     <>
       <div className="toolbar">
         <div style={{ minWidth: 200 }}><Select value={cls} onChange={setCls} options={[['', 'সব শ্রেণি'], ...classes]} /></div>
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ maxWidth: 190 }} />
+        <input type="month" value={month} min={ay ? ay.start_date.slice(0, 7) : undefined} max={ay ? ay.end_date.slice(0, 7) : undefined} onChange={(e) => setMonth(e.target.value)} style={{ maxWidth: 190 }} />
         {month && <button className="btn small outline" onClick={() => setMonth('')}>সব মাস</button>}
         <button className="btn outline" onClick={() => downloadCsv('বকেয়া-তালিকা.csv', ['আইডি', 'নাম', 'শ্রেণি', 'অভিভাবকের ফোন', 'বকেয়া বিল', 'মোট বকেয়া'], rows.map((r) => [r.s.student_no, nm(r.s), cname[r.s.class_id], r.s.guardian_phone, r.items.join('; '), r.due]))}><Icon name="upload" size={17} cls="cur" /> Excel</button>
         <button className="btn outline" onClick={() => printNode(document.querySelector('.print-area'), 'A4')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
@@ -114,8 +119,7 @@ function Dues() {
 
 function CashBook({ M }) {
   const methods = useMethods()
-  const [from, setFrom] = useState(`${monthStr()}-01`)
-  const [to, setTo] = useState(todayStr())
+  const { from, to, setFrom, setTo, min: yMin, max: yMax } = useYearDates()
   const before = M.tx.filter((t) => t.date < from)
   const rows = M.tx.filter((t) => t.date >= from && t.date <= to)
   const codes = methods.list.map((x) => x[0])
@@ -125,8 +129,8 @@ function CashBook({ M }) {
   return (
     <>
       <div className="toolbar">
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ maxWidth: 170 }} />
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} />
+        <input type="date" value={from} min={yMin} max={yMax} onChange={(e) => setFrom(e.target.value)} style={{ maxWidth: 170 }} />
+        <input type="date" value={to} min={yMin} max={yMax} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} />
         <button className="btn outline" onClick={() => downloadCsv(`ক্যাশবই-${from}-${to}.csv`, ['তারিখ', 'মাধ্যম', 'খাত', 'বিবরণ', 'জমা', 'খরচ'], rows.map((t) => [t.date, methods.label(t.method), t.cat, t.desc, t.in || '', t.out || '']))}><Icon name="upload" size={17} cls="cur" /> Excel</button>
         <button className="btn outline" onClick={() => printNode(document.querySelector('.print-area'), 'A4')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
       </div>

@@ -4,6 +4,7 @@ import { fetchAll } from '../../lib/db'
 import { Modal, Select, useConfirm } from '../../components/Ui'
 import Icon from '../../components/Icon'
 import { downloadCsv } from './Crud'
+import { useYear } from '../../lib/year'
 import { PrintDoc, VoidDialog, dateBn, monthName, monthStr, nm, num, taka, todayStr, useMethods, voidPatch } from './fin'
 
 function usePeople() {
@@ -157,11 +158,13 @@ function History({ P, methods }) {
   const [month, setMonth] = useState('')
   const [vd, setVd] = useState(null)
   const sn = Object.fromEntries(P.staff.map((s) => [s.id, s]))
-  const rows = P.sal.filter((x) => !month || x.period === month)
+  const { year: ay } = useYear()
+  const inY = (x) => !ay || (String(x.period).slice(0, 7) >= ay.start_date.slice(0, 7) && String(x.period).slice(0, 7) <= ay.end_date.slice(0, 7))
+  const rows = P.sal.filter((x) => (!month || x.period === month) && inY(x))
   return (
     <>
       <div className="toolbar">
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} style={{ maxWidth: 190 }} />
+        <input type="month" value={month} min={ay ? ay.start_date.slice(0, 7) : undefined} max={ay ? ay.end_date.slice(0, 7) : undefined} onChange={(e) => setMonth(e.target.value)} style={{ maxWidth: 190 }} />
         {month && <button className="btn small outline" onClick={() => setMonth('')}>সব মাস</button>}
         <button className="btn outline" onClick={() => downloadCsv(`বেতন-${month || 'সব'}.csv`, ['মাস', 'নাম', 'মূল বেতন', 'কর্তন', 'অগ্রিম কাটা', 'বোনাস', 'প্রদত্ত', 'মাধ্যম', 'অবস্থা'], rows.map((r) => [r.period, nm(sn[r.staff_id]), r.base, r.deduction, r.advance_deduct, r.bonus, r.net, methods.label(r.method), r.void ? `বাতিল: ${r.void_reason}` : 'সক্রিয়']))}><Icon name="upload" size={17} cls="cur" /> Excel</button>
       </div>

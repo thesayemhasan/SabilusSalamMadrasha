@@ -915,3 +915,7 @@ html[lang='en'] .apply-title { font-size: 1rem; }
 .ei-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .ei-bar { height: 8px; border-radius: 99px; background: var(--line); margin-top: 10px; overflow: hidden; }
 .ei-bar i { display: block; height: 100%; background: var(--primary); transition: width .3s; }
+
+/* শিক্ষাবর্ষ সিলেক্টর (অ্যাডমিন টপবার) */
+.yr-pick { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; height: 38px; border-radius: 12px; border: 1px solid var(--line, rgba(0,0,0,.12)); background: var(--glass, rgba(255,255,255,.6)); }
+.yr-pick select { border: 0; background: transparent; padding: 0 4px; height: 36px; font: inherit; min-width: 80px; max-width: 140px; width: auto; box-shadow: none; }

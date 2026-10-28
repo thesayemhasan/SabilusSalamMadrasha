@@ -6,6 +6,7 @@ import { ScrollToTop } from '../../components/ScrollTools'
 import Icon from '../../components/Icon'
 import { MODULES, MODULE_GROUPS, BUILT } from '../../lib/modules'
 import { PATH_FEATURE } from '../../lib/features'
+import { YearProvider, useYear } from '../../lib/year'
 
 const MENU = [
   ['প্রধান', [['/admin', 'dashboard', 'ড্যাশবোর্ড', true], ['/admin/applications', 'clipboard', 'ভর্তির আবেদন'], ['/admin/messages', 'mail', 'যোগাযোগের বার্তা']]],
@@ -13,10 +14,23 @@ const MENU = [
   ['পরীক্ষা ও হিফজ', [['/admin/exams', 'clipboard', 'পরীক্ষা ও ফলাফল'], ['/admin/hifz', 'books', 'হিফজ ট্র্যাকিং'], ['/admin/idcards', 'users', 'আইডি কার্ড'], ['/admin/admit', 'clipboard', 'প্রবেশপত্র'], ['/admin/readmit', 'apply', 'পুনঃভর্তি ও ভর্তি ফরম']]],
   ['ফি ও হিসাব', [['/admin/fees', 'wallet', 'ফি আদায় ও রসিদ'], ['/admin/billing', 'clipboard', 'বিল তৈরি'], ['/admin/fee-setup', 'sliders', 'ফি-র ধরন ও পরিমাণ'], ['/admin/income', 'coins', 'দান ও অন্যান্য আয়'], ['/admin/expense', 'coins', 'ব্যয়'], ['/admin/salary', 'users', 'শিক্ষক-কর্মচারীর বেতন'], ['/admin/reports', 'chart', 'হিসাব ও রিপোর্ট'], ['/admin/account-setup', 'gear', 'খাত ও পেমেন্ট মাধ্যম'], ['/admin/audit', 'shield', 'আর্থিক লগ'], ['/admin/receipt-settings', 'printer', 'রসিদের লেখা ও ডিজাইন']]],
   ['ওয়েবসাইট', [['/admin/texts', 'edit', 'সাইটের লেখা'], ['/admin/slides', 'image', 'হোম স্লাইড'], ['/admin/departments', 'books', 'বিভাগসমূহ'], ['/admin/home-blocks', 'building', 'হোম সেকশন (নতুন রো)'], ['/admin/notices', 'megaphone', 'নোটিশ'], ['/admin/events', 'calendar', 'ইভেন্ট ও টাইমার'], ['/admin/gallery', 'video', 'গ্যালারি'], ['/admin/teachers', 'teacher', 'শিক্ষকবৃন্দ (পাবলিক)'], ['/admin/admission-form', 'apply', 'ভর্তি ফরম']]],
-  ['সিস্টেম', [['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'সাইটের সেটিংস (হেডার, ফুটার…)'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
+  ['সিস্টেম', [['/admin/years', 'calendar', 'শিক্ষাবর্ষ'], ['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'সাইটের সেটিংস (হেডার, ফুটার…)'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
 ]
 
 const PATH_MOD = { '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance', '/admin/fees': 'fees', '/admin/billing': 'fees', '/admin/fee-setup': 'fees', '/admin/income': 'accounts_basic', '/admin/expense': 'accounts_basic', '/admin/account-setup': 'accounts_basic', '/admin/salary': 'hr_payroll', '/admin/reports': 'reports', '/admin/audit': 'activity_log', '/admin/exams': 'exams', '/admin/hifz': 'hifz', '/admin/idcards': 'id_print', '/admin/admit': 'admit_card', '/admin/readmit': 'readmission' }
+
+function YearPick() {
+  const { years, year, setYearId } = useYear()
+  if (!years.length) return null
+  return (
+    <label className="yr-pick" title="শিক্ষাবর্ষ">
+      <Icon name="calendar" size={16} cls="cur" />
+      <select value={year?.id || ''} onChange={(e) => setYearId(e.target.value)} aria-label="শিক্ষাবর্ষ">
+        {years.map((y) => <option key={y.id} value={y.id}>{y.name_bn || y.name_en}</option>)}
+      </select>
+    </label>
+  )
+}
 
 function Login() {
   const { signIn } = useAuth()
@@ -90,6 +104,7 @@ export default function AdminShell() {
   const allowed = seg === '/admin/users' ? isSuper : !featKey || can(featKey)
 
   return (
+    <YearProvider>
     <div className="adm">
       <ScrollToTop />
       {open && <div className="scrim" onClick={() => setOpen(false)} />}
@@ -127,6 +142,7 @@ export default function AdminShell() {
         <div className="adm-top">
           <button className="menu-btn" onClick={() => setOpen(true)}><Icon name="menu" size={22} /></button>
           <span className="muted grow" style={{ fontSize: '.9rem' }}>{profile.full_name || profile.email}</span>
+          <YearPick />
           <button type="button" className="theme-btn solid" aria-label="theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
             <span key={theme} className="theme-ic"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} cls="cur" /></span>
           </button>
@@ -143,5 +159,6 @@ export default function AdminShell() {
         </div>
       </div>
     </div>
+    </YearProvider>
   )
 }

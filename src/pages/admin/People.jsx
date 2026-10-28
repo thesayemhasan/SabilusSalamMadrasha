@@ -167,3 +167,17 @@ export const SessionsAdmin = () => (
     summary={(r) => <><b>{bn(r, 'name')}</b>{r.code === 'day' && <span className="tag built">মেশিনের হাজিরা এখানে</span>}</>}
   />
 )
+
+export const YearsAdmin = () => (
+  <Crud
+    table="academic_years" title="শিক্ষাবর্ষ" order="start_date" asc={false} toggle={null}
+    hint="এখানে শিক্ষাবর্ষ (যেমন ২০২৬/২৭) তৈরি করুন এবং শুরু ও শেষের তারিখ দিন। অ্যাডমিন প্যানেলের উপরের সিলেক্টর থেকে বর্ষ বাছলে হিসাব ও তথ্য ওই সময়ের ভেতরের দেখাবে। আজকের তারিখ যে বর্ষের ভেতরে পড়ে সেটিই নিজে থেকে নির্বাচিত থাকে।"
+    nameOf={(r) => bn(r, 'name')} blank={{ sort: 0 }}
+    fields={[
+      { name: 'name', label: 'শিক্ষাবর্ষের নাম (যেমন ২০২৬/২৭)', i18n: true, required: true },
+      { name: 'start_date', label: 'শুরুর তারিখ', type: 'date' },
+      { name: 'end_date', label: 'শেষের তারিখ', type: 'date' },
+    ]}
+    summary={(r) => <><b>{bn(r, 'name')}</b>{sub(`${r.start_date} → ${r.end_date}`)}</>}
+  />
+)

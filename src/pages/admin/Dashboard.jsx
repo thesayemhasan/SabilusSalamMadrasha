@@ -9,6 +9,7 @@ import Icon from '../../components/Icon'
 import { Select } from '../../components/Ui'
 import { ChartCard, Columns, Donut, HBars } from '../../components/Charts'
 import { monthName, nm, num, taka, todayStr } from './fin'
+import { useYear } from '../../lib/year'
 
 export const BLOOD = ['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−']
 const bnum = (n) => Number(n || 0).toLocaleString('bn-BD')
@@ -77,44 +78,57 @@ function StudentCharts() {
 
 // আয়-ব্যয়ের বিশ্লেষণ: আয়ের কত অংশ ব্যয়, বেশি/কম কত, আগের সময়ের সাথে তুলনা ইত্যাদি (রং: আয় = নীল, ব্যয় = কমলা)
 const pc = (n, d = 1) => `${Number(n).toLocaleString('bn-BD', { maximumFractionDigits: d })}%`
+// prefix: 'YYYY-MM' / 'YYYY' (শুরু মিলিয়ে) অথবা [শুরু, শেষ] তারিখের পরিসর
+const hit = (pf, v) => {
+  const x = String(v || '')
+  if (!Array.isArray(pf)) return x.startsWith(pf)
+  const L = Math.min(x.length, 10)
+  return L >= 7 && x.slice(0, L) >= pf[0].slice(0, L) && x.slice(0, L) <= pf[1].slice(0, L)
+}
+const monthsBetween = (a, b) => {
+  const out = []; let y = Number(a.slice(0, 4)); let m = Number(a.slice(5, 7))
+  const ey = Number(b.slice(0, 4)); const em = Number(b.slice(5, 7))
+  while ((y < ey || (y === ey && m <= em)) && out.length < 48) { out.push(`${y}-${String(m).padStart(2, '0')}`); m += 1; if (m > 12) { m = 1; y += 1 } }
+  return out
+}
+
 function Insights({ d }) {
   const now = new Date()
   const nowYear = now.getFullYear()
+  const { year: ay, years: ays } = useYear()
   const [mode, setMode] = useState('month')
-  const [year, setYear] = useState(String(nowYear))
-  const [mon, setMon] = useState(String(now.getMonth() + 1).padStart(2, '0'))
+  const yFrom = ay ? ay.start_date : `${nowYear}-01-01`
+  const yTo = ay ? ay.end_date : `${nowYear}-12-31`
+  const monthList = useMemo(() => monthsBetween(yFrom, yTo), [yFrom, yTo])
+  const dflt = useMemo(() => { const cur = `${nowYear}-${String(now.getMonth() + 1).padStart(2, '0')}`; return monthList.includes(cur) ? cur : (cur < monthList[0] ? monthList[0] : monthList[monthList.length - 1]) }, [monthList]) // eslint-disable-line
+  const [monPick, setMon] = useState('')
+  const mon = monthList.includes(monPick) ? monPick : dflt
   const sum = useMemo(() => (prefix) => {
     const r = { fee: 0, other: 0, exp: 0, sal: 0, adv: 0, cats: {}, billed: 0, paid: 0 }
-    d.pay.filter((p) => !p.void && String(p.paid_at).startsWith(prefix)).forEach((p) => { r.fee += num(p.amount) })
-    d.led.filter((l) => !l.void && String(l.date).startsWith(prefix)).forEach((l) => {
+    d.pay.filter((p) => !p.void && hit(prefix, p.paid_at)).forEach((p) => { r.fee += num(p.amount) })
+    d.led.filter((l) => !l.void && hit(prefix, l.date)).forEach((l) => {
       if (l.kind === 'income') r.other += num(l.amount)
       else { r.exp += num(l.amount); r.cats[l.category_name || 'ব্যয়'] = (r.cats[l.category_name || 'ব্যয়'] || 0) + num(l.amount) }
     })
-    d.sal.filter((x) => !x.void && String(x.paid_at).startsWith(prefix)).forEach((x) => { r.sal += num(x.net) })
-    d.adv.filter((x) => !x.void && String(x.date).startsWith(prefix)).forEach((x) => { r.adv += num(x.amount) })
+    d.sal.filter((x) => !x.void && hit(prefix, x.paid_at)).forEach((x) => { r.sal += num(x.net) })
+    d.adv.filter((x) => !x.void && hit(prefix, x.date)).forEach((x) => { r.adv += num(x.amount) })
     if (r.sal) r.cats['শিক্ষক-কর্মচারীর বেতন'] = r.sal
     if (r.adv) r.cats['অগ্রিম'] = r.adv
     r.exp += r.sal + r.adv
     r.inc = r.fee + r.other
-    d.inv.filter((i) => !i.cancelled && String(i.period).startsWith(prefix)).forEach((i) => { r.billed += num(i.amount); r.paid += num(i.paid) })
+    d.inv.filter((i) => !i.cancelled && hit(prefix, i.period)).forEach((i) => { r.billed += num(i.amount); r.paid += num(i.paid) })
     return r
   }, [d])
-  // বছরের তালিকা: ডেটায় থাকা সবচেয়ে পুরোনো সাল থেকে এ বছর পর্যন্ত (অন্তত গত বছরসহ)
-  const years = useMemo(() => {
-    let min = nowYear - 1
-    ;[[d.pay, 'paid_at'], [d.led, 'date'], [d.sal, 'paid_at'], [d.adv, 'date']].forEach(([arr, k]) => arr.forEach((x) => { const y = Number(String(x[k] || '').slice(0, 4)); if (y > 2000 && y < min) min = y }))
-    const out = []
-    for (let y = nowYear; y >= min; y -= 1) out.push(String(y))
-    return out
-  }, [d, nowYear])
   const MN = Array.from({ length: 12 }, (_, i) => monthName(`2000-${String(i + 1).padStart(2, '0')}`).split(' ')[0])
   const bnYear = (y) => Number(y).toLocaleString('bn-BD', { useGrouping: false })
   const isMonth = mode === 'month'
-  const prefix = isMonth ? `${year}-${mon}` : year
+  const shiftY = (dt) => `${Number(dt.slice(0, 4)) - 1}${dt.slice(4)}`
+  const prevAy = ay ? ays.filter((y) => y.end_date < ay.start_date).sort((p, q) => (p.end_date < q.end_date ? 1 : -1))[0] : null
+  const prefix = isMonth ? mon : [yFrom, yTo]
   const prevPrefix = isMonth
-    ? (Number(mon) === 1 ? `${Number(year) - 1}-12` : `${year}-${String(Number(mon) - 1).padStart(2, '0')}`)
-    : String(Number(year) - 1)
-  const labelOf = (pf) => (pf.length === 4 ? `${bnYear(pf)} সাল` : `${MN[Number(pf.slice(5)) - 1]} ${bnYear(pf.slice(0, 4))}`)
+    ? (Number(mon.slice(5)) === 1 ? `${Number(mon.slice(0, 4)) - 1}-12` : `${mon.slice(0, 4)}-${String(Number(mon.slice(5)) - 1).padStart(2, '0')}`)
+    : (prevAy ? [prevAy.start_date, prevAy.end_date] : [shiftY(yFrom), shiftY(yTo)])
+  const labelOf = (pf) => (Array.isArray(pf) ? (pf === prefix ? (ay?.name_bn || `${bnYear(pf[0].slice(0, 4))} সাল`) : (prevAy?.name_bn || 'আগের বছর')) : `${MN[Number(pf.slice(5)) - 1]} ${bnYear(pf.slice(0, 4))}`)
   const c = sum(prefix)
   const P = { name: labelOf(prefix), before: labelOf(prevPrefix), prev: sum(prevPrefix) }
   const isCurrentMonth = isMonth && prefix === `${nowYear}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -139,9 +153,9 @@ function Insights({ d }) {
     <>
       <div className="dash-sec"><h3>আয়-ব্যয়ের বিশ্লেষণ</h3></div>
       <div className="grid g4" style={{ marginBottom: 12, alignItems: 'end' }}>
-        <div className="field"><label>কীভাবে দেখবেন</label><Select value={mode} onChange={setMode} options={[['month', 'মাস অনুযায়ী'], ['year', 'পুরো বছর']]} /></div>
-        {isMonth && <div className="field"><label>মাস</label><Select value={mon} onChange={setMon} options={MN.map((n, i) => [String(i + 1).padStart(2, '0'), n])} /></div>}
-        <div className="field"><label>সাল</label><Select value={year} onChange={setYear} options={years.map((y) => [y, bnYear(y)])} /></div>
+        <div className="field"><label>কীভাবে দেখবেন</label><Select value={mode} onChange={setMode} options={[['month', 'মাস অনুযায়ী'], ['year', 'পুরো শিক্ষাবর্ষ']]} /></div>
+        {isMonth && <div className="field"><label>মাস</label><Select value={mon} onChange={setMon} options={monthList.map((m) => [m, `${MN[Number(m.slice(5)) - 1]} ${bnYear(m.slice(0, 4))}`])} /></div>}
+        <div className="field"><label>শিক্ষাবর্ষ</label><input readOnly value={ay?.name_bn || `${bnYear(nowYear)} সাল`} title="উপরের সিলেক্টর থেকে শিক্ষাবর্ষ বদলান" /></div>
       </div>
       <div className="card viz" style={{ marginBottom: 14 }}>
         <div className="viz-head"><div><h3>{P.name}: আয়ের তুলনায় ব্যয়</h3><span className="muted">আয় = ফি + দান/অন্যান্য আয়; ব্যয় = খরচ + বেতন + অগ্রিম</span></div></div>
@@ -173,13 +187,17 @@ function Insights({ d }) {
 }
 
 function FinanceCharts({ onTiles }) {
+  const { year: ay, inYear } = useYear()
   const [d, setD] = useState(null)
   useEffect(() => {
     Promise.all([rows('payments'), rows('ledger'), rows('salary_payments'), rows('invoices'), rows('students'), rows('classes', 'sort'), rows('staff_advances')]).then(([pay, led, sal, inv, stu, cls, adv]) => setD({ pay, led, sal, inv, stu, cls, adv }))
   }, [])
   const model = useMemo(() => {
     if (!d) return null
-    const months = []; const now = new Date()
+    const months = []; const t0 = todayStr()
+    // শিক্ষাবর্ষ নির্বাচিত থাকলে: আজ ওই বর্ষের ভেতরে হলে আজকের মাস, নইলে বর্ষের শেষ (বা শুরু) মাস ধরে হিসাব
+    const anchorStr = !ay || inYear(t0) ? t0 : (t0 > ay.end_date ? ay.end_date : ay.start_date)
+    const now = new Date(Number(anchorStr.slice(0, 4)), Number(anchorStr.slice(5, 7)) - 1, 1)
     for (let i = 5; i >= 0; i--) { const x = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}`) }
     const inc = Object.fromEntries(months.map((m) => [m, 0])); const exp = { ...inc }
     d.pay.filter((p) => !p.void).forEach((p) => { const m = String(p.paid_at).slice(0, 7); if (m in inc) inc[m] += num(p.amount) })
@@ -188,9 +206,9 @@ function FinanceCharts({ onTiles }) {
     d.adv.filter((s) => !s.void).forEach((s) => { const m = String(s.date).slice(0, 7); if (m in exp) exp[m] += num(s.amount) })
     const cn = Object.fromEntries(d.cls.map((c) => [c.id, nm(c)])); const sc = Object.fromEntries(d.stu.map((s) => [s.id, s.class_id]))
     const dueBy = {}; let dueTotal = 0
-    d.inv.filter((i) => !i.cancelled && num(i.amount) - num(i.paid) > 0).forEach((i) => { const k = cn[sc[i.student_id]] || 'শ্রেণি ঠিক নেই'; const v = num(i.amount) - num(i.paid); dueBy[k] = (dueBy[k] || 0) + v; dueTotal += v })
-    const today = todayStr(); const mNow = months[months.length - 1]
-    const todayIn = d.pay.filter((p) => !p.void && p.paid_at === today).reduce((a, p) => a + num(p.amount), 0)
+    d.inv.filter((i) => !i.cancelled && (!ay || hit([ay.start_date, ay.end_date], i.period)) && num(i.amount) - num(i.paid) > 0).forEach((i) => { const k = cn[sc[i.student_id]] || 'শ্রেণি ঠিক নেই'; const v = num(i.amount) - num(i.paid); dueBy[k] = (dueBy[k] || 0) + v; dueTotal += v })
+    const today = t0; const mNow = months[months.length - 1]
+    const todayIn = (ay && !inYear(today) ? [] : d.pay.filter((p) => !p.void && p.paid_at === today)).reduce((a, p) => a + num(p.amount), 0)
     const monthFee = d.pay.filter((p) => !p.void && String(p.paid_at).slice(0, 7) === mNow).reduce((a, p) => a + num(p.amount), 0)
     const catIn = {}
     d.led.filter((l) => !l.void && l.kind === 'income' && String(l.date).slice(0, 7) === mNow).forEach((l) => { catIn[l.category_name || 'আয়'] = (catIn[l.category_name || 'আয়'] || 0) + num(l.amount) })
@@ -202,21 +220,21 @@ function FinanceCharts({ onTiles }) {
     const advNow = d.adv.filter((x) => !x.void && String(x.date).slice(0, 7) === mNow).reduce((a, x) => a + num(x.amount), 0)
     if (salNow) catEx['শিক্ষক-কর্মচারীর বেতন'] = (catEx['শিক্ষক-কর্মচারীর বেতন'] || 0) + salNow
     if (advNow) catEx['অগ্রিম'] = (catEx['অগ্রিম'] || 0) + advNow
-    return { months, inc, exp, dueBy: Object.entries(dueBy).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 8), dueTotal, todayIn, monthFee, catIn: Object.entries(catIn).map(([label, value]) => ({ label, value })), catEx: Object.entries(catEx).map(([label, value]) => ({ label, value })), balance: months.reduce((a, m) => a + inc[m] - exp[m], 0) }
-  }, [d])
-  useEffect(() => { if (model) onTiles({ todayIn: model.todayIn, monthFee: model.monthFee, dueTotal: model.dueTotal }) }, [model]) // eslint-disable-line
+    return { curM: mNow === t0.slice(0, 7), mName: monthName(mNow), months, inc, exp, dueBy: Object.entries(dueBy).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 8), dueTotal, todayIn, monthFee, catIn: Object.entries(catIn).map(([label, value]) => ({ label, value })), catEx: Object.entries(catEx).map(([label, value]) => ({ label, value })), balance: months.reduce((a, m) => a + inc[m] - exp[m], 0) }
+  }, [d, ay]) // eslint-disable-line
+  useEffect(() => { if (model) onTiles({ todayIn: model.todayIn, monthFee: model.monthFee, dueTotal: model.dueTotal, curM: model.curM, mName: model.mName }) }, [model]) // eslint-disable-line
   if (!model) return null
   const fm = (n) => taka(n)
   return (
     <>
       <div className="dash-sec"><h3>অর্থনৈতিক চার্ট</h3><Link to="/admin/reports" className="more-link">বিস্তারিত রিপোর্ট <Icon name="arrowright" size={15} cls="cur" /></Link></div>
       <div className="grid g2">
-        <ChartCard wide title="গত ৬ মাসের আয় ও ব্যয়" sub="আয় = ফি + দান; ব্যয় = খরচ + বেতন + অগ্রিম" table={model.months.map((m) => [monthName(m), `আয় ${fm(model.inc[m])} · ব্যয় ${fm(model.exp[m])}`])}>
+        <ChartCard wide title={model.curM ? 'গত ৬ মাসের আয় ও ব্যয়' : `${model.mName} পর্যন্ত ৬ মাসের আয় ও ব্যয়`} sub="আয় = ফি + দান; ব্যয় = খরচ + বেতন + অগ্রিম" table={model.months.map((m) => [monthName(m), `আয় ${fm(model.inc[m])} · ব্যয় ${fm(model.exp[m])}`])}>
           <Columns labels={model.months.map((m) => monthName(m).split(' ')[0])} a={model.months.map((m) => model.inc[m])} b={model.months.map((m) => model.exp[m])} nameA="আয়" nameB="ব্যয়" />
         </ChartCard>
         <ChartCard title="শ্রেণি অনুযায়ী বকেয়া" sub={`মোট বকেয়া ${fm(model.dueTotal)}`} table={model.dueBy.map((x) => [x.label, fm(x.value)])}><HBars data={model.dueBy} fmt={fm} empty="কোনো বকেয়া নেই" /></ChartCard>
-        <ChartCard title="এই মাসের আয়ের উৎস" table={model.catIn.map((x) => [x.label, fm(x.value)])}><Donut data={model.catIn} tone="income" /></ChartCard>
-        <ChartCard title="এই মাসের ব্যয়ের খাত" table={model.catEx.map((x) => [x.label, fm(x.value)])}><Donut data={model.catEx} tone="expense" /></ChartCard>
+        <ChartCard title={model.curM ? 'এই মাসের আয়ের উৎস' : `${model.mName}-এর আয়ের উৎস`} table={model.catIn.map((x) => [x.label, fm(x.value)])}><Donut data={model.catIn} tone="income" /></ChartCard>
+        <ChartCard title={model.curM ? 'এই মাসের ব্যয়ের খাত' : `${model.mName}-এর ব্যয়ের খাত`} table={model.catEx.map((x) => [x.label, fm(x.value)])}><Donut data={model.catEx} tone="expense" /></ChartCard>
       </div>
       <Insights d={d} />
     </>
@@ -239,7 +257,7 @@ export default function Dashboard() {
     ['আজ উপস্থিত ছাত্র', c.marked === undefined ? undefined : `${bnum(c.here)} / ${bnum(c.marked)}`, '/admin/attendance'],
     ['নতুন ভর্তির আবেদন', c.apps, '/admin/applications'],
     ['অপঠিত বার্তা', c.msgs, '/admin/messages'],
-    ...(fin ? [['আজকের আদায়', taka(fin.todayIn), '/admin/fees'], ['এই মাসের ফি আদায়', taka(fin.monthFee), '/admin/fees'], ['মোট বকেয়া', taka(fin.dueTotal), '/admin/reports']] : []),
+    ...(fin ? [['আজকের আদায়', taka(fin.todayIn), '/admin/fees'], [fin.curM === false ? `${fin.mName}-এর ফি আদায়` : 'এই মাসের ফি আদায়', taka(fin.monthFee), '/admin/fees'], ['মোট বকেয়া', taka(fin.dueTotal), '/admin/reports']] : []),
   ]
   const quick = [['wallet', 'ফি আদায়', '/admin/fees'], ['clipboard', 'আজকের হাজিরা', '/admin/attendance'], ['users', 'ছাত্র-ছাত্রী', '/admin/students'], ['coins', 'নতুন ব্যয়', '/admin/expense'], ['apply', 'ভর্তির আবেদন', '/admin/applications'], ['chart', 'রিপোর্ট', '/admin/reports'], ['megaphone', 'নোটিশ', '/admin/notices'], ['image', 'হোম স্লাইড', '/admin/slides'], ['gear', 'সেটিংস', '/admin/settings']]
   const ok = ([, , to]) => !PATH_FEATURE[to] || can(PATH_FEATURE[to])
