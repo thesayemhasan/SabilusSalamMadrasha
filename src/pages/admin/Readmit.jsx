@@ -91,20 +91,22 @@ export default function Readmit() {
   useEffect(() => { supabase.from('exams').select('*').order('created_at', { ascending: false }).then(({ data }) => { setExams(data || []); if (data?.[0]) setExam(data[0].id) }) }, [])
   const loadStatic = useCallback(async () => {
     supabase.rpc('student_dues').then(({ data }) => setDues(data || []))
-    const i = await fetchAll((a, b) => supabase.from('student_incidents').select('*').range(a, b)); setInc(i.data || [])
+    const i = await fetchAll((a, b) => supabase.from('student_incidents').select('*').order('id').range(a, b)); setInc(i.data || [])
     const d = await supabase.from('readmissions').select('*').eq('year', year); setDec(d.data || [])
   }, [year])
   useEffect(() => { loadStatic() }, [loadStatic])
   useEffect(() => { supabase.rpc('student_attendance_stats', { p_from: from, p_to: to }).then(({ data }) => setAtt(data || [])) }, [from, to])
   useEffect(() => {
-    let q = supabase.from('students').select('*').eq('status', 'active').order('student_no')
-    if (cls) q = q.eq('class_id', cls)
-    q.then(({ data }) => setStudents(data || []))
+    fetchAll((a, b) => {
+      let q = supabase.from('students').select('*').eq('status', 'active').order('student_no').order('id').range(a, b)
+      if (cls) q = q.eq('class_id', cls)
+      return q
+    }).then(({ data }) => setStudents(data || []))
   }, [cls])
   useEffect(() => {
     if (!exam) { setSubjects([]); setMarks([]); return }
     supabase.from('exam_subjects').select('*').eq('exam_id', exam).then(({ data }) => setSubjects(data || []))
-    fetchAll((a, b) => supabase.from('exam_marks').select('*').eq('exam_id', exam).range(a, b)).then(({ data }) => setMarks(data || []))
+    fetchAll((a, b) => supabase.from('exam_marks').select('*').eq('exam_id', exam).order('id').range(a, b)).then(({ data }) => setMarks(data || []))
   }, [exam])
 
   const clsById = useMemo(() => Object.fromEntries(classes.map((c) => [c.id, c])), [classes])

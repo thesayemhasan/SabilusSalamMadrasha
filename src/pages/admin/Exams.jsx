@@ -172,7 +172,7 @@ function useClassStudents(cls) {
   const [list, setList] = useState([])
   useEffect(() => {
     if (!cls) return setList([])
-    supabase.from('students').select('*').eq('class_id', cls).eq('status', 'active').order('student_no').then(({ data }) => setList(data || []))
+    fetchAll((a, b) => supabase.from('students').select('*').eq('class_id', cls).eq('status', 'active').order('student_no').order('id').range(a, b)).then(({ data }) => setList(data || []))
   }, [cls])
   return list
 }
@@ -288,7 +288,7 @@ function Results({ exams, classes }) {
   const [mode, setMode] = useState('merit')
   useEffect(() => {
     if (!exam) return setMarks([])
-    fetchAll((a, b) => supabase.from('exam_marks').select('*').eq('exam_id', exam).range(a, b)).then(({ data }) => setMarks(data || []))
+    fetchAll((a, b) => supabase.from('exam_marks').select('*').eq('exam_id', exam).order('id').range(a, b)).then(({ data }) => setMarks(data || []))
   }, [exam, cls])
   const { rows, fullTotal } = useMemo(() => compute(subs, students, marks), [subs, students, marks])
   const ex = exams.find((e) => e.id === exam)

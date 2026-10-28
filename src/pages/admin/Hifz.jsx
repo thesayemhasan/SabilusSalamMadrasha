@@ -15,9 +15,11 @@ const bn = (n, d = 0) => Number(n).toLocaleString('bn-BD', { maximumFractionDigi
 function useStudents(cls) {
   const [list, setList] = useState([])
   useEffect(() => {
-    let q = supabase.from('students').select('*').eq('status', 'active').order('student_no')
-    if (cls) q = q.eq('class_id', cls)
-    q.then(({ data }) => setList(data || []))
+    fetchAll((a, b) => {
+      let q = supabase.from('students').select('*').eq('status', 'active').order('student_no').order('id').range(a, b)
+      if (cls) q = q.eq('class_id', cls)
+      return q
+    }).then(({ data }) => setList(data || []))
   }, [cls])
   return list
 }
@@ -99,8 +101,8 @@ function Progress({ classes }) {
   useEffect(() => {
     const from = `${month}-01`
     const to = `${month}-31`
-    fetchAll((a, b) => supabase.from('hifz_logs').select('*').gte('log_date', from).lte('log_date', to).range(a, b)).then(({ data }) => setLogs(data || []))
-    fetchAll((a, b) => supabase.from('hifz_logs').select('student_id,kind,pages,para,log_date').eq('kind', 'sabaq').range(a, b)).then(({ data }) => setAll(data || []))
+    fetchAll((a, b) => supabase.from('hifz_logs').select('*').gte('log_date', from).lte('log_date', to).order('id').range(a, b)).then(({ data }) => setLogs(data || []))
+    fetchAll((a, b) => supabase.from('hifz_logs').select('student_id,kind,pages,para,log_date').eq('kind', 'sabaq').order('id').range(a, b)).then(({ data }) => setAll(data || []))
   }, [month])
   const rows = useMemo(() => students.map((s) => {
     const mine = logs.filter((l) => l.student_id === s.id)

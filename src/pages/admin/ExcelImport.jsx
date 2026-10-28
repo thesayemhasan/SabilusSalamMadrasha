@@ -95,9 +95,9 @@ async function loadCtx() {
     supabase.from('classes').select('id,name_bn,name_en,department_id,sort').order('sort'),
     supabase.from('lookups').select('name_bn,name_en').eq('kind', 'residence').order('sort'),
     supabase.from('exams').select('id,name_bn,name_en,year').order('created_at', { ascending: false }),
-    fetchAll((a, b) => supabase.from('exam_subjects').select('id,exam_id,class_id,name_bn,name_en,full_marks,sort').range(a, b)),
+    fetchAll((a, b) => supabase.from('exam_subjects').select('id,exam_id,class_id,name_bn,name_en,full_marks,sort').order('id').range(a, b)),
     fetchAll((a, b) => supabase.from('students').select('id,student_no,device_user_id,name_bn,guardian_phone,class_id').order('student_no').range(a, b)),
-    fetchAll((a, b) => supabase.from('staff').select('id,staff_no,device_user_id,name_bn,phone').range(a, b)),
+    fetchAll((a, b) => supabase.from('staff').select('id,staff_no,device_user_id,name_bn,phone').order('id').range(a, b)),
   ])
   const c = {
     deps: dep.data || [], classes: cls.data || [], residences: res.data || [], exams: exm.data || [], subjects: sub.data || [], students: stu.data || [], staff: stf.data || [],

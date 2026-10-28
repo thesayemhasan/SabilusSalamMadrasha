@@ -38,10 +38,10 @@ export function Billing() {
 
   useEffect(() => {
     (async () => {
-      const st = await fetchAll((a, b) => { let q = supabase.from('students').select('*').eq('status', 'active').range(a, b); if (cls) q = q.eq('class_id', cls); return q })
-      const rates = await fetchAll((a, b) => supabase.from('fee_rates').select('*').range(a, b))
-      const sfr = await fetchAll((a, b) => supabase.from('student_fees').select('*').range(a, b))
-      const inv = await fetchAll((a, b) => supabase.from('invoices').select('student_id,head_id,period').range(a, b))
+      const st = await fetchAll((a, b) => { let q = supabase.from('students').select('*').eq('status', 'active').order('id').range(a, b); if (cls) q = q.eq('class_id', cls); return q })
+      const rates = await fetchAll((a, b) => supabase.from('fee_rates').select('*').order('id').range(a, b))
+      const sfr = await fetchAll((a, b) => supabase.from('student_fees').select('*').order('id').range(a, b))
+      const inv = await fetchAll((a, b) => supabase.from('invoices').select('student_id,head_id,period').order('id').range(a, b))
       setData({ students: st.data || [], rates: rates.data || [], sf: Object.fromEntries((sfr.data || []).map((r) => [`${r.student_id}|${r.head_id}`, r])), existing: new Set((inv.data || []).map((r) => `${r.student_id}|${r.head_id}|${r.period}`)) })
     })()
   }, [cls, msg])
@@ -126,7 +126,7 @@ function Collect() {
   const [doc, setDoc] = useState(null)
   const [extra, setExtra] = useState(null)
 
-  useEffect(() => { fetchAll((a, b) => supabase.from('students').select('*').range(a, b)).then(({ data }) => setStudents(data || [])) }, [])
+  useEffect(() => { fetchAll((a, b) => supabase.from('students').select('*').order('id').range(a, b)).then(({ data }) => setStudents(data || [])) }, [])
   const found = useMemo(() => {
     const k = q.trim().toLowerCase()
     if (!k) return []
@@ -258,7 +258,7 @@ function Receipts() {
   const load = useCallback(async () => {
     const p = await fetchAll((a, b) => supabase.from('payments').select('*').gte('paid_at', from).lte('paid_at', to).order('paid_at', { ascending: false }).range(a, b))
     setRows(p.data || [])
-    const s = await fetchAll((a, b) => supabase.from('students').select('id,name_bn,name_en,student_no').range(a, b))
+    const s = await fetchAll((a, b) => supabase.from('students').select('id,name_bn,name_en,student_no').order('id').range(a, b))
     setStu(Object.fromEntries((s.data || []).map((x) => [x.id, x])))
   }, [from, to])
   useEffect(() => { load() }, [load])

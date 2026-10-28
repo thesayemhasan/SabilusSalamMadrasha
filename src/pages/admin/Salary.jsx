@@ -36,7 +36,7 @@ function Pay({ P, methods }) {
     (async () => {
       const [y, m] = month.split('-').map(Number)
       const to = `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`
-      const { data } = await fetchAll((a, b) => supabase.from('attendance').select('person_id,status').eq('person_type', 'staff').eq('status', 'absent').gte('date', `${month}-01`).lte('date', to).range(a, b))
+      const { data } = await fetchAll((a, b) => supabase.from('attendance').select('person_id,status').eq('person_type', 'staff').eq('status', 'absent').gte('date', `${month}-01`).lte('date', to).order('id').range(a, b))
       const o = {}; (data || []).forEach((r) => { o[r.person_id] = (o[r.person_id] || 0) + 1 })
       setAbsent(o); setEdit({})
     })()

@@ -64,11 +64,11 @@ function Take({ type, sessions, classes }) {
   const load = useCallback(async () => {
     const table = type === 'student' ? 'students' : 'staff'
     const ppl = await fetchAll((a, b) => {
-      let q = supabase.from(table).select('*').eq('status', 'active').order('created_at', { ascending: true }).range(a, b)
+      let q = supabase.from(table).select('*').eq('status', 'active').order('created_at', { ascending: true }).order('id').range(a, b)
       if (type === 'student' && cls) q = q.eq('class_id', cls)
       return q
     })
-    const att = await fetchAll((a, b) => supabase.from('attendance').select('*').eq('person_type', type).eq('date', date).eq('session', session).range(a, b))
+    const att = await fetchAll((a, b) => supabase.from('attendance').select('*').eq('person_type', type).eq('date', date).eq('session', session).order('id').range(a, b))
     const m = {}; const t = {}
     ;(att.data || []).forEach((r) => { m[r.person_id] = r.status; t[r.person_id] = { src: r.source, in: r.in_time, out: r.out_time } })
     setPeople(ppl.data || []); setMarks(m); setOrig(m); setTimes(t); setMsg('')
@@ -154,11 +154,11 @@ function Report({ type, sessions, classes }) {
       const to = `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`
       const table = type === 'student' ? 'students' : 'staff'
       const ppl = await fetchAll((a, b) => {
-        let q = supabase.from(table).select('*').order('created_at', { ascending: true }).range(a, b)
+        let q = supabase.from(table).select('*').order('created_at', { ascending: true }).order('id').range(a, b)
         if (type === 'student' && cls) q = q.eq('class_id', cls)
         return q
       })
-      const att = await fetchAll((a, b) => supabase.from('attendance').select('*').eq('person_type', type).eq('session', session).gte('date', from).lte('date', to).range(a, b))
+      const att = await fetchAll((a, b) => supabase.from('attendance').select('*').eq('person_type', type).eq('session', session).gte('date', from).lte('date', to).order('id').range(a, b))
       const by = {}
       ;(att.data || []).forEach((r) => { (by[r.person_id] = by[r.person_id] || { present: 0, absent: 0, late: 0, leave: 0 })[r.status] += 1 })
       setRows((ppl.data || []).filter((p) => p.status === 'active' || by[p.id]).map((p) => {
@@ -213,8 +213,8 @@ function Device() {
     supabase.from('integrations').select('*').eq('key', 'zkteco').maybeSingle().then(({ data }) => setCfg(data || { enabled: false, config: {} }))
     supabase.from('device_punches').select('*').order('punched_at', { ascending: false }).limit(30).then(({ data }) => setPunches(data || []))
     Promise.all([
-      supabase.from('students').select('id,device_user_id').eq('status', 'active').limit(5000),
-      supabase.from('staff').select('id,device_user_id').eq('status', 'active').limit(5000),
+      fetchAll((a, b) => supabase.from('students').select('id,device_user_id').eq('status', 'active').order('id').range(a, b)),
+      fetchAll((a, b) => supabase.from('staff').select('id,device_user_id').eq('status', 'active').order('id').range(a, b)),
     ]).then(([a, b]) => setCounts({ s: (a.data || []).filter((x) => x.device_user_id).length, t: (b.data || []).filter((x) => x.device_user_id).length }))
   }, [])
   const on = cfg?.enabled && cfg?.config?.push_key
