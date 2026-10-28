@@ -78,37 +78,47 @@ function StudentCharts() {
 // আয়-ব্যয়ের বিশ্লেষণ: আয়ের কত অংশ ব্যয়, বেশি/কম কত, আগের সময়ের সাথে তুলনা ইত্যাদি (রং: আয় = নীল, ব্যয় = কমলা)
 const pc = (n, d = 1) => `${Number(n).toLocaleString('bn-BD', { maximumFractionDigits: d })}%`
 function Insights({ d }) {
-  const [per, setPer] = useState('month')
-  const M = useMemo(() => {
-    const ym = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`
-    const now = new Date()
-    const at = (back) => ym(new Date(now.getFullYear(), now.getMonth() - back, 1))
-    const y = now.getFullYear()
-    const sum = (prefix) => {
-      const r = { fee: 0, other: 0, exp: 0, sal: 0, adv: 0, cats: {}, billed: 0, paid: 0 }
-      d.pay.filter((p) => !p.void && String(p.paid_at).startsWith(prefix)).forEach((p) => { r.fee += num(p.amount) })
-      d.led.filter((l) => !l.void && String(l.date).startsWith(prefix)).forEach((l) => {
-        if (l.kind === 'income') r.other += num(l.amount)
-        else { r.exp += num(l.amount); r.cats[l.category_name || 'ব্যয়'] = (r.cats[l.category_name || 'ব্যয়'] || 0) + num(l.amount) }
-      })
-      d.sal.filter((x) => !x.void && String(x.paid_at).startsWith(prefix)).forEach((x) => { r.sal += num(x.net) })
-      d.adv.filter((x) => !x.void && String(x.date).startsWith(prefix)).forEach((x) => { r.adv += num(x.amount) })
-      if (r.sal) r.cats['শিক্ষক-কর্মচারীর বেতন'] = r.sal
-      if (r.adv) r.cats['অগ্রিম'] = r.adv
-      r.exp += r.sal + r.adv
-      r.inc = r.fee + r.other
-      d.inv.filter((i) => !i.cancelled && String(i.period).startsWith(prefix)).forEach((i) => { r.billed += num(i.amount); r.paid += num(i.paid) })
-      return r
-    }
-    return {
-      month: { cur: sum(at(0)), prev: sum(at(1)), name: 'এই মাস', before: 'গত মাস' },
-      last: { cur: sum(at(1)), prev: sum(at(2)), name: 'গত মাস', before: 'তার আগের মাস' },
-      year: { cur: sum(String(y)), prev: sum(String(y - 1)), name: 'চলতি বছর', before: 'গত বছর' },
-      day: now.getDate(), days: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(),
-    }
+  const now = new Date()
+  const nowYear = now.getFullYear()
+  const [mode, setMode] = useState('month')
+  const [year, setYear] = useState(String(nowYear))
+  const [mon, setMon] = useState(String(now.getMonth() + 1).padStart(2, '0'))
+  const sum = useMemo(() => (prefix) => {
+    const r = { fee: 0, other: 0, exp: 0, sal: 0, adv: 0, cats: {}, billed: 0, paid: 0 }
+    d.pay.filter((p) => !p.void && String(p.paid_at).startsWith(prefix)).forEach((p) => { r.fee += num(p.amount) })
+    d.led.filter((l) => !l.void && String(l.date).startsWith(prefix)).forEach((l) => {
+      if (l.kind === 'income') r.other += num(l.amount)
+      else { r.exp += num(l.amount); r.cats[l.category_name || 'ব্যয়'] = (r.cats[l.category_name || 'ব্যয়'] || 0) + num(l.amount) }
+    })
+    d.sal.filter((x) => !x.void && String(x.paid_at).startsWith(prefix)).forEach((x) => { r.sal += num(x.net) })
+    d.adv.filter((x) => !x.void && String(x.date).startsWith(prefix)).forEach((x) => { r.adv += num(x.amount) })
+    if (r.sal) r.cats['শিক্ষক-কর্মচারীর বেতন'] = r.sal
+    if (r.adv) r.cats['অগ্রিম'] = r.adv
+    r.exp += r.sal + r.adv
+    r.inc = r.fee + r.other
+    d.inv.filter((i) => !i.cancelled && String(i.period).startsWith(prefix)).forEach((i) => { r.billed += num(i.amount); r.paid += num(i.paid) })
+    return r
   }, [d])
-  const P = M[per]
-  const c = P.cur
+  // বছরের তালিকা: ডেটায় থাকা সবচেয়ে পুরোনো সাল থেকে এ বছর পর্যন্ত (অন্তত গত বছরসহ)
+  const years = useMemo(() => {
+    let min = nowYear - 1
+    ;[[d.pay, 'paid_at'], [d.led, 'date'], [d.sal, 'paid_at'], [d.adv, 'date']].forEach(([arr, k]) => arr.forEach((x) => { const y = Number(String(x[k] || '').slice(0, 4)); if (y > 2000 && y < min) min = y }))
+    const out = []
+    for (let y = nowYear; y >= min; y -= 1) out.push(String(y))
+    return out
+  }, [d, nowYear])
+  const MN = Array.from({ length: 12 }, (_, i) => monthName(`2000-${String(i + 1).padStart(2, '0')}`).split(' ')[0])
+  const bnYear = (y) => Number(y).toLocaleString('bn-BD', { useGrouping: false })
+  const isMonth = mode === 'month'
+  const prefix = isMonth ? `${year}-${mon}` : year
+  const prevPrefix = isMonth
+    ? (Number(mon) === 1 ? `${Number(year) - 1}-12` : `${year}-${String(Number(mon) - 1).padStart(2, '0')}`)
+    : String(Number(year) - 1)
+  const labelOf = (pf) => (pf.length === 4 ? `${bnYear(pf)} সাল` : `${MN[Number(pf.slice(5)) - 1]} ${bnYear(pf.slice(0, 4))}`)
+  const c = sum(prefix)
+  const P = { name: labelOf(prefix), before: labelOf(prevPrefix), prev: sum(prevPrefix) }
+  const isCurrentMonth = isMonth && prefix === `${nowYear}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const M = { day: now.getDate(), days: new Date(nowYear, now.getMonth() + 1, 0).getDate() }
   const net = c.inc - c.exp
   const max = Math.max(1, c.inc, c.exp)
   const top = Object.entries(c.cats).sort((a, b) => b[1] - a[1])[0]
@@ -124,12 +134,14 @@ function Insights({ d }) {
     </div>
   )
   const Tile2 = ({ label, value, sub, color }) => <div className="card stat"><b style={color ? { color } : undefined}>{value}</b><span className="muted">{label}</span>{sub && <small className="muted">{sub}</small>}</div>
-  const projected = per === 'month' && M.day > 0 ? (c.exp / M.day) * M.days : null
+  const projected = isCurrentMonth && M.day > 0 ? (c.exp / M.day) * M.days : null
   return (
     <>
       <div className="dash-sec"><h3>আয়-ব্যয়ের বিশ্লেষণ</h3></div>
-      <div className="tabs">
-        {[['month', 'এই মাস'], ['last', 'গত মাস'], ['year', 'চলতি বছর']].map(([k, l]) => <button key={k} type="button" className={per === k ? 'on' : ''} onClick={() => setPer(k)}>{l}</button>)}
+      <div className="grid g4" style={{ marginBottom: 12, alignItems: 'end' }}>
+        <div className="field"><label>কীভাবে দেখবেন</label><Select value={mode} onChange={setMode} options={[['month', 'মাস অনুযায়ী'], ['year', 'পুরো বছর']]} /></div>
+        {isMonth && <div className="field"><label>মাস</label><Select value={mon} onChange={setMon} options={MN.map((n, i) => [String(i + 1).padStart(2, '0'), n])} /></div>}
+        <div className="field"><label>সাল</label><Select value={year} onChange={setYear} options={years.map((y) => [y, bnYear(y)])} /></div>
       </div>
       <div className="card viz" style={{ marginBottom: 14 }}>
         <div className="viz-head"><div><h3>{P.name}: আয়ের তুলনায় ব্যয়</h3><span className="muted">আয় = ফি + দান/অন্যান্য আয়; ব্যয় = খরচ + বেতন + অগ্রিম</span></div></div>
