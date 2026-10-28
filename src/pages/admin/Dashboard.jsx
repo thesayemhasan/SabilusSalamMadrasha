@@ -75,6 +75,91 @@ function StudentCharts() {
   )
 }
 
+// আয়-ব্যয়ের বিশ্লেষণ: আয়ের কত অংশ ব্যয়, বেশি/কম কত, আগের সময়ের সাথে তুলনা ইত্যাদি (রং: আয় = নীল, ব্যয় = কমলা)
+const pc = (n, d = 1) => `${Number(n).toLocaleString('bn-BD', { maximumFractionDigits: d })}%`
+function Insights({ d }) {
+  const [per, setPer] = useState('month')
+  const M = useMemo(() => {
+    const ym = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`
+    const now = new Date()
+    const at = (back) => ym(new Date(now.getFullYear(), now.getMonth() - back, 1))
+    const y = now.getFullYear()
+    const sum = (prefix) => {
+      const r = { fee: 0, other: 0, exp: 0, sal: 0, adv: 0, cats: {}, billed: 0, paid: 0 }
+      d.pay.filter((p) => !p.void && String(p.paid_at).startsWith(prefix)).forEach((p) => { r.fee += num(p.amount) })
+      d.led.filter((l) => !l.void && String(l.date).startsWith(prefix)).forEach((l) => {
+        if (l.kind === 'income') r.other += num(l.amount)
+        else { r.exp += num(l.amount); r.cats[l.category_name || 'ব্যয়'] = (r.cats[l.category_name || 'ব্যয়'] || 0) + num(l.amount) }
+      })
+      d.sal.filter((x) => !x.void && String(x.paid_at).startsWith(prefix)).forEach((x) => { r.sal += num(x.net) })
+      d.adv.filter((x) => !x.void && String(x.date).startsWith(prefix)).forEach((x) => { r.adv += num(x.amount) })
+      if (r.sal) r.cats['শিক্ষক-কর্মচারীর বেতন'] = r.sal
+      if (r.adv) r.cats['অগ্রিম'] = r.adv
+      r.exp += r.sal + r.adv
+      r.inc = r.fee + r.other
+      d.inv.filter((i) => !i.cancelled && String(i.period).startsWith(prefix)).forEach((i) => { r.billed += num(i.amount); r.paid += num(i.paid) })
+      return r
+    }
+    return {
+      month: { cur: sum(at(0)), prev: sum(at(1)), name: 'এই মাস', before: 'গত মাস' },
+      last: { cur: sum(at(1)), prev: sum(at(2)), name: 'গত মাস', before: 'তার আগের মাস' },
+      year: { cur: sum(String(y)), prev: sum(String(y - 1)), name: 'চলতি বছর', before: 'গত বছর' },
+      day: now.getDate(), days: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(),
+    }
+  }, [d])
+  const P = M[per]
+  const c = P.cur
+  const net = c.inc - c.exp
+  const max = Math.max(1, c.inc, c.exp)
+  const top = Object.entries(c.cats).sort((a, b) => b[1] - a[1])[0]
+  const chg = (a, b) => (b > 0 ? ((a - b) / b) * 100 : null)
+  const chgTxt = (a, b) => { const x = chg(a, b); if (x === null) return a > 0 ? 'আগে ছিল না' : '—'; return `${x >= 0 ? '▲' : '▼'} ${pc(Math.abs(x))}` }
+  const empty = !c.inc && !c.exp
+  const BLUE = 'var(--v1)'; const ORG = 'var(--v2)'
+  const Bar = ({ v, color, label }) => (
+    <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr auto', gap: 10, alignItems: 'center', margin: '6px 0' }}>
+      <span style={{ fontSize: '.9rem' }}>{label}</span>
+      <span style={{ background: 'var(--th)', borderRadius: 99, height: 14, overflow: 'hidden' }}><span style={{ display: 'block', height: '100%', width: `${Math.max(v ? 2 : 0, (v / max) * 100)}%`, background: color, borderRadius: 99 }} /></span>
+      <b style={{ color }}>{taka(v)}</b>
+    </div>
+  )
+  const Tile2 = ({ label, value, sub, color }) => <div className="card stat"><b style={color ? { color } : undefined}>{value}</b><span className="muted">{label}</span>{sub && <small className="muted">{sub}</small>}</div>
+  const projected = per === 'month' && M.day > 0 ? (c.exp / M.day) * M.days : null
+  return (
+    <>
+      <div className="dash-sec"><h3>আয়-ব্যয়ের বিশ্লেষণ</h3></div>
+      <div className="tabs">
+        {[['month', 'এই মাস'], ['last', 'গত মাস'], ['year', 'চলতি বছর']].map(([k, l]) => <button key={k} type="button" className={per === k ? 'on' : ''} onClick={() => setPer(k)}>{l}</button>)}
+      </div>
+      <div className="card viz" style={{ marginBottom: 14 }}>
+        <div className="viz-head"><div><h3>{P.name}: আয়ের তুলনায় ব্যয়</h3><span className="muted">আয় = ফি + দান/অন্যান্য আয়; ব্যয় = খরচ + বেতন + অগ্রিম</span></div></div>
+        {empty ? <p className="muted">{P.name}-এ কোনো আয় বা ব্যয় নেই।</p> : (
+          <>
+            <Bar v={c.inc} color={BLUE} label="আয়" />
+            <Bar v={c.exp} color={ORG} label="ব্যয়" />
+            <div style={{ marginTop: 12, display: 'grid', gap: 4 }}>
+              {c.inc > 0 && net >= 0 && <div>আয়ের <b style={{ color: ORG }}>{pc((c.exp / c.inc) * 100)}</b> ব্যয় হয়েছে, বাকি <b style={{ color: BLUE }}>{pc((net / c.inc) * 100)}</b> ({taka(net)}) থেকে গেছে।</div>}
+              {c.inc === 0 && <div style={{ color: ORG }}>এই সময়ে কোনো আয় নেই, তবু {taka(c.exp)} ব্যয় হয়েছে।</div>}
+              {c.inc > 0 && net < 0 && <div>আয়ের <b style={{ color: ORG }}>পুরোটাই (১০০%)</b> ব্যয় হয়ে গেছে, তার ওপরেও <b style={{ color: ORG }}>{taka(-net)}</b> বেশি ব্যয় হয়েছে — যা আয়ের <b style={{ color: ORG }}>{pc((-net / c.inc) * 100)}</b> বেশি (ঘাটতি)।</div>}
+              {c.inc > 0 && net === 0 && <div>আয় ও ব্যয় সমান।</div>}
+            </div>
+          </>
+        )}
+      </div>
+      <div className="grid g4" style={{ marginBottom: 20 }}>
+        <Tile2 label="সঞ্চয়ের হার (আয়ের কত অংশ জমেছে)" value={c.inc > 0 ? pc(Math.max(0, (net / c.inc) * 100)) : '—'} color={net < 0 ? ORG : BLUE} sub={c.inc > 0 ? `${net >= 0 ? 'উদ্বৃত্ত' : 'ঘাটতি (কিছু জমেনি)'} ${taka(Math.abs(net))}` : undefined} />
+        <Tile2 label={`আয়: ${P.before}-এর তুলনায়`} value={chgTxt(c.inc, P.prev.inc)} color={BLUE} sub={`${P.before}: ${taka(P.prev.inc)}`} />
+        <Tile2 label={`ব্যয়: ${P.before}-এর তুলনায়`} value={chgTxt(c.exp, P.prev.exp)} color={ORG} sub={`${P.before}: ${taka(P.prev.exp)}`} />
+        <Tile2 label="সবচেয়ে বড় ব্যয়ের খাত" value={top ? top[0] : '—'} color={ORG} sub={top && c.exp > 0 ? `মোট ব্যয়ের ${pc((top[1] / c.exp) * 100)} (${taka(top[1])})` : undefined} />
+        <Tile2 label="বেতন ও অগ্রিমের অংশ" value={c.exp > 0 ? pc(((c.sal + c.adv) / c.exp) * 100) : '—'} color={ORG} sub={c.inc > 0 && (c.sal + c.adv) > 0 ? ((c.sal + c.adv) > c.inc ? 'বেতন ও অগ্রিমই আয়ের চেয়ে বেশি' : `আয়ের ${pc(((c.sal + c.adv) / c.inc) * 100)} বেতনে গেছে`) : 'মোট ব্যয়ের মধ্যে'} />
+        <Tile2 label="ফি আদায়ের হার (ইস্যু করা মাসিক বিল)" value={c.billed > 0 ? pc((c.paid / c.billed) * 100) : '—'} color={BLUE} sub={c.billed > 0 ? `বিল ${taka(c.billed)} · জমা ${taka(c.paid)}` : 'এই সময়ের কোনো বিল নেই'} />
+        <Tile2 label="ফি ও অন্যান্য আয়ের ভাগ" value={c.inc > 0 ? pc((c.fee / c.inc) * 100) : '—'} color={BLUE} sub={c.inc > 0 ? `ফি ${taka(c.fee)} · দান/অন্যান্য ${taka(c.other)}` : undefined} />
+        {projected !== null && <Tile2 label="এই হারে চললে মাস শেষে মোট ব্যয় (আনুমানিক)" value={taka(Math.round(projected))} color={ORG} sub={`দৈনিক গড় ${taka(Math.round(c.exp / Math.max(1, M.day)))}`} />}
+      </div>
+    </>
+  )
+}
+
 function FinanceCharts({ onTiles }) {
   const [d, setD] = useState(null)
   useEffect(() => {
@@ -118,9 +203,10 @@ function FinanceCharts({ onTiles }) {
           <Columns labels={model.months.map((m) => monthName(m).split(' ')[0])} a={model.months.map((m) => model.inc[m])} b={model.months.map((m) => model.exp[m])} nameA="আয়" nameB="ব্যয়" />
         </ChartCard>
         <ChartCard title="শ্রেণি অনুযায়ী বকেয়া" sub={`মোট বকেয়া ${fm(model.dueTotal)}`} table={model.dueBy.map((x) => [x.label, fm(x.value)])}><HBars data={model.dueBy} fmt={fm} empty="কোনো বকেয়া নেই" /></ChartCard>
-        <ChartCard title="এই মাসের আয়ের উৎস" table={model.catIn.map((x) => [x.label, fm(x.value)])}><Donut data={model.catIn} /></ChartCard>
-        <ChartCard title="এই মাসের ব্যয়ের খাত" table={model.catEx.map((x) => [x.label, fm(x.value)])}><Donut data={model.catEx} /></ChartCard>
+        <ChartCard title="এই মাসের আয়ের উৎস" table={model.catIn.map((x) => [x.label, fm(x.value)])}><Donut data={model.catIn} tone="income" /></ChartCard>
+        <ChartCard title="এই মাসের ব্যয়ের খাত" table={model.catEx.map((x) => [x.label, fm(x.value)])}><Donut data={model.catEx} tone="expense" /></ChartCard>
       </div>
+      <Insights d={d} />
     </>
   )
 }
