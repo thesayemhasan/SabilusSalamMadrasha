@@ -132,7 +132,8 @@ function Insights({ d }) {
     : (prevAy ? [prevAy.start_date, prevAy.end_date] : [shiftY(yFrom), shiftY(yTo)])
   const labelOf = (pf) => (Array.isArray(pf) ? (pf === prefix ? (ay?.name_bn || `${bnYear(pf[0].slice(0, 4))} সাল`) : (prevAy?.name_bn || 'আগের বছর')) : `${MN[Number(pf.slice(5)) - 1]} ${bnYear(pf.slice(0, 4))}`)
   const c = sum(prefix)
-  const P = { name: labelOf(prefix), before: labelOf(prevPrefix), prev: sum(prevPrefix) }
+  const prevIn = !ay || (isMonth && prevPrefix >= yFrom.slice(0, 7))
+  const P = { name: labelOf(prefix), before: labelOf(prevPrefix), prev: prevIn ? sum(prevPrefix) : null }
   const isCurrentMonth = isMonth && prefix === `${nowYear}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const M = { day: now.getDate(), days: new Date(nowYear, now.getMonth() + 1, 0).getDate() }
   const net = c.inc - c.exp
@@ -176,8 +177,8 @@ function Insights({ d }) {
       </div>
       <div className="grid g4" style={{ marginBottom: 20 }}>
         <Tile2 label="সঞ্চয়ের হার (আয়ের কত অংশ জমেছে)" value={c.inc > 0 ? pc(Math.max(0, (net / c.inc) * 100)) : '—'} color={net < 0 ? ORG : BLUE} sub={c.inc > 0 ? `${net >= 0 ? 'উদ্বৃত্ত' : 'ঘাটতি (কিছু জমেনি)'} ${taka(Math.abs(net))}` : undefined} />
-        <Tile2 label={`আয়: ${P.before}-এর তুলনায়`} value={chgTxt(c.inc, P.prev.inc)} color={BLUE} sub={`${P.before}: ${taka(P.prev.inc)}`} />
-        <Tile2 label={`ব্যয়: ${P.before}-এর তুলনায়`} value={chgTxt(c.exp, P.prev.exp)} color={ORG} sub={`${P.before}: ${taka(P.prev.exp)}`} />
+        {P.prev && <Tile2 label={`আয়: ${P.before}-এর তুলনায়`} value={chgTxt(c.inc, P.prev.inc)} color={BLUE} sub={`${P.before}: ${taka(P.prev.inc)}`} />}
+        {P.prev && <Tile2 label={`ব্যয়: ${P.before}-এর তুলনায়`} value={chgTxt(c.exp, P.prev.exp)} color={ORG} sub={`${P.before}: ${taka(P.prev.exp)}`} />}
         <Tile2 label="সবচেয়ে বড় ব্যয়ের খাত" value={top ? top[0] : '—'} color={ORG} sub={top && c.exp > 0 ? `মোট ব্যয়ের ${pc((top[1] / c.exp) * 100)} (${taka(top[1])})` : undefined} />
         <Tile2 label="বেতন ও অগ্রিমের অংশ" value={c.exp > 0 ? pc(((c.sal + c.adv) / c.exp) * 100) : '—'} color={ORG} sub={c.inc > 0 && (c.sal + c.adv) > 0 ? ((c.sal + c.adv) > c.inc ? 'বেতন ও অগ্রিমই আয়ের চেয়ে বেশি' : `আয়ের ${pc(((c.sal + c.adv) / c.inc) * 100)} বেতনে গেছে`) : 'মোট ব্যয়ের মধ্যে'} />
         <Tile2 label="ফি আদায়ের হার (ইস্যু করা মাসিক বিল)" value={c.billed > 0 ? pc((c.paid / c.billed) * 100) : '—'} color={BLUE} sub={c.billed > 0 ? `বিল ${taka(c.billed)} · জমা ${taka(c.paid)}` : 'এই সময়ের কোনো বিল নেই'} />
@@ -200,7 +201,16 @@ function FinanceCharts({ onTiles }) {
     // শিক্ষাবর্ষ নির্বাচিত থাকলে: আজ ওই বর্ষের ভেতরে হলে আজকের মাস, নইলে বর্ষের শেষ (বা শুরু) মাস ধরে হিসাব
     const anchorStr = !ay || inYear(t0) ? t0 : (t0 > ay.end_date ? ay.end_date : ay.start_date)
     const now = new Date(Number(anchorStr.slice(0, 4)), Number(anchorStr.slice(5, 7)) - 1, 1)
-    for (let i = 5; i >= 0; i--) { const x = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}`) }
+    const anchorM = anchorStr.slice(0, 7)
+    if (ay) {
+      // ৬ মাসের চার্ট শুধু নির্বাচিত শিক্ষাবর্ষের মাসগুলো থেকে (বাইরের মাস আসে না)
+      const all = monthsBetween(ay.start_date, ay.end_date)
+      const idx = Math.max(0, all.indexOf(anchorM))
+      const st = Math.max(0, Math.min(idx - 5, all.length - 6))
+      all.slice(st, st + 6).forEach((m) => months.push(m))
+    } else {
+      for (let i = 5; i >= 0; i--) { const x = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}`) }
+    }
     const inc = Object.fromEntries(months.map((m) => [m, 0])); const exp = { ...inc }
     d.pay.filter((p) => !p.void).forEach((p) => { const m = String(p.paid_at).slice(0, 7); if (m in inc) inc[m] += num(p.amount) })
     d.led.filter((l) => !l.void).forEach((l) => { const m = String(l.date).slice(0, 7); if (l.kind === 'income' && m in inc) inc[m] += num(l.amount); if (l.kind === 'expense' && m in exp) exp[m] += num(l.amount) })
@@ -209,7 +219,7 @@ function FinanceCharts({ onTiles }) {
     const cn = Object.fromEntries(d.cls.map((c) => [c.id, nm(c)])); const sc = Object.fromEntries(d.stu.map((s) => [s.id, s.class_id]))
     const dueBy = {}; let dueTotal = 0
     d.inv.filter((i) => !i.cancelled && (!ay || hit([ay.start_date, ay.end_date], i.period)) && num(i.amount) - num(i.paid) > 0).forEach((i) => { const k = cn[sc[i.student_id]] || 'শ্রেণি ঠিক নেই'; const v = num(i.amount) - num(i.paid); dueBy[k] = (dueBy[k] || 0) + v; dueTotal += v })
-    const today = t0; const mNow = months[months.length - 1]
+    const today = t0; const mNow = anchorM
     const todayIn = (ay && !inYear(today) ? [] : d.pay.filter((p) => !p.void && p.paid_at === today)).reduce((a, p) => a + num(p.amount), 0)
     const monthFee = d.pay.filter((p) => !p.void && String(p.paid_at).slice(0, 7) === mNow).reduce((a, p) => a + num(p.amount), 0)
     const catIn = {}
@@ -231,7 +241,7 @@ function FinanceCharts({ onTiles }) {
     <>
       <div className="dash-sec"><h3>অর্থনৈতিক চার্ট</h3><Link to="/admin/reports" className="more-link">বিস্তারিত রিপোর্ট <Icon name="arrowright" size={15} cls="cur" /></Link></div>
       <div className="grid g2">
-        <ChartCard wide title={model.curM ? 'গত ৬ মাসের আয় ও ব্যয়' : `${model.mName} পর্যন্ত ৬ মাসের আয় ও ব্যয়`} sub="আয় = ফি + দান; ব্যয় = খরচ + বেতন + অগ্রিম" table={model.months.map((m) => [monthName(m), `আয় ${fm(model.inc[m])} · ব্যয় ${fm(model.exp[m])}`])}>
+        <ChartCard wide title={ay ? `${monthName(model.months[0])} থেকে ${monthName(model.months[model.months.length - 1])} পর্যন্ত আয় ও ব্যয়` : 'গত ৬ মাসের আয় ও ব্যয়'} sub="আয় = ফি + দান; ব্যয় = খরচ + বেতন + অগ্রিম" table={model.months.map((m) => [monthName(m), `আয় ${fm(model.inc[m])} · ব্যয় ${fm(model.exp[m])}`])}>
           <Columns labels={model.months.map((m) => monthName(m).split(' ')[0])} a={model.months.map((m) => model.inc[m])} b={model.months.map((m) => model.exp[m])} nameA="আয়" nameB="ব্যয়" />
         </ChartCard>
         <ChartCard title="শ্রেণি অনুযায়ী বকেয়া" sub={`মোট বকেয়া ${fm(model.dueTotal)}`} table={model.dueBy.map((x) => [x.label, fm(x.value)])}><HBars data={model.dueBy} fmt={fm} empty="কোনো বকেয়া নেই" /></ChartCard>
