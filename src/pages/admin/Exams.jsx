@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
+import { useYear, useEnrolled, examInYear, inYearStudents } from '../../lib/year'
 import { useAuth, useSite } from '../../lib/store'
 import { Select, useConfirm } from '../../components/Ui'
 import { downloadCsv } from './Crud'
@@ -18,19 +19,22 @@ export function useClassList() {
 }
 
 function useExams() {
-  const [list, setList] = useState([])
+  const { year } = useYear()
+  const [raw, setRaw] = useState([])
   const load = useCallback(async () => {
     const { data } = await supabase.from('exams').select('*').order('created_at', { ascending: false })
-    setList(data || [])
+    setRaw(data || [])
   }, [])
   useEffect(() => { load() }, [load])
+  const list = useMemo(() => raw.filter((x) => examInYear(x, year)), [raw, year])
   return [list, load]
 }
 
 /* ---------- পরীক্ষা ---------- */
 function ExamList({ exams, reload }) {
   const confirm = useConfirm()
-  const empty = { name_bn: '', name_en: '', year: String(new Date().getFullYear()), date_from: '', date_to: '' }
+  const { year: ay } = useYear()
+  const empty = { name_bn: '', name_en: '', year: ay ? ay.name_bn : String(new Date().getFullYear()), date_from: '', date_to: '' }
   const [f, setF] = useState(empty)
   const [editId, setEditId] = useState(null)
   const [err, setErr] = useState('')
@@ -170,10 +174,16 @@ function Subjects({ exams, classes }) {
 
 function useClassStudents(cls) {
   const [list, setList] = useState([])
+  const en = useEnrolled()
   useEffect(() => {
     if (!cls) return setList([])
-    fetchAll((a, b) => supabase.from('students').select('*').eq('class_id', cls).eq('status', 'active').order('student_no').order('id').range(a, b)).then(({ data }) => setList(data || []))
-  }, [cls])
+    if (en.active && !en.ids) return setList([])
+    fetchAll((a, b) => {
+      let q = supabase.from('students').select('*').eq('status', 'active').order('student_no').order('id').range(a, b)
+      if (!en.active) q = q.eq('class_id', cls)
+      return q
+    }).then(({ data }) => setList(inYearStudents(data || [], en).filter((s) => s.class_id === cls)))
+  }, [cls, en.active, en.ids, en.classOf]) // eslint-disable-line
   return list
 }
 

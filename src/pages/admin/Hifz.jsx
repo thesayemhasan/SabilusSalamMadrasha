@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
+import { useEnrolled, inYearStudents } from '../../lib/year'
 import { Select, useConfirm } from '../../components/Ui'
 import { downloadCsv } from './Crud'
 import { monthStr, nm, num, todayStr } from './fin'
@@ -14,13 +15,14 @@ const bn = (n, d = 0) => Number(n).toLocaleString('bn-BD', { maximumFractionDigi
 
 function useStudents(cls) {
   const [list, setList] = useState([])
+  const en = useEnrolled()
   useEffect(() => {
     fetchAll((a, b) => {
       let q = supabase.from('students').select('*').eq('status', 'active').order('student_no').order('id').range(a, b)
-      if (cls) q = q.eq('class_id', cls)
+      if (cls && !en.active) q = q.eq('class_id', cls)
       return q
-    }).then(({ data }) => setList(data || []))
-  }, [cls])
+    }).then(({ data }) => setList(inYearStudents(data || [], en).filter((s) => !cls || s.class_id === cls)))
+  }, [cls, en.active, en.ids, en.classOf]) // eslint-disable-line
   return list
 }
 

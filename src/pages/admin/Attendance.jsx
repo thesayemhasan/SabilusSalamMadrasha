@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
+import { useYearDay, useYearMonth, useEnrolled } from '../../lib/year'
 import { useSite } from '../../lib/store'
 import { dig } from '../../lib/util'
 import { Select, useConfirm } from '../../components/Ui'
@@ -50,7 +51,10 @@ function useClasses() {
 
 /* ---------------- হাজিরা নিন ---------------- */
 function Take({ type, sessions, classes }) {
-  const [date, setDate] = useState(todayStr())
+  const { date, setDate, min: dMin, max: dMax } = useYearDay()
+  const en = useEnrolled()
+  const enIds = en.ids; const enActive = en.active
+  const keep = useCallback((id) => !enActive || (enIds ? enIds.has(id) : false), [enActive, enIds])
   const [session, setSession] = useState('day')
   const [cls, setCls] = useState('')
   const [people, setPeople] = useState([])
@@ -71,8 +75,8 @@ function Take({ type, sessions, classes }) {
     const att = await fetchAll((a, b) => supabase.from('attendance').select('*').eq('person_type', type).eq('date', date).eq('session', session).order('id').range(a, b))
     const m = {}; const t = {}
     ;(att.data || []).forEach((r) => { m[r.person_id] = r.status; t[r.person_id] = { src: r.source, in: r.in_time, out: r.out_time } })
-    setPeople(ppl.data || []); setMarks(m); setOrig(m); setTimes(t); setMsg('')
-  }, [type, date, session, cls])
+    setPeople((ppl.data || []).filter((p) => type !== 'student' || keep(p.id))); setMarks(m); setOrig(m); setTimes(t); setMsg('')
+  }, [type, date, session, cls, keep])
   useEffect(() => { load() }, [load])
 
   const changed = useMemo(() => Object.keys(marks).filter((id) => marks[id] !== orig[id]), [marks, orig])
@@ -98,7 +102,7 @@ function Take({ type, sessions, classes }) {
   return (
     <>
       <div className="toolbar">
-        <div className="field" style={{ margin: 0 }}><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+        <div className="field" style={{ margin: 0 }}><input type="date" value={date} min={dMin} max={dMax} onChange={(e) => setDate(e.target.value)} /></div>
         <div style={{ minWidth: 160 }}><Select value={session} onChange={setSession} options={sessions} /></div>
         {type === 'student' && <div style={{ minWidth: 200 }}><Select value={cls} onChange={setCls} options={[['', 'সব শ্রেণি'], ...classes]} /></div>}
         <button className="btn outline" onClick={allPresent}><Icon name="check" size={17} cls="cur" /> বাকি সবাই উপস্থিত</button>
@@ -142,7 +146,9 @@ function Take({ type, sessions, classes }) {
 
 /* ---------------- মাসিক রিপোর্ট ---------------- */
 function Report({ type, sessions, classes }) {
-  const [month, setMonth] = useState(todayStr().slice(0, 7))
+  const { month, setMonth, min: mMin, max: mMax } = useYearMonth()
+  const en = useEnrolled()
+  const enIds = en.ids; const enActive = en.active
   const [session, setSession] = useState('day')
   const [cls, setCls] = useState('')
   const [rows, setRows] = useState([])
@@ -161,13 +167,13 @@ function Report({ type, sessions, classes }) {
       const att = await fetchAll((a, b) => supabase.from('attendance').select('*').eq('person_type', type).eq('session', session).gte('date', from).lte('date', to).order('id').range(a, b))
       const by = {}
       ;(att.data || []).forEach((r) => { (by[r.person_id] = by[r.person_id] || { present: 0, absent: 0, late: 0, leave: 0 })[r.status] += 1 })
-      setRows((ppl.data || []).filter((p) => p.status === 'active' || by[p.id]).map((p) => {
+      setRows((ppl.data || []).filter((p) => (p.status === 'active' || by[p.id]) && (type !== 'student' || !enActive || (enIds && enIds.has(p.id)))).map((p) => {
         const c = by[p.id] || { present: 0, absent: 0, late: 0, leave: 0 }
         const base = c.present + c.late + c.absent
         return { p, ...c, pct: base ? Math.round(((c.present + c.late) / base) * 100) : null }
       }))
     })()
-  }, [type, month, session, cls])
+  }, [type, month, session, cls, enIds, enActive])
 
   const tot = rows.reduce((a, r) => ({ present: a.present + r.present, absent: a.absent + r.absent, late: a.late + r.late, leave: a.leave + r.leave }), { present: 0, absent: 0, late: 0, leave: 0 })
   const base = tot.present + tot.late + tot.absent
@@ -175,7 +181,7 @@ function Report({ type, sessions, classes }) {
   return (
     <>
       <div className="toolbar">
-        <div className="field" style={{ margin: 0 }}><input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></div>
+        <div className="field" style={{ margin: 0 }}><input type="month" value={month} min={mMin} max={mMax} onChange={(e) => setMonth(e.target.value)} /></div>
         <div style={{ minWidth: 160 }}><Select value={session} onChange={setSession} options={sessions} /></div>
         {type === 'student' && <div style={{ minWidth: 200 }}><Select value={cls} onChange={setCls} options={[['', 'সব শ্রেণি'], ...classes]} /></div>}
         <button className="btn outline" onClick={() => downloadCsv(`হাজিরা-${month}.csv`, ['আইডি', 'নাম', 'উপস্থিত', 'দেরি', 'অনুপস্থিত', 'ছুটি', 'উপস্থিতির হার %'], rows.map((r) => [r.p.student_no || r.p.staff_no, nm(r.p), r.present, r.late, r.absent, r.leave, r.pct ?? '']))}>

@@ -1,4 +1,6 @@
+import { useCallback, useMemo } from 'react'
 import Crud from './Crud'
+import { useYear, useEnrolled } from '../../lib/year'
 
 const bn = (r, f) => r[`${f}_bn`] || r[`${f}_en`] || '(নামহীন)'
 const sub = (t) => <div className="muted" style={{ fontSize: '.85rem' }}>{t}</div>
@@ -43,16 +45,23 @@ export const ClassesAdmin = () => (
 )
 
 /* ---------- ছাত্র-ছাত্রী ---------- */
-export const StudentsAdmin = () => (
+export function StudentsAdmin() {
+  const { year, inYear } = useYear()
+  const en = useEnrolled()
+  const rowFilter = useMemo(() => (en.active ? (r) => (en.ids ? en.ids.has(r.id) : false) : null), [en.active, en.ids]) // eslint-disable-line
+  const decorate = useCallback((r) => (en.active && en.classOf[r.id] !== undefined ? { ...r, class_id: en.classOf[r.id] } : r), [en.active, en.classOf])
+  return (
   <Crud
     table="students"
-    title="ছাত্র-ছাত্রী"
+    rowFilter={rowFilter}
+    decorate={decorate}
+    title={year ? `ছাত্র-ছাত্রী — ${year.name_bn || year.name_en}` : 'ছাত্র-ছাত্রী'}
     addLabel="নতুন ছাত্র যোগ"
     hint="আইডি নম্বর নিজে থেকে তৈরি হবে। ভর্তির আবেদন থেকে সরাসরি ছাত্র বানাতে 'ভর্তির আবেদন' পেইজের বাটন ব্যবহার করুন।"
     order="created_at"
     toggle={null}
     nameOf={(r) => bn(r, 'name')}
-    blank={{ status: 'active', admission_date: today() }}
+    blank={{ status: 'active', admission_date: !year || inYear(today()) ? today() : year.start_date }}
     searchFields={['name_bn', 'name_en', 'student_no', 'father_name', 'guardian_phone', 'device_user_id']}
     filters={[
       { name: 'department_id', label: 'সব বিভাগ', optionsFrom: DEPT },
@@ -99,7 +108,8 @@ export const StudentsAdmin = () => (
       </div>
     )}
   />
-)
+  )
+}
 
 /* ---------- শিক্ষক-কর্মচারী (ভেতরের তালিকা) ---------- */
 export const StaffAdmin = () => (

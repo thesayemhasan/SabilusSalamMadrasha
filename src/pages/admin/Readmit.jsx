@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
+import { useYear, useEnrolled, inYearStudents, examInYear } from '../../lib/year'
 import { useSite } from '../../lib/store'
 import { FORM_DEFAULTS, useConfig } from '../../lib/config'
 import LayoutDesigner, { useLayout } from '../../components/LayoutDesigner'
@@ -87,22 +88,25 @@ export default function Readmit() {
   const lay = useLayout('form')
   const [pmode, setPmode] = useState('')
   const year = cfg.year
+  const ay = useYear().year
+  const en = useEnrolled()
 
-  useEffect(() => { supabase.from('exams').select('*').order('created_at', { ascending: false }).then(({ data }) => { setExams(data || []); if (data?.[0]) setExam(data[0].id) }) }, [])
+  useEffect(() => { supabase.from('exams').select('*').order('created_at', { ascending: false }).then(({ data }) => { const d = (data || []).filter((x) => examInYear(x, ay)); setExams(d); setExam(d[0] ? d[0].id : '') }) }, [ay?.id]) // eslint-disable-line
   const loadStatic = useCallback(async () => {
     supabase.rpc('student_dues').then(({ data }) => setDues(data || []))
     const i = await fetchAll((a, b) => supabase.from('student_incidents').select('*').order('id').range(a, b)); setInc(i.data || [])
     const d = await supabase.from('readmissions').select('*').eq('year', year); setDec(d.data || [])
   }, [year])
   useEffect(() => { loadStatic() }, [loadStatic])
+  useEffect(() => { if (ay) { const t = todayStr(); setFrom(ay.start_date); setTo(t > ay.end_date ? ay.end_date : t < ay.start_date ? ay.start_date : t) } }, [ay?.id]) // eslint-disable-line
   useEffect(() => { supabase.rpc('student_attendance_stats', { p_from: from, p_to: to }).then(({ data }) => setAtt(data || [])) }, [from, to])
   useEffect(() => {
     fetchAll((a, b) => {
       let q = supabase.from('students').select('*').eq('status', 'active').order('student_no').order('id').range(a, b)
-      if (cls) q = q.eq('class_id', cls)
+      if (cls && !en.active) q = q.eq('class_id', cls)
       return q
-    }).then(({ data }) => setStudents(data || []))
-  }, [cls])
+    }).then(({ data }) => setStudents(inYearStudents(data || [], en).filter((s) => !cls || s.class_id === cls)))
+  }, [cls, en.active, en.ids, en.classOf]) // eslint-disable-line
   useEffect(() => {
     if (!exam) { setSubjects([]); setMarks([]); return }
     supabase.from('exam_subjects').select('*').eq('exam_id', exam).then(({ data }) => setSubjects(data || []))

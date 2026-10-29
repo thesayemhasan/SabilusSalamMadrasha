@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
+import { useEnrolled, inYearStudents } from '../../lib/year'
 import { useSite } from '../../lib/store'
 import { Select } from '../../components/Ui'
 import LayoutDesigner, { useLayout } from '../../components/LayoutDesigner'
@@ -30,11 +31,12 @@ export default function IdCards() {
   const lay = kind === 'staff' ? hookT : hookS
   const [mode, setMode] = useState('')
   const ref = useRef(null)
+  const en = useEnrolled()
   useEffect(() => {
     setPick({})
     if (kind === 'staff') fetchAll((a, b) => supabase.from('staff').select('*').eq('status', 'active').order('staff_no').range(a, b)).then(({ data }) => setRows(data || []))
-    else fetchAll((a, b) => { let q = supabase.from('students').select('*').eq('status', 'active').order('student_no'); if (cls) q = q.eq('class_id', cls); return q.range(a, b) }).then(({ data }) => setRows(data || []))
-  }, [kind, cls])
+    else fetchAll((a, b) => { let q = supabase.from('students').select('*').eq('status', 'active').order('student_no').order('id'); if (cls && !en.active) q = q.eq('class_id', cls); return q.range(a, b) }).then(({ data }) => setRows(inYearStudents(data || [], en).filter((s) => !cls || s.class_id === cls)))
+  }, [kind, cls, en.active, en.ids, en.classOf]) // eslint-disable-line
   const cname = useMemo(() => Object.fromEntries(classes.map((c) => [c.id, nm(c)])), [classes])
   const inst = instData(settings, t)
   const chosen = rows.filter((r) => pick[r.id])

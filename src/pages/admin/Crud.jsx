@@ -41,7 +41,7 @@ export function downloadCsv(file, head, rows) {
 }
 
 // একটি জেনেরিক তালিকা + যোগ/সম্পাদনা/মুছা ফর্ম
-export default function Crud({ table, title, hint, fields, order = 'created_at', asc = false, summary, blank = {}, nameOf, beforeSave, extra, toggle = 'published', toggleLabel = 'প্রকাশিত', eq, filters = [], searchFields, csv, addLabel = 'নতুন যোগ করুন', afterSave }) {
+export default function Crud({ table, title, hint, fields, order = 'created_at', asc = false, summary, blank = {}, nameOf, beforeSave, extra, toggle = 'published', toggleLabel = 'প্রকাশিত', eq, filters = [], searchFields, csv, addLabel = 'নতুন যোগ করুন', afterSave, rowFilter, decorate }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [edit, setEdit] = useState(null)
@@ -88,7 +88,9 @@ export default function Crud({ table, title, hint, fields, order = 'created_at',
     load()
   }
 
-  const shown = rows.filter((r) => {
+  // rowFilter: কোন সারি দেখানো হবে (যেমন শিক্ষাবর্ষে ভর্তি); decorate: শুধু তালিকায় দেখানোর মান বদলায় (সম্পাদনায় আসল সারি যায়)
+  const base = useMemo(() => (rowFilter ? rows.filter(rowFilter) : rows), [rows, rowFilter])
+  const shown = (decorate ? base.map(decorate) : base).filter((r) => {
     if (q && searchFields && !searchFields.some((k) => String(r[k] ?? '').toLowerCase().includes(q.trim().toLowerCase()))) return false
     return filters.every((f) => !fv[f.name] || String(r[f.name] ?? '') === String(fv[f.name]))
   })
@@ -109,12 +111,12 @@ export default function Crud({ table, title, hint, fields, order = 'created_at',
               <Select value={fv[f.name] ?? ''} onChange={(x) => setFv((o) => ({ ...o, [f.name]: x }))} options={[['', f.label], ...(f.options || opts[`f:${f.name}`] || [])]} />
             </div>
           ))}
-          <span className="muted">{shown.length} / {rows.length} জন</span>
+          <span className="muted">{shown.length} / {base.length} জন</span>
         </div>
       )}
       {hint && <p className="muted" style={{ marginTop: -6 }}>{hint}</p>}
       {msg && <div className="alert err" style={{ marginBottom: 12 }}>{msg}</div>}
-      {loading ? <p>লোড হচ্ছে…</p> : shown.length === 0 ? <div className="card muted">{rows.length ? 'কোনো ফল পাওয়া যায়নি।' : 'এখনো কিছু যোগ করা হয়নি।'}</div> : (
+      {loading ? <p>লোড হচ্ছে…</p> : shown.length === 0 ? <div className="card muted">{base.length ? 'কোনো ফল পাওয়া যায়নি।' : 'এখনো কিছু যোগ করা হয়নি।'}</div> : (
         <div className="stack">
           {shown.map((r) => (
             <div className="card row-card" key={r.id}>
@@ -122,7 +124,7 @@ export default function Crud({ table, title, hint, fields, order = 'created_at',
               <div className="row-actions">
                 {toggle && <><span className="muted" style={{ fontSize: '.8rem' }}>{toggleLabel}</span>
                 <Switch checked={r[toggle]} onChange={(v) => flip(r, v)} /></>}
-                <button className="btn small outline" onClick={() => setEdit(r)}><Icon name="edit" size={15} cls="cur" /> সম্পাদনা</button>
+                <button className="btn small outline" onClick={() => setEdit(rows.find((x) => x.id === r.id) || r)}><Icon name="edit" size={15} cls="cur" /> সম্পাদনা</button>
                 <button className="btn small danger" onClick={() => remove(r)}><Icon name="trash" size={15} cls="cur" /> মুছুন</button>
               </div>
             </div>

@@ -9,7 +9,7 @@ import Icon from '../../components/Icon'
 import { Select } from '../../components/Ui'
 import { ChartCard, Columns, Donut, HBars } from '../../components/Charts'
 import { monthName, nm, num, taka, todayStr } from './fin'
-import { useYear } from '../../lib/year'
+import { useYear, useEnrolled, inYearStudents } from '../../lib/year'
 
 export const BLOOD = ['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−']
 const bnum = (n) => Number(n || 0).toLocaleString('bn-BD')
@@ -31,7 +31,9 @@ function useCounts() {
 }
 
 function StudentCharts() {
-  const [st, setSt] = useState([])
+  const en = useEnrolled()
+  const [stAll, setSt] = useState([])
+  const st = useMemo(() => inYearStudents(stAll, en), [stAll, en.active, en.ids, en.classOf]) // eslint-disable-line
   const [classes, setClasses] = useState([])
   const [depts, setDepts] = useState([])
   const [res, setRes] = useState([])
@@ -247,12 +249,18 @@ export default function Dashboard() {
   const c = useCounts()
   const [cnt, setCnt] = useState({})
   const [fin, setFin] = useState(null)
+  const enD = useEnrolled()
+  const [stuY, setStuY] = useState(null)
+  useEffect(() => {
+    if (!enD.active || !enD.ids) { setStuY(null); return }
+    fetchAll((a, b) => supabase.from('students').select('id').eq('status', 'active').order('id').range(a, b)).then((r) => setStuY((r.data || []).filter((s) => enD.ids.has(s.id)).length))
+  }, [enD.active, enD.ids])
   useEffect(() => {
     Promise.all([supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'), supabase.from('staff').select('*', { count: 'exact', head: true }).eq('status', 'active')]).then(([a, b]) => setCnt({ stu: a.count ?? 0, staff: b.count ?? 0 }))
   }, [])
   const enabled = MODULES.filter((m) => (BUILT.has(m.key) ? modules[m.key] !== false : modules[m.key])).length
   const tiles = [
-    ['সক্রিয় ছাত্র', cnt.stu, '/admin/students'],
+    ['সক্রিয় ছাত্র', enD.active ? (stuY ?? undefined) : cnt.stu, '/admin/students'],
     ['শিক্ষক-কর্মচারী', cnt.staff, '/admin/staff'],
     ['আজ উপস্থিত ছাত্র', c.marked === undefined ? undefined : `${bnum(c.here)} / ${bnum(c.marked)}`, '/admin/attendance'],
     ['নতুন ভর্তির আবেদন', c.apps, '/admin/applications'],

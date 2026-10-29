@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
+import { useYear, useEnrolled, inYearStudents, examInYear } from '../../lib/year'
 import { useSite } from '../../lib/store'
 import { ADMIT_DEFAULTS, useConfig } from '../../lib/config'
 import { Select } from '../../components/Ui'
@@ -29,14 +30,16 @@ export default function Admit() {
   const ref = useRef(null)
   const lay = useLayout('admit')
   const [mode, setMode] = useState('')
+  const ay = useYear().year
+  const en = useEnrolled()
   useEffect(() => {
-    supabase.from('exams').select('*').order('created_at', { ascending: false }).then(({ data }) => setExams(data || []))
+    supabase.from('exams').select('*').order('created_at', { ascending: false }).then(({ data }) => setExams((data || []).filter((x) => examInYear(x, ay))))
     supabase.from('fee_heads').select('*').then(({ data }) => setHeads(data || []))
     supabase.rpc('student_dues').then(({ data }) => setDues(data || []))
-  }, [])
+  }, [ay?.id]) // eslint-disable-line
   useEffect(() => {
-    fetchAll((a, b) => { let q = supabase.from('students').select('*').eq('status', 'active').order('student_no'); if (cls) q = q.eq('class_id', cls); return q.range(a, b) }).then(({ data }) => setStudents(data || []))
-  }, [cls])
+    fetchAll((a, b) => { let q = supabase.from('students').select('*').eq('status', 'active').order('student_no').order('id'); if (cls && !en.active) q = q.eq('class_id', cls); return q.range(a, b) }).then(({ data }) => setStudents(inYearStudents(data || [], en).filter((s) => !cls || s.class_id === cls)))
+  }, [cls, en.active, en.ids, en.classOf]) // eslint-disable-line
   useEffect(() => {
     if (!exam) { setRoutine([]); return }
     supabase.from('exam_subjects').select('*').eq('exam_id', exam).order('exam_date', { ascending: true }).then(({ data }) => setRoutine(data || []))
