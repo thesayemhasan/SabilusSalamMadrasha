@@ -35,6 +35,7 @@ export const FEATURES = [
   ['admission_form', 'cms', 'ওয়েবসাইট', 'ভর্তি ফরম', '/admin/admission-form'],
   ['modules', 'system', 'সিস্টেম', 'মডিউল সুইচ', '/admin/modules', '/admin/m'],
   ['integrations', 'system', 'সিস্টেম', 'মেশিন ও বাইরের সেবা', '/admin/integrations'],
+  ['backup', 'system', 'সিস্টেম', 'ব্যাকআপ ও ডাউনলোড', '/admin/backup'],
   ['years', 'system', 'সিস্টেম', 'শিক্ষাবর্ষ', '/admin/years'],
   ['settings', 'system', 'সিস্টেম', 'সাইটের সেটিংস', '/admin/settings'],
 ].map(([key, area, grp, name, ...paths]) => ({ key, area, grp, name, paths }))
