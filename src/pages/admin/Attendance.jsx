@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
+import SmsSend from '../../components/SmsSend'
 import { useYearDay, useYearMonth, useEnrolled } from '../../lib/year'
 import { useSite } from '../../lib/store'
 import { dig } from '../../lib/util'
@@ -63,6 +64,7 @@ function Take({ type, sessions, classes }) {
   const [times, setTimes] = useState({})
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
+  const [smsOpen, setSmsOpen] = useState(false)
   const confirm = useConfirm()
 
   const load = useCallback(async () => {
@@ -106,7 +108,9 @@ function Take({ type, sessions, classes }) {
         <div style={{ minWidth: 160 }}><Select value={session} onChange={setSession} options={sessions} /></div>
         {type === 'student' && <div style={{ minWidth: 200 }}><Select value={cls} onChange={setCls} options={[['', 'সব শ্রেণি'], ...classes]} /></div>}
         <button className="btn outline" onClick={allPresent}><Icon name="check" size={17} cls="cur" /> বাকি সবাই উপস্থিত</button>
+        {type === 'student' && <button className="btn outline" onClick={() => (changed.length ? setMsg('আগে হাজিরা সংরক্ষণ করুন, তারপর SMS পাঠান।') : setSmsOpen(true))}><Icon name="mail" size={17} cls="cur" /> অনুপস্থিতদের অভিভাবককে SMS</button>}
       </div>
+      {smsOpen && <SmsSend kind="absent" title="অনুপস্থিত ছাত্রদের অভিভাবককে SMS" onClose={() => setSmsOpen(false)} rows={people.filter((p) => marks[p.id] === 'absent').map((p) => ({ student_id: p.id, name: nm(p), phone: p.guardian_phone || p.phone2, vars: { date: new Date(`${date}T00:00:00`).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' }) } }))} />}
       <div className="grid g4" style={{ marginBottom: 14 }}>
         {[['উপস্থিত', count('present')], ['অনুপস্থিত', count('absent')], ['দেরি', count('late')], ['ছুটি', count('leave')]].map(([l, n]) => (
           <div className="card stat" key={l}><b>{dig(n, 'bn')}</b><span className="muted">{l}</span></div>

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { initFx } from './lib/fx'
+import { useSite } from './lib/store'
 import PublicLayout from './components/PublicLayout'
 import { About, Account, Admission, Contact, Departments, Donate, Events, Gallery, Home, Notices, Privacy, Teachers, Terms } from './pages/public/Public'
 import AdminShell from './pages/admin/AdminShell'
@@ -21,6 +22,7 @@ import ReceiptSettings from './pages/admin/ReceiptSettings'
 import ModulePage from './pages/admin/ModulePage'
 import Enroll from './pages/admin/Enroll'
 import Backup from './pages/admin/Backup'
+import Sms from './pages/admin/Sms'
 import { ClassesAdmin, ResidenceAdmin, SessionsAdmin, YearsAdmin, StaffAdmin, StudentsAdmin } from './pages/admin/People'
 import Attendance, { Gate } from './pages/admin/Attendance'
 import FeesPage, { Billing } from './pages/admin/Fees'
@@ -31,7 +33,10 @@ import Reports from './pages/admin/Reports'
 import Audit from './pages/admin/Audit'
 
 export default function App() {
+  const { ready } = useSite()
   useEffect(() => initFx(), [])
+  // সাইটের লেখা/সেটিং ডেটাবেজ থেকে আসার আগে কিছু দেখানো হয় না, যাতে পুরোনো/ডিফল্ট ভার্সন এক ঝলক না আসে
+  if (!ready) return <div className="boot" aria-busy="true" />
   return (
     <Routes>
       <Route element={<PublicLayout />}>
@@ -68,6 +73,7 @@ export default function App() {
         <Route path="years" element={<YearsAdmin />} />
         <Route path="enroll" element={<Enroll />} />
         <Route path="backup" element={<Backup />} />
+        <Route path="sms" element={<Gate mod="sms" name="এসএমএস"><Sms /></Gate>} />
         <Route path="hifz" element={<Gate mod="hifz" name="হিফজ ট্র্যাকিং"><Hifz /></Gate>} />
         <Route path="idcards" element={<Gate mod="id_print" name="আইডি কার্ড ও প্রিন্ট"><IdCards /></Gate>} />
         <Route path="admit" element={<Gate mod="admit_card" name="প্রবেশপত্র"><Admit /></Gate>} />

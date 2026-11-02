@@ -62,11 +62,15 @@ export function SiteProvider({ children }) {
 
   const load = useCallback(async () => {
     if (!supabase) return
-    const [tx, st, md] = await Promise.all([
-      supabase.from('site_texts').select('*'),
-      supabase.from('site_settings').select('*'),
-      supabase.from('modules').select('*'),
-    ])
+    // ডেটাবেজের তথ্য আসার আগে ডিফল্ট লেখা/সেটিং দেখানো হয় না (ready না হওয়া পর্যন্ত সাইট ফাঁকা থাকে)
+    let tx, st, md
+    try {
+      ;[tx, st, md] = await Promise.all([
+        supabase.from('site_texts').select('*'),
+        supabase.from('site_settings').select('*'),
+        supabase.from('modules').select('*'),
+      ])
+    } catch { setReady(true); return }
     if (tx.data) {
       const o = {}
       tx.data.forEach((r) => (o[r.key] = r))
@@ -74,7 +78,12 @@ export function SiteProvider({ children }) {
     }
     if (st.data) {
       const inst = st.data.find((r) => r.key === 'institute')
-      if (inst) setSettings({ ...DEFAULT_SETTINGS, ...inst.value })
+      if (inst) {
+        const s = { ...DEFAULT_SETTINGS, ...inst.value }
+        const r = document.documentElement.style
+        r.setProperty('--primary', s.color_primary); r.setProperty('--secondary', s.color_secondary); r.setProperty('--accent', s.color_accent)
+        setSettings(s)
+      }
     }
     if (md.data) {
       const m = {}
@@ -84,7 +93,12 @@ export function SiteProvider({ children }) {
     setReady(true)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+    // নেট খুব ধীর/বন্ধ হলেও সাইট যেন আটকে না থাকে
+    const id = setTimeout(() => setReady(true), 6000)
+    return () => clearTimeout(id)
+  }, [load])
 
   useEffect(() => {
     const l = LANGS.find((x) => x.code === lang) || LANGS[0]
@@ -218,14 +232,17 @@ const DEFAULT_DEPTS = [
 export function useDepartments() {
   const { t, lang } = useSite()
   const [rows, setRows] = useState(null)
+  const [loading, setLoading] = useState(Boolean(supabase))
   useEffect(() => {
     if (!supabase) return
     supabase.from('departments').select('*').order('sort', { ascending: true }).then(({ data, error }) => {
       if (!error && data) setRows(data.filter((r) => r.published !== false))
+      setLoading(false)
     })
   }, [])
+  // লোড চলার সময় ডিফল্ট বিভাগ দেখানো হয় না (পরে বদলে যেত); ডিফল্ট শুধু টেবিল না থাকলে
   const list = rows
     ? rows.map((r) => ({ id: r.id, icon: r.icon || 'book', title: pick(r, 'name', lang), text: pick(r, 'text', lang) }))
-    : DEFAULT_DEPTS.map((d) => ({ id: d.id, icon: d.icon, title: t(d.k + '.title'), text: t(d.k + '.text') }))
-  return { list, fromDb: rows !== null }
+    : loading ? [] : DEFAULT_DEPTS.map((d) => ({ id: d.id, icon: d.icon, title: t(d.k + '.title'), text: t(d.k + '.text') }))
+  return { list, fromDb: rows !== null, loading }
 }

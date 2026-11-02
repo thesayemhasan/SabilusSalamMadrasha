@@ -238,7 +238,9 @@ export function Home() {
   const picSlides = custom
     ? heroRows.rows.filter((s) => s.published !== false && s.image_url)
     : gallery.rows.filter((g) => g.published !== false && (g.kind || 'image') === 'image' && g.image_url).map((g) => ({ ...g, title_bn: g.caption_bn, title_en: g.caption_en }))
-  const items = [...(settings.hero_brand_slide !== false || !picSlides.length ? [{ brand: true }] : []), ...picSlides]
+  const heroLoading = custom ? heroRows.loading : gallery.loading
+  // স্লাইডের ছবি আসার আগে ব্র্যান্ড-স্লাইড এক ঝলক দেখানো হয় না (যদি ব্র্যান্ড-স্লাইড বন্ধ রাখা থাকে)
+  const items = heroLoading && settings.hero_brand_slide === false ? [] : [...(settings.hero_brand_slide !== false || !picSlides.length ? [{ brand: true }] : []), ...picSlides]
 
   const feats = [['book', 'home.why1'], ['moon', 'home.why2'], ['lotus', 'home.why3'], ['chat', 'home.why4']]
   const depts = useDepartments()
@@ -280,7 +282,7 @@ export function Home() {
         <div className="container">
           <div className="stats">
             <div className="stat-item"><b className="count">{t('stat.year.num')}</b><span>{t('stat.year.label')}</span></div>
-            <div className="stat-item"><b className="count">{depts.fromDb ? dig(depts.list.length, lang) : t('stat.depts.num')}</b><span>{t('stat.depts.label')}</span></div>
+            <div className="stat-item"><b className="count">{depts.fromDb ? dig(depts.list.length, lang) : depts.loading ? '' : t('stat.depts.num')}</b><span>{t('stat.depts.label')}</span></div>
             {tcount > 0 && <div className="stat-item"><b className="count">{dig(tcount, lang)}</b><span>{t('stat.teachers.label')}</span></div>}
           </div>
         </div>

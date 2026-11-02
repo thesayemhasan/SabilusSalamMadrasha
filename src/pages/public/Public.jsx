@@ -112,7 +112,7 @@ export function Admission() {
   const live = fields.rows.filter((f) => f.published !== false)
   const list = live.length
     ? live.map((f) => ({ ...f, label: pick(f, 'label', lang), opts: splitOpts(pick(f, 'options', lang)) }))
-    : defaults
+    : fields.loading ? [] : defaults
 
   const [v, setV] = useState({})
   const [agree, setAgree] = useState(false)

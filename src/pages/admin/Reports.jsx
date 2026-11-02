@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
+import SmsSend from '../../components/SmsSend'
 import { useYear, useYearDates } from '../../lib/year'
 import { Select } from '../../components/Ui'
 import Icon from '../../components/Icon'
@@ -78,6 +79,7 @@ function Dues() {
   const [cls, setCls] = useState('')
   const [month, setMonth] = useState('')
   const { year: ay } = useYear()
+  const [smsOpen, setSmsOpen] = useState(false)
   useEffect(() => {
     all('invoices').then(setInv)
     all('students').then((s) => setStu(Object.fromEntries(s.map((x) => [x.id, x]))))
@@ -101,8 +103,10 @@ function Dues() {
         <input type="month" value={month} min={ay ? ay.start_date.slice(0, 7) : undefined} max={ay ? ay.end_date.slice(0, 7) : undefined} onChange={(e) => setMonth(e.target.value)} style={{ maxWidth: 190 }} />
         {month && <button className="btn small outline" onClick={() => setMonth('')}>সব মাস</button>}
         <button className="btn outline" onClick={() => downloadCsv('বকেয়া-তালিকা.csv', ['আইডি', 'নাম', 'শ্রেণি', 'অভিভাবকের ফোন', 'বকেয়া বিল', 'মোট বকেয়া'], rows.map((r) => [r.s.student_no, nm(r.s), cname[r.s.class_id], r.s.guardian_phone, r.items.join('; '), r.due]))}><Icon name="upload" size={17} cls="cur" /> Excel</button>
+        <button className="btn outline" onClick={() => setSmsOpen(true)}><Icon name="mail" size={17} cls="cur" /> বকেয়া তাগাদা SMS</button>
         <button className="btn outline" onClick={() => printNode(document.querySelector('.print-area'), 'A4')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
       </div>
+      {smsOpen && <SmsSend kind="dues" title="বকেয়া ফি-র তাগাদা SMS" onClose={() => setSmsOpen(false)} rows={rows.map((r) => ({ student_id: r.s.id, name: nm(r.s), phone: r.s.guardian_phone || r.s.phone2, vars: { amount: Math.round(r.due).toLocaleString('bn-BD') } }))} />}
       <div className="card" style={{ marginBottom: 12 }}>বকেয়া আছে এমন ছাত্র: <b>{rows.length.toLocaleString('bn-BD')}</b> জন · মোট বকেয়া: <b>{taka(rows.reduce((a, r) => a + r.due, 0))}</b></div>
       <div className="card table-wrap print-area">
         <table>

@@ -86,7 +86,7 @@ export function StudentsAdmin() {
       { name: 'blood_group', label: 'রক্তের গ্রুপ', type: 'select', options: [['', '— জানা নেই —'], ...['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'].map((b) => [b, b])] },
       { name: 'father_name', label: 'পিতার নাম' },
       { name: 'mother_name', label: 'মাতার নাম' },
-      { name: 'guardian_phone', label: 'অভিভাবকের মোবাইল (SMS ও হাজিরার বার্তা এই নম্বরে যাবে)' },
+      { name: 'guardian_phone', label: 'অভিভাবকের মোবাইল (অনুপস্থিতি ও বকেয়ার SMS এই নম্বরে যাবে)' },
       { name: 'phone2', label: 'বিকল্প মোবাইল' },
       { name: 'address', label: 'ঠিকানা', type: 'textarea' },
       { name: 'department_id', label: 'বিভাগ', type: 'select', optionsFrom: DEPT },
