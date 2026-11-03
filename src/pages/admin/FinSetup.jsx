@@ -30,7 +30,7 @@ const Heads = () => (
 const Rates = () => (
   <Crud
     table="fee_rates" title="শ্রেণি / বিভাগ / আবাসিক অনুযায়ী পরিমাণ" order="created_at" toggle={null}
-    hint="যে শর্ত দেবেন শুধু সেই ছাত্রদের জন্য এই পরিমাণ। ফাঁকা রাখলে 'সব'। একাধিক নিয়ম মিলে গেলে যেটা বেশি নির্দিষ্ট (শর্ত বেশি) সেটাই ধরা হবে। কোনো নিয়ম না মিললে ফি-র সাধারণ পরিমাণ ধরা হবে।"
+    hint="যে শর্ত দেবেন শুধু সেই শিক্ষার্থীদের জন্য এই পরিমাণ। ফাঁকা রাখলে 'সব'। একাধিক নিয়ম মিলে গেলে যেটা বেশি নির্দিষ্ট (শর্ত বেশি) সেটাই ধরা হবে। কোনো নিয়ম না মিললে ফি-র সাধারণ পরিমাণ ধরা হবে।"
     nameOf={() => 'এই নিয়মটি'}
     blank={{ amount: 0 }}
     fields={[
@@ -41,22 +41,22 @@ const Rates = () => (
       { name: 'amount', label: 'পরিমাণ (টাকা)', type: 'number' },
     ]}
     beforeSave={(p) => ({ ...p, class_id: p.class_id || null, department_id: p.department_id || null, residence: p.residence || null })}
-    summary={(r, m) => (<><b>{m.head_id?.[r.head_id] || '—'}: {taka(r.amount)}</b>{sub([r.class_id && m.class_id?.[r.class_id], r.department_id && m.department_id?.[r.department_id], r.residence].filter(Boolean).join(' · ') || 'সব ছাত্র')}</>)}
+    summary={(r, m) => (<><b>{m.head_id?.[r.head_id] || '—'}: {taka(r.amount)}</b>{sub([r.class_id && m.class_id?.[r.class_id], r.department_id && m.department_id?.[r.department_id], r.residence].filter(Boolean).join(' · ') || 'সব শিক্ষার্থী')}</>)}
   />
 )
 
 const Special = () => (
   <Crud
-    table="student_fees" title="ছাত্রভিত্তিক আলাদা পরিমাণ / ছাড় / অব্যাহতি" order="created_at" toggle={null}
-    hint="কোনো ছাত্রের জন্য আলাদা পরিমাণ (যেমন ইয়াতিম, গরিব বা ভাই-বোন ছাড়) এখানে দিন। 'পরিমাণ' ফাঁকা রাখলে সাধারণ পরিমাণ থেকে 'ছাড়' বাদ যাবে। 'প্রযোজ্য নয়' দিলে ওই ফি ওই ছাত্রের বিলে আসবে না।"
-    nameOf={() => 'এই ছাত্রের ব্যবস্থাটি'}
+    table="student_fees" title="শিক্ষার্থীভিত্তিক আলাদা পরিমাণ / ছাড় / অব্যাহতি" order="created_at" toggle={null}
+    hint="কোনো শিক্ষার্থীর জন্য আলাদা পরিমাণ (যেমন ইয়াতিম, গরিব বা ভাই-বোন ছাড়) এখানে দিন। 'পরিমাণ' ফাঁকা রাখলে সাধারণ পরিমাণ থেকে 'ছাড়' বাদ যাবে। 'প্রযোজ্য নয়' দিলে ওই ফি ওই শিক্ষার্থীর বিলে আসবে না।"
+    nameOf={() => 'এই শিক্ষার্থীর ব্যবস্থাটি'}
     blank={{ discount: 0, exempt: false }}
     fields={[
-      { name: 'student_id', label: 'ছাত্র', type: 'select', optionsFrom: STUDENT },
+      { name: 'student_id', label: 'শিক্ষার্থী', type: 'select', optionsFrom: STUDENT },
       { name: 'head_id', label: 'ফি-র ধরন', type: 'select', optionsFrom: HEAD },
       { name: 'amount', label: 'আলাদা পরিমাণ (ফাঁকা = সাধারণ)', type: 'number', nullable: true },
       { name: 'discount', label: 'ছাড় (টাকা)', type: 'number' },
-      { name: 'exempt', label: 'এই ফি এই ছাত্রের জন্য প্রযোজ্য নয়', type: 'bool' },
+      { name: 'exempt', label: 'এই ফি এই শিক্ষার্থীর জন্য প্রযোজ্য নয়', type: 'bool' },
       { name: 'note', label: 'কারণ / নোট', type: 'textarea' },
     ]}
     summary={(r, m) => (<><b>{m.student_id?.[r.student_id] || '—'}</b><span className="tag">{m.head_id?.[r.head_id]}</span>{sub(r.exempt ? 'প্রযোজ্য নয়' : [r.amount != null && `পরিমাণ ${taka(r.amount)}`, num0(r.discount) > 0 && `ছাড় ${taka(r.discount)}`].filter(Boolean).join(' · '))}</>)}
@@ -69,7 +69,7 @@ export function FeeSetup() {
   return (
     <>
       <div className="tabs" style={{ marginBottom: 14 }}>
-        {[['heads', 'ফি-র ধরন'], ['rates', 'পরিমাণ (শ্রেণি/বিভাগ অনুযায়ী)'], ['special', 'ছাত্রভিত্তিক ছাড়']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+        {[['heads', 'ফি-র ধরন'], ['rates', 'পরিমাণ (শ্রেণি/বিভাগ অনুযায়ী)'], ['special', 'শিক্ষার্থীভিত্তিক ছাড়']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
       </div>
       {tab === 'heads' && <Heads />}
       {tab === 'rates' && <Rates />}

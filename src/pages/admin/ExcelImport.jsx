@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
 import { readXlsx, saveBlob, serialToIso, writeXlsx } from '../../lib/xlsx'
@@ -147,7 +148,7 @@ function refExam(r, k, c) {
 function refStudent(r, k, c, nameKey) {
   if (blank(r.raw(k))) return null
   const s = c.stuNo[idKey(r.raw(k))]
-  if (!s) { r.err(k, `ছাত্র আইডি "${r.raw(k)}" সাইটে পাওয়া যায়নি`); return null }
+  if (!s) { r.err(k, `শিক্ষার্থী আইডি "${r.raw(k)}" সাইটে পাওয়া যায়নি`); return null }
   if (nameKey && !blank(r.raw(nameKey)) && nk(r.raw(nameKey)) !== nk(s.name_bn)) r.warn(nameKey, `নাম মেলেনি — সাইটে "${s.name_bn}"; আইডি অনুযায়ী ধরা হয়েছে`)
   return s
 }
@@ -198,12 +199,12 @@ const DATASETS = [
         st.no.add(no)
       }
       if (dev) {
-        if (c.stuDev.has(dev) || st.dev.has(dev)) r.err('device_user_id', `মেশিন আইডি ${dev} আগেই অন্য ছাত্রের আছে`)
+        if (c.stuDev.has(dev) || st.dev.has(dev)) r.err('device_user_id', `মেশিন আইডি ${dev} আগেই অন্য শিক্ষার্থীর আছে`)
         st.dev.add(dev)
       }
       const sk = `${nk(r.text('name_bn'))}|${phone}`
       if (r.text('name_bn') && phone && !no) {
-        if (c.stuSoft.has(sk)) dupSkip(r, 'একই নাম ও ফোনের ছাত্র সাইটে আছে — সম্ভাব্য ডুপ্লিকেট', true)
+        if (c.stuSoft.has(sk)) dupSkip(r, 'একই নাম ও ফোনের শিক্ষার্থী সাইটে আছে — সম্ভাব্য ডুপ্লিকেট', true)
         else if (st.soft.has(sk)) dupSkip(r, 'একই নাম ও ফোন ফাইলেই আগে আছে — সম্ভাব্য ডুপ্লিকেট', true)
         st.soft.add(sk)
       }
@@ -342,7 +343,7 @@ const DATASETS = [
     id: 'marks', title: 'ফলাফল / নম্বর', table: 'exam_marks', file: 'নম্বর', dynamic: true, conflict: 'subject_id,student_id',
     cols: [
       C('exam', 'পরীক্ষা', { req: 1 }), C('class', 'শ্রেণি', { req: 1 }), C('dept', 'বিভাগ'),
-      C('student_no', 'ছাত্র আইডি', { req: 1 }), C('sname', 'নাম'),
+      C('student_no', 'শিক্ষার্থী আইডি', { req: 1 }), C('sname', 'নাম'),
     ],
     maps: {},
     check(r, c, st, dyn) {
@@ -350,10 +351,10 @@ const DATASETS = [
       const ex = refExam(r, 'exam', c)
       const cls = refClass(r, 'class', c, refDept(r, 'dept', c))
       const stu = refStudent(r, 'student_no', c, 'sname')
-      if (stu && cls && stu.class_id !== cls.id) r.warn('student_no', 'ছাত্রটি সাইটে এই শ্রেণিতে নেই — তবু নম্বর যোগ হবে')
+      if (stu && cls && stu.class_id !== cls.id) r.warn('student_no', 'শিক্ষার্থীটি সাইটে এই শ্রেণিতে নেই — তবু নম্বর যোগ হবে')
       if (!(ex && cls && stu)) return []
       const fk = `${ex.id}|${stu.id}`
-      if (st.seen.has(fk)) { dupSkip(r, 'এই ছাত্রের এই পরীক্ষার সারি ফাইলে আগেও আছে — বাদ'); return [] }
+      if (st.seen.has(fk)) { dupSkip(r, 'এই শিক্ষার্থীর এই পরীক্ষার সারি ফাইলে আগেও আছে — বাদ'); return [] }
       st.seen.add(fk)
       const subs = c.subKey[`${ex.id}|${cls.id}`] || {}
       if (!Object.keys(subs).length) { r.err('class', 'এই পরীক্ষা-শ্রেণির কোনো বিষয় সাইটে নেই — আগে "পরীক্ষার বিষয়" ইম্পোর্ট/যোগ করুন'); return [] }
@@ -379,7 +380,7 @@ const DATASETS = [
     id: 'hifz', title: 'হিফজ এন্ট্রি', table: 'hifz_logs', file: 'হিফজ',
     cols: [
       C('date', 'তারিখ', { ex: '15/10/2026', hint: 'ফাঁকা হলে আজকের তারিখ' }),
-      C('student_no', 'ছাত্র আইডি', { req: 1, ex: '260001', hint: 'ছাত্র তালিকার পাতা দেখুন' }),
+      C('student_no', 'শিক্ষার্থী আইডি', { req: 1, ex: '260001', hint: 'শিক্ষার্থী তালিকার পাতা দেখুন' }),
       C('sname', 'নাম (মিলিয়ে দেখার জন্য, ঐচ্ছিক)'),
       C('kind', 'ধরন', { req: 1, ex: 'সবক', list: () => ['সবক', 'সাত সবক', 'আমুখতা'] }),
       C('para', 'পারা (১–৩০)', { ex: '5' }),
@@ -442,7 +443,7 @@ async function buildTemplate(ds, ctx, opt = {}) {
       const uniq = [...new Map(subs.map((s) => [s.id, s])).values()].sort((a, b) => a.sort - b.sort)
       uniq.forEach((s) => { if (!subjNames.includes(s.name_bn || s.name_en)) subjNames.push(s.name_bn || s.name_en) })
     })
-    const head = ['পরীক্ষা *', 'শ্রেণি *', 'বিভাগ', 'ছাত্র আইডি *', 'নাম', ...subjNames]
+    const head = ['পরীক্ষা *', 'শ্রেণি *', 'বিভাগ', 'শিক্ষার্থী আইডি *', 'নাম', ...subjNames]
     classes.forEach((k) => {
       const has = Object.keys(ctx.subKey[`${exam.id}|${k.id}`] || {}).length
       if (!has) return
@@ -450,9 +451,9 @@ async function buildTemplate(ds, ctx, opt = {}) {
       ctx.students.filter((s) => s.class_id === k.id).forEach((s) => rows.push([nm(exam), nm(k), dep ? nm(dep) : '', s.student_no, s.name_bn || '']))
     })
     if (!subjNames.length) throw new Error('এই পরীক্ষায় (নির্বাচিত শ্রেণিতে) কোনো বিষয় নেই — আগে "পরীক্ষার বিষয়" যোগ বা ইম্পোর্ট করুন')
-    if (!rows.length) throw new Error('এই শ্রেণিতে কোনো ছাত্র নেই — আগে ছাত্র ইম্পোর্ট/যোগ করুন')
+    if (!rows.length) throw new Error('এই শ্রেণিতে কোনো শিক্ষার্থী নেই — আগে শিক্ষার্থী ইম্পোর্ট/যোগ করুন')
     sheets.push({ name: 'তথ্য', rows: [head, ...rows], headerRow: true, required: head.map((h) => h.includes('*')), widths: [22, 16, 14, 14, 22, ...subjNames.map(() => 14)], textCols: [0, 1, 2, 3, 4], maxRow: rows.length + 50 })
-    const dr = docRows(ds, ['৬. নম্বর ঘরে সংখ্যা লিখুন; পরীক্ষায় অনুপস্থিত থাকলে "অনুপস্থিত" লিখুন; নম্বর না দিতে চাইলে ঘর ফাঁকা রাখুন।', '৭. বিষয়ের কলামগুলো সাইটের বিষয়ের নামে তৈরি — নাম বদলাবেন না। ছাত্র আইডি-র সারি মুছলেও সমস্যা নেই।'])
+    const dr = docRows(ds, ['৬. নম্বর ঘরে সংখ্যা লিখুন; পরীক্ষায় অনুপস্থিত থাকলে "অনুপস্থিত" লিখুন; নম্বর না দিতে চাইলে ঘর ফাঁকা রাখুন।', '৭. বিষয়ের কলামগুলো সাইটের বিষয়ের নামে তৈরি — নাম বদলাবেন না। শিক্ষার্থী আইডি-র সারি মুছলেও সমস্যা নেই।'])
     sheets.push({ name: 'নির্দেশনা', rows: dr, kind: 'doc', widths: [26, 14, 60, 26], headerRow: true })
     return writeXlsx(sheets)
   }
@@ -461,7 +462,7 @@ async function buildTemplate(ds, ctx, opt = {}) {
   sheets.push({ name: 'তথ্য', rows: [head], headerRow: true, required: ds.cols.map((c) => !!c.req), widths: ds.cols.map((c) => Math.max(14, c.l.length + 6)), textCols: ds.cols.map((_, i) => i), lists: ls.refs, maxRow: 3000 })
   sheets.push({ name: 'নির্দেশনা', rows: docRows(ds), kind: 'doc', widths: [26, 14, 60, 26], headerRow: true })
   if (ds.id === 'hifz') {
-    sheets.push({ name: 'ছাত্র তালিকা', rows: [['আইডি', 'নাম', 'শ্রেণি'], ...ctx.students.map((s) => [s.student_no, s.name_bn || '', nm(ctx.classes.find((k) => k.id === s.class_id))])], kind: 'doc', widths: [14, 28, 18], headerRow: true, docStyle: { 0: 4 } })
+    sheets.push({ name: 'শিক্ষার্থী তালিকা', rows: [['আইডি', 'নাম', 'শ্রেণি'], ...ctx.students.map((s) => [s.student_no, s.name_bn || '', nm(ctx.classes.find((k) => k.id === s.class_id))])], kind: 'doc', widths: [14, 28, 18], headerRow: true, docStyle: { 0: 4 } })
   }
   if (ls.has) sheets.push({ name: 'তালিকা', rows: ls.rows, hidden: true })
   return writeXlsx(sheets)
@@ -470,7 +471,7 @@ async function buildTemplate(ds, ctx, opt = {}) {
 // ---------- ফাইল পড়া ও যাচাই ----------
 function mapHeaders(ds, rows) {
   const look = {}
-  ds.cols.forEach((c) => { look[norm(c.l)] = c; look[norm(c.k)] = c })
+  ds.cols.forEach((c) => { look[norm(c.l)] = c; look[norm(c.k)] = c; look[norm(c.l.replace(/শিক্ষার্থী/g, 'ছাত্র'))] = c })
   for (let i = 0; i < Math.min(rows.length, 12); i++) {
     const r = rows[i] || []
     const colMap = {}; const dyn = []; let hit = 0
@@ -541,7 +542,8 @@ const LV = { err: 'ভুল', warn: 'ওয়ার্নিং', skip: 'ব�
 
 export default function ExcelImport() {
   const [ctx, setCtx] = useState(null)
-  const [dsId, setDsId] = useState('students')
+  const [sp] = useSearchParams()
+  const [dsId, setDsId] = useState(DATASETS.some((d) => d.id === sp.get('t')) ? sp.get('t') : 'students')
   const ds = DATASETS.find((d) => d.id === dsId)
   const [examId, setExamId] = useState('')
   const [clsId, setClsId] = useState('')
@@ -653,8 +655,8 @@ export default function ExcelImport() {
         <div className="ei-order">
           {dsId === 'students' && 'আগে শ্রেণি (ও বিভাগ) সাইটে থাকতে হবে — না থাকলে প্রথমে "শ্রেণি / হালকা" ইম্পোর্ট করুন।'}
           {dsId === 'subjects' && 'আগে পরীক্ষা ও শ্রেণি সাইটে থাকতে হবে — না থাকলে প্রথমে "পরীক্ষা" ও "শ্রেণি" ইম্পোর্ট করুন।'}
-          {dsId === 'marks' && 'আগে ছাত্র ও পরীক্ষার বিষয় সাইটে থাকতে হবে। টেমপ্লেটে ছাত্রদের আইডি-নাম ও বিষয়ের কলাম আগে থেকেই বসানো থাকবে, আপনি শুধু নম্বর লিখবেন। আগের নম্বর থাকলে নতুনটি দিয়ে বদলে যাবে।'}
-          {dsId === 'hifz' && 'আগে ছাত্র সাইটে থাকতে হবে। টেমপ্লেটে "ছাত্র তালিকা" পাতায় সব আইডি-নাম দেওয়া থাকবে।'}
+          {dsId === 'marks' && 'আগে শিক্ষার্থী ও পরীক্ষার বিষয় সাইটে থাকতে হবে। টেমপ্লেটে শিক্ষার্থীদের আইডি-নাম ও বিষয়ের কলাম আগে থেকেই বসানো থাকবে, আপনি শুধু নম্বর লিখবেন। আগের নম্বর থাকলে নতুনটি দিয়ে বদলে যাবে।'}
+          {dsId === 'hifz' && 'আগে শিক্ষার্থী সাইটে থাকতে হবে। টেমপ্লেটে "শিক্ষার্থী তালিকা" পাতায় সব আইডি-নাম দেওয়া থাকবে।'}
           {['classes', 'exams', 'staff'].includes(dsId) && 'একই নামের আগে থেকে থাকা সারি ডুপ্লিকেট ধরে বাদ যাবে।'}
         </div>
       </div>

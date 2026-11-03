@@ -55,7 +55,7 @@ export function useYearDates() {
   return { from: clampF(r[0]), to: clampF(r[1]), setFrom: (v) => setR([v, r[1]]), setTo: (v) => setR([r[0], v]), min: lo, max: hi }
 }
 
-// নির্বাচিত শিক্ষাবর্ষে ভর্তি থাকা ছাত্র: ids = ছাত্র-আইডির সেট, classOf = বর্ষে তার শ্রেণি। শিক্ষাবর্ষ না থাকলে ids = null (ফিল্টার হয় না)
+// নির্বাচিত শিক্ষাবর্ষে ভর্তি থাকা শিক্ষার্থী: ids = শিক্ষার্থী-আইডির সেট, classOf = বর্ষে তার শ্রেণি। শিক্ষাবর্ষ না থাকলে ids = null (ফিল্টার হয় না)
 export function useEnrolled() {
   const { year } = useYear()
   const id = year?.id || ''
@@ -99,5 +99,5 @@ export const examInYear = (x, y) => {
   return within(x.created_at)
 }
 
-// ছাত্র-তালিকাকে নির্বাচিত বর্ষের ভর্তি অনুযায়ী ছাঁকে এবং বর্ষের শ্রেণি বসায় (শিক্ষাবর্ষ না থাকলে যেমন আছে তেমনই)
+// শিক্ষার্থী-তালিকাকে নির্বাচিত বর্ষের ভর্তি অনুযায়ী ছাঁকে এবং বর্ষের শ্রেণি বসায় (শিক্ষাবর্ষ না থাকলে যেমন আছে তেমনই)
 export const inYearStudents = (list, en) => (en.active ? (en.ids ? list.filter((s) => en.ids.has(s.id)).map((s) => ({ ...s, class_id: en.classOf[s.id] !== undefined ? en.classOf[s.id] : s.class_id })) : []) : list)

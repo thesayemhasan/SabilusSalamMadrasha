@@ -7,13 +7,13 @@ import { RECEIPT_DEFAULTS } from './config'
 export const PT = 0.3528 // ১ pt = ০.৩৫২৮ মিমি
 
 const INST = [['inst_name', 'প্রতিষ্ঠানের নাম'], ['inst_addr', 'প্রতিষ্ঠানের ঠিকানা'], ['inst_phone', 'প্রতিষ্ঠানের ফোন'], ['logo', 'লোগো', 'image']]
-const STU = [['name_bn', 'নাম (বাংলা)'], ['name_en', 'নাম (ইংরেজি)'], ['student_no', 'আইডি নম্বর'], ['class', 'শ্রেণি'], ['father_name', 'পিতার নাম'], ['mother_name', 'মাতার নাম'], ['dob', 'জন্ম তারিখ'], ['gender', 'লিঙ্গ'], ['guardian_phone', 'অভিভাবকের ফোন'], ['phone2', 'বিকল্প ফোন'], ['address', 'ঠিকানা', 'multi'], ['blood_group', 'রক্তের গ্রুপ'], ['residence', 'আবাসিক/অনাবাসিক'], ['admission_date', 'ভর্তির তারিখ'], ['photo', 'ছাত্রের ছবি', 'image']]
+const STU = [['name_bn', 'নাম (বাংলা)'], ['name_en', 'নাম (ইংরেজি)'], ['student_no', 'আইডি নম্বর'], ['class', 'শ্রেণি'], ['father_name', 'পিতার নাম'], ['mother_name', 'মাতার নাম'], ['dob', 'জন্ম তারিখ'], ['gender', 'লিঙ্গ'], ['guardian_phone', 'অভিভাবকের ফোন'], ['phone2', 'বিকল্প ফোন'], ['address', 'ঠিকানা', 'multi'], ['blood_group', 'রক্তের গ্রুপ'], ['residence', 'আবাসিক/অনাবাসিক'], ['admission_date', 'ভর্তির তারিখ'], ['photo', 'শিক্ষার্থীর ছবি', 'image']]
 const STAFF = [['name_bn', 'নাম (বাংলা)'], ['name_en', 'নাম (ইংরেজি)'], ['staff_no', 'আইডি নম্বর'], ['designation', 'পদবি'], ['phone', 'ফোন'], ['address', 'ঠিকানা', 'multi'], ['nid', 'জাতীয় পরিচয়পত্র নং'], ['join_date', 'যোগদানের তারিখ'], ['photo', 'ছবি', 'image']]
 const ADMIT = [['doc_title', 'কার্ডের শিরোনাম'], ['exam_name', 'পরীক্ষার নাম'], ['year', 'সাল'], ['routine', 'পরীক্ষার রুটিন', 'multi'], ['instructions', 'নির্দেশনা', 'multi'], ['sign_left', 'বাঁ স্বাক্ষরের লেখা'], ['sign_right', 'ডান স্বাক্ষরের লেখা']]
 const FORM = [['form_heading', 'ফরমের শিরোনাম (সালসহ)'], ['form_year', 'ভর্তির শিক্ষাবর্ষ'], ['prev_class', 'আগের শ্রেণি'], ['prev_result', 'আগের ফলাফল'], ['next_class', 'ভর্তির শ্রেণি (পরবর্তী)'], ['decision', 'পুনঃভর্তির যোগ্যতা'], ['reasons', 'যোগ্যতার কারণ/শর্ত'], ['policy_title', 'নীতিমালার শিরোনাম'], ['policy', 'নীতিমালা', 'multi'], ['declaration', 'অঙ্গীকার', 'multi'], ['sign_guardian', 'অভিভাবকের স্বাক্ষরের লেখা'], ['sign_authority', 'কর্তৃপক্ষের স্বাক্ষরের লেখা']]
 
 // রসিদ-প্যাড: প্রেসের ছাপানো A5 কাগজে শুধু তথ্য ছাপার নকশা
-const RPAD = [['title', 'রসিদের শিরোনাম'], ['no', 'রসিদ নং'], ['date', 'তারিখ'], ['meta', 'নাম/মাধ্যম ইত্যাদি (সব লাইন একসাথে)', 'multi'], ['meta_ছাত্র', 'ছাত্র (নাম ও আইডি)'], ['meta_নাম', 'নাম (শিক্ষক-কর্মচারী)'], ['meta_দাতা', 'দাতা'], ['meta_প্রদানকারী', 'প্রদানকারী'], ['meta_পদবি', 'পদবি'], ['meta_আইডি', 'আইডি'], ['meta_ফোন', 'ফোন'], ['meta_মাধ্যম', 'পেমেন্টের মাধ্যম'], ['meta_রেফারেন্স', 'রেফারেন্স / ট্রান্স. নং'], ['items_desc', 'বিবরণ (প্রতি লাইনে একটি)', 'multi'], ['items_amt', 'টাকার অঙ্ক (প্রতি লাইনে একটি)', 'multi'], ['total', 'মোট টাকা'], ['note', 'নিচের লেখা/নোট', 'multi'], ['printed_by', 'Printed by (কে ছাপাল)']]
+const RPAD = [['title', 'রসিদের শিরোনাম'], ['no', 'রসিদ নং'], ['date', 'তারিখ'], ['meta', 'নাম/মাধ্যম ইত্যাদি (সব লাইন একসাথে)', 'multi'], ['meta_শিক্ষার্থী', 'শিক্ষার্থী (নাম ও আইডি)'], ['meta_নাম', 'নাম (শিক্ষক-কর্মচারী)'], ['meta_দাতা', 'দাতা'], ['meta_প্রদানকারী', 'প্রদানকারী'], ['meta_পদবি', 'পদবি'], ['meta_আইডি', 'আইডি'], ['meta_ফোন', 'ফোন'], ['meta_মাধ্যম', 'পেমেন্টের মাধ্যম'], ['meta_রেফারেন্স', 'রেফারেন্স / ট্রান্স. নং'], ['items_desc', 'বিবরণ (প্রতি লাইনে একটি)', 'multi'], ['items_amt', 'টাকার অঙ্ক (প্রতি লাইনে একটি)', 'multi'], ['total', 'মোট টাকা'], ['note', 'নিচের লেখা/নোট', 'multi'], ['printed_by', 'Printed by (কে ছাপাল)']]
 export const FIELD_SETS = {
   receipt_pad: RPAD,
   idcard_student: [...STU, ...INST],
@@ -21,7 +21,7 @@ export const FIELD_SETS = {
   admit: [...STU, ...ADMIT, ...INST],
   form: [...STU, ...FORM, ...INST],
 }
-export const TYPE_TITLE = { receipt_pad: 'রসিদ প্যাড', idcard_student: 'ছাত্র আইডি কার্ড', idcard_staff: 'শিক্ষক-কর্মচারী আইডি কার্ড', admit: 'প্রবেশপত্র', form: 'ভর্তি ফরম' }
+export const TYPE_TITLE = { receipt_pad: 'রসিদ প্যাড', idcard_student: 'শিক্ষার্থী আইডি কার্ড', idcard_staff: 'শিক্ষক-কর্মচারী আইডি কার্ড', admit: 'প্রবেশপত্র', form: 'ভর্তি ফরম' }
 export const fieldLabel = (type, key) => (FIELD_SETS[type].find((f) => f[0] === key) || [key, key])[1]
 export const fieldKind = (type, key) => (FIELD_SETS[type].find((f) => f[0] === key) || [])[2] || 'text'
 
@@ -38,7 +38,7 @@ function idcard(staff) {
     sides: {
       front: { bg_url: '', els: [
         B(0, 0, 85.6, 11, { fill: '#16a34a' }), IMG('logo', 2, 1, 9, 9, { border: false }),
-        F('inst_name', 12.5, 1.2, 70, 5.5, { size: 9, bold: true, color: '#ffffff' }), T(staff ? 'পরিচয়পত্র' : 'ছাত্র পরিচয়পত্র', 12.5, 6.4, 70, 4, { size: 7, color: '#ffffff' }),
+        F('inst_name', 12.5, 1.2, 70, 5.5, { size: 9, bold: true, color: '#ffffff' }), T(staff ? 'পরিচয়পত্র' : 'শিক্ষার্থী পরিচয়পত্র', 12.5, 6.4, 70, 4, { size: 7, color: '#ffffff' }),
         IMG('photo', 3, 13.5, 21, 26),
         F('name_bn', 27, 14, 56, 5.5, { size: 10.5, bold: true }),
         staff ? F('staff_no', 27, 20.5, 56, 4, { size: 8, prefix: 'আইডি: ' }) : F('student_no', 27, 20.5, 56, 4, { size: 8, prefix: 'আইডি: ' }),

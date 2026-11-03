@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
     const { data: ok } = await asUser.rpc('sms_allowed', { k: kind })
     if (!ok) return json({ error: 'এই বার্তা পাঠানোর অনুমতি নেই' }, 403)
     const items: { student_id: string; vars?: Record<string, string> }[] = Array.isArray(body.items) ? body.items.slice(0, 200) : []
-    if (items.length === 0) return json({ error: 'কোনো ছাত্র বাছাই করা নেই' }, 400)
+    if (items.length === 0) return json({ error: 'কোনো শিক্ষার্থী বাছাই করা নেই' }, 400)
 
     const { data: tpl } = await admin.from('sms_templates').select('*').eq('key', kind).maybeSingle()
     if (!tpl || !tpl.enabled) return json({ error: 'এই বার্তাটি বন্ধ আছে বা লেখা নেই' }, 400)
@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
         const it = queue.shift()!
         const s = byId[it.student_id]
         const base = { kind, student_id: it.student_id, sent_by: u.user.id }
-        if (!s) { out.skipped++; logs.push({ ...base, status: 'skipped', detail: 'ছাত্র পাওয়া যায়নি', segments: 0 }); continue }
+        if (!s) { out.skipped++; logs.push({ ...base, status: 'skipped', detail: 'শিক্ষার্থী পাওয়া যায়নি', segments: 0 }); continue }
         const phone = normPhone(s.guardian_phone) || normPhone(s.phone2)
         if (!phone) { out.skipped++; logs.push({ ...base, status: 'skipped', detail: 'মোবাইল নম্বর নেই বা ঠিক নয়', segments: 0 }); continue }
         if (done.has(it.student_id)) { out.skipped++; logs.push({ ...base, phone, status: 'skipped', detail: 'আগেই পাঠানো হয়েছে', segments: 0 }); continue }

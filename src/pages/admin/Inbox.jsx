@@ -35,7 +35,7 @@ export function Applications() {
     load()
   }
   async function admit(r) {
-    if (!(await confirm({ danger: false, name: r.student_name || 'এই আবেদন', text: 'এই আবেদনের তথ্য দিয়ে ছাত্র হিসেবে ভর্তি করবেন? ছাত্র তালিকায় যুক্ত হবে এবং আবেদনের অবস্থা "ভর্তি হয়েছে" হবে।', ok: 'হ্যাঁ, ভর্তি করুন' }))) return
+    if (!(await confirm({ danger: false, name: r.student_name || 'এই আবেদন', text: 'এই আবেদনের তথ্য দিয়ে শিক্ষার্থী হিসেবে ভর্তি করবেন? শিক্ষার্থী তালিকায় যুক্ত হবে এবং আবেদনের অবস্থা "ভর্তি হয়েছে" হবে।', ok: 'হ্যাঁ, ভর্তি করুন' }))) return
     const [{ data: deps }, { data: cls }] = await Promise.all([supabase.from('departments').select('*'), supabase.from('classes').select('*')])
     const same = (a, b) => a && b && String(a).trim() === String(b).trim()
     const dep = (deps || []).find((d) => same(d.name_bn, r.department) || same(d.name_en, r.department))
@@ -94,7 +94,7 @@ export function Applications() {
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                     <div style={{ minWidth: 190 }}><Select value={r.status} onChange={(x) => setStatus(r, x)} options={Object.entries(STATUS)} /></div>
-                    {r.status !== 'admitted' && <button className="btn small" onClick={() => admit(r)}><Icon name="check" size={15} cls="cur" /> ছাত্র হিসেবে ভর্তি করুন</button>}
+                    {r.status !== 'admitted' && <button className="btn small" onClick={() => admit(r)}><Icon name="check" size={15} cls="cur" /> শিক্ষার্থী হিসেবে ভর্তি করুন</button>}
                     {phoneOf(r) && <a className="btn small outline" href={`tel:${phoneOf(r)}`}><Icon name="phone" size={15} cls="cur" /> কল করুন</a>}
                     <button className="btn small danger" onClick={() => remove(r)}><Icon name="trash" size={15} cls="cur" /> মুছুন</button>
                   </div>

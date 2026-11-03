@@ -19,7 +19,7 @@ function useMoney() {
   }, [])
   const tx = useMemo(() => {
     const t = []
-    d.pay.filter((x) => !x.void).forEach((x) => t.push({ date: x.paid_at, method: x.method, in: num(x.amount), out: 0, cat: 'ছাত্র ফি', desc: `রসিদ ${x.receipt_no || ''}`, group: 'fee' }))
+    d.pay.filter((x) => !x.void).forEach((x) => t.push({ date: x.paid_at, method: x.method, in: num(x.amount), out: 0, cat: 'শিক্ষার্থী ফি', desc: `রসিদ ${x.receipt_no || ''}`, group: 'fee' }))
     d.led.filter((x) => !x.void).forEach((x) => t.push({ date: x.date, method: x.method, in: x.kind === 'income' ? num(x.amount) : 0, out: x.kind === 'expense' ? num(x.amount) : 0, cat: x.category_name || (x.kind === 'income' ? 'আয়' : 'ব্যয়'), desc: [x.party, x.note].filter(Boolean).join(' — '), group: x.kind }))
     d.sal.filter((x) => !x.void).forEach((x) => t.push({ date: x.paid_at, method: x.method, in: 0, out: num(x.net), cat: 'বেতন (শিক্ষক-কর্মচারী)', desc: monthName(x.period), group: 'salary' }))
     d.adv.filter((x) => !x.void).forEach((x) => t.push({ date: x.date, method: x.method, in: 0, out: num(x.amount), cat: 'অগ্রিম প্রদান', desc: '', group: 'advance' }))
@@ -107,7 +107,7 @@ function Dues() {
         <button className="btn outline" onClick={() => printNode(document.querySelector('.print-area'), 'A4')}><Icon name="printer" size={17} cls="cur" /> প্রিন্ট</button>
       </div>
       {smsOpen && <SmsSend kind="dues" title="বকেয়া ফি-র তাগাদা SMS" onClose={() => setSmsOpen(false)} rows={rows.map((r) => ({ student_id: r.s.id, name: nm(r.s), phone: r.s.guardian_phone || r.s.phone2, vars: { amount: Math.round(r.due).toLocaleString('bn-BD') } }))} />}
-      <div className="card" style={{ marginBottom: 12 }}>বকেয়া আছে এমন ছাত্র: <b>{rows.length.toLocaleString('bn-BD')}</b> জন · মোট বকেয়া: <b>{taka(rows.reduce((a, r) => a + r.due, 0))}</b></div>
+      <div className="card" style={{ marginBottom: 12 }}>বকেয়া আছে এমন শিক্ষার্থী: <b>{rows.length.toLocaleString('bn-BD')}</b> জন · মোট বকেয়া: <b>{taka(rows.reduce((a, r) => a + r.due, 0))}</b></div>
       <div className="card table-wrap print-area">
         <table>
           <thead><tr><th>আইডি</th><th>নাম</th><th>শ্রেণি</th><th>ফোন</th><th>বকেয়া বিল</th><th>মোট</th></tr></thead>
@@ -180,7 +180,7 @@ function StudentStatement() {
     <>
       <div className="card form" style={{ marginBottom: 14 }}>
         <div className="field" style={{ position: 'relative' }}>
-          <label>ছাত্র খুঁজুন</label>
+          <label>শিক্ষার্থী খুঁজুন</label>
           <input value={q} onChange={(e) => { setQ(e.target.value); setSel(null) }} placeholder="নাম বা আইডি" autoComplete="off" />
           {found.length > 0 && <div className="pick-list">{found.map((s) => <button type="button" key={s.id} onClick={() => { setSel(s); setQ(`${nm(s)} (${s.student_no})`) }}><b>{nm(s)}</b> <span className="muted">{s.student_no}</span></button>)}</div>}
         </div>
@@ -205,7 +205,7 @@ export default function Reports() {
     <>
       <h2>হিসাব ও রিপোর্ট</h2>
       <div className="tabs" style={{ marginBottom: 14 }}>
-        {[['sum', 'আয়-ব্যয় সারাংশ'], ['dues', 'বকেয়া'], ['cash', 'ক্যাশবই'], ['stu', 'ছাত্রের হিসাব']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+        {[['sum', 'আয়-ব্যয় সারাংশ'], ['dues', 'বকেয়া'], ['cash', 'ক্যাশবই'], ['stu', 'শিক্ষার্থীর হিসাব']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
       </div>
       {tab === 'sum' && <Summary M={M} />}
       {tab === 'dues' && <Dues />}

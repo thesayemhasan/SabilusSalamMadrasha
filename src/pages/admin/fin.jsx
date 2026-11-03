@@ -173,7 +173,7 @@ export function VoidDialog({ name, onClose, onDone }) {
     <Modal onClose={onClose}>
       <h3>এন্ট্রি বাতিল</h3>
       <p><b>{name}</b> বাতিল করবেন? বাতিল করলে এটি আর হিসাবে ধরা হবে না এবং ফিরিয়ে আনা যাবে না। এন্ট্রিটি লগে থেকে যাবে।</p>
-      <div className="field"><label>বাতিলের কারণ *</label><textarea value={why} onChange={(e) => setWhy(e.target.value)} placeholder="যেমন: ভুল ছাত্রের নামে ধরা হয়েছিল" /></div>
+      <div className="field"><label>বাতিলের কারণ *</label><textarea value={why} onChange={(e) => setWhy(e.target.value)} placeholder="যেমন: ভুল শিক্ষার্থীর নামে ধরা হয়েছিল" /></div>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
         <button className="btn outline" onClick={onClose}>না, থাক</button>
         <button className="btn danger" disabled={busy || why.trim().length < 3} onClick={async () => { setBusy(true); await onDone(why.trim()); setBusy(false) }}>হ্যাঁ, বাতিল করুন</button>

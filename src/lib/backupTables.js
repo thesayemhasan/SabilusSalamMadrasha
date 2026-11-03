@@ -5,7 +5,7 @@ export const TABLES = [
   ['admission_applications', 'ভর্তির আবেদন', 'id'], ['contact_messages', 'যোগাযোগের বার্তা', 'id'], ['admission_fields', 'ভর্তি ফরমের ঘর', 'id'], ['lookups', 'তালিকা (আবাসিক ধরন, সময় ইত্যাদি)', 'id'],
   ['academic_years', 'শিক্ষাবর্ষ', 'id'], ['classes', 'শ্রেণি/হালকা', 'id'], ['students', 'ছাত্র-ছাত্রী', 'id'], ['enrollments', 'বর্ষে ভর্তি', 'id'], ['staff', 'শিক্ষক-কর্মচারী', 'id'],
   ['attendance', 'হাজিরা', 'id'], ['device_punches', 'মেশিনের পাঞ্চ', 'id'],
-  ['fee_heads', 'ফি-র ধরন', 'id'], ['fee_rates', 'ফি-র হার', 'id'], ['student_fees', 'ছাত্রভিত্তিক ফি', 'id'], ['invoices', 'বিল', 'id'], ['payments', 'আদায় ও রসিদ', 'id'], ['payment_items', 'রসিদের আইটেম', 'id'],
+  ['fee_heads', 'ফি-র ধরন', 'id'], ['fee_rates', 'ফি-র হার', 'id'], ['student_fees', 'শিক্ষার্থীভিত্তিক ফি', 'id'], ['invoices', 'বিল', 'id'], ['payments', 'আদায় ও রসিদ', 'id'], ['payment_items', 'রসিদের আইটেম', 'id'],
   ['ledger_categories', 'আয়-ব্যয়ের খাত', 'id'], ['ledger', 'আয়-ব্যয়ের খাতা', 'id'], ['staff_advances', 'অগ্রিম', 'id'], ['salary_payments', 'বেতন', 'id'], ['audit_log', 'আর্থিক লগ', 'id'],
   ['exams', 'পরীক্ষা', 'id'], ['exam_subjects', 'পরীক্ষার বিষয়', 'id'], ['exam_marks', 'নম্বর', 'id'], ['hifz_logs', 'হিফজ', 'id'],
   ['print_configs', 'প্রিন্ট ডিজাইন', 'key'], ['student_incidents', 'আচরণগত ঘটনা', 'id'], ['readmissions', 'পুনঃভর্তির সিদ্ধান্ত', 'id'],

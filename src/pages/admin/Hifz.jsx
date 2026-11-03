@@ -49,7 +49,7 @@ function Daily({ classes }) {
   async function add(e) {
     e.preventDefault()
     setErr('')
-    if (!stu) return setErr('আগে ছাত্র বাছুন')
+    if (!stu) return setErr('আগে শিক্ষার্থী বাছুন')
     const { error } = await supabase.from('hifz_logs').insert({ student_id: stu, log_date: date, kind: f.kind, para: f.para ? Number(f.para) : null, detail: f.detail || null, pages: num(f.pages), quality: f.quality || null, note: f.note || null })
     if (error) return setErr(error.message)
     setF({ ...f, detail: '', pages: '', note: '' })
@@ -66,7 +66,7 @@ function Daily({ classes }) {
         <div className="grid g3">
           <div className="field"><label>তারিখ</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
           <div className="field"><label>শ্রেণি / হালকা (ফিল্টার)</label><Select placeholder="সব" value={cls} onChange={(v) => { setCls(v); setStu('') }} options={[['', 'সব'], ...classes.map((c) => [c.id, nm(c)])]} /></div>
-          <div className="field"><label>ছাত্র</label><Select placeholder="ছাত্র বাছুন" value={stu} onChange={setStu} options={students.map((s) => [s.id, `${s.student_no} — ${nm(s)}`])} /></div>
+          <div className="field"><label>শিক্ষার্থী</label><Select placeholder="শিক্ষার্থী বাছুন" value={stu} onChange={setStu} options={students.map((s) => [s.id, `${s.student_no} — ${nm(s)}`])} /></div>
           <div className="field"><label>ধরন</label><Select value={f.kind} onChange={(v) => setF({ ...f, kind: v })} options={KINDS} /></div>
           <div className="field"><label>পারা (১–৩০)</label><input type="number" min="1" max="30" value={f.para} onChange={(e) => setF({ ...f, para: e.target.value })} /></div>
           <div className="field"><label>পৃষ্ঠা / পরিমাণ</label><input type="number" min="0" step="0.5" value={f.pages} onChange={(e) => setF({ ...f, pages: e.target.value })} /></div>
@@ -79,7 +79,7 @@ function Daily({ classes }) {
       </form>
       <h3>{date} এর এন্ট্রি ({bn(logs.length)})</h3>
       <div className="table-wrap"><table>
-        <thead><tr><th>ছাত্র</th><th>ধরন</th><th>পারা</th><th>বিবরণ</th><th>পৃষ্ঠা</th><th>মান</th><th></th></tr></thead>
+        <thead><tr><th>শিক্ষার্থী</th><th>ধরন</th><th>পারা</th><th>বিবরণ</th><th>পৃষ্ঠা</th><th>মান</th><th></th></tr></thead>
         <tbody>
           {logs.map((l) => (
             <tr key={l.id}>
@@ -121,10 +121,10 @@ function Progress({ classes }) {
         <button className="btn outline" onClick={() => downloadCsv(`হিফজ-${month}.csv`, ['আইডি', 'নাম', 'সবক (পৃষ্ঠা)', 'সাত সবক', 'আমুখতা', 'সক্রিয় দিন', 'মোট সবক', 'সর্বশেষ পারা'], rows.map((r) => [r.s.student_no, nm(r.s), r.sabaq, r.sabaqi, r.manzil, r.days, r.total, r.lastPara || '']))}>CSV</button>
       </div>
       <div className="table-wrap"><table>
-        <thead><tr><th>ছাত্র</th><th>সবক</th><th>সাত সবক</th><th>আমুখতা</th><th>দিন</th><th>মোট সবক</th><th>সর্বশেষ পারা</th></tr></thead>
+        <thead><tr><th>শিক্ষার্থী</th><th>সবক</th><th>সাত সবক</th><th>আমুখতা</th><th>দিন</th><th>মোট সবক</th><th>সর্বশেষ পারা</th></tr></thead>
         <tbody>
           {rows.map((r) => <tr key={r.s.id}><td>{r.s.student_no} — {nm(r.s)}</td><td>{bn(r.sabaq, 1)}</td><td>{bn(r.sabaqi, 1)}</td><td>{bn(r.manzil, 1)}</td><td>{bn(r.days)}</td><td>{bn(r.total, 1)}</td><td>{r.lastPara ? bn(r.lastPara) : '—'}</td></tr>)}
-          {!rows.length && <tr><td colSpan={7} className="muted">কোনো ছাত্র নেই</td></tr>}
+          {!rows.length && <tr><td colSpan={7} className="muted">কোনো শিক্ষার্থী নেই</td></tr>}
         </tbody>
       </table></div>
       <p className="muted" style={{ marginTop: 8 }}>সংখ্যাগুলো পৃষ্ঠার হিসাবে। “মোট সবক” শুরু থেকে এখন পর্যন্ত।</p>

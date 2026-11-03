@@ -8,7 +8,7 @@ import { nm } from './fin'
 const bnum = (n) => Number(n || 0).toLocaleString('bn-BD')
 const all = (make) => fetchAll(make).then((r) => r.data || [])
 
-// নির্বাচিত (উপরের সিলেক্টরের) শিক্ষাবর্ষে ছাত্র ভর্তি করা: আগের বর্ষ থেকে বেছে নতুন শ্রেণিতে তোলা
+// নির্বাচিত (উপরের সিলেক্টরের) শিক্ষাবর্ষে শিক্ষার্থী ভর্তি করা: আগের বর্ষ থেকে বেছে নতুন শ্রেণিতে তোলা
 export default function Enroll() {
   const { year, years, reload: reloadYears } = useYear()
   const confirm = useConfirm()
@@ -65,17 +65,17 @@ export default function Enroll() {
       if (error) { setBusy(false); return setMsg(`ভর্তি হয়নি: ${error.message}`) }
     }
     setBusy(false)
-    setMsg(`${bnum(recs.length)} জন ছাত্র ${year.name_bn}-এ ভর্তি হয়েছে।`)
+    setMsg(`${bnum(recs.length)} জন শিক্ষার্থী ${year.name_bn}-এ ভর্তি হয়েছে।`)
     setPick({})
     await loadTarget()
   }
   async function allActive() {
-    if (!(await confirm({ name: year.name_bn, text: 'সব সক্রিয় ছাত্রকে এই বর্ষে তাদের বর্তমান শ্রেণিতে ভর্তি করবেন? (যারা আগে থেকেই ভর্তি আছে তাদের শ্রেণি বদলাবে না)' }))) return
+    if (!(await confirm({ name: year.name_bn, text: 'সব সক্রিয় শিক্ষার্থীকে এই বর্ষে তাদের বর্তমান শ্রেণিতে ভর্তি করবেন? (যারা আগে থেকেই ভর্তি আছে তাদের শ্রেণি বদলাবে না)' }))) return
     const st = await all((a, b) => supabase.from('students').select('id,class_id').eq('status', 'active').order('id').range(a, b))
     await enroll(st.filter((s) => !done.has(s.id)).map((s) => [s.id, s.class_id]))
   }
   async function remove(e) {
-    if (!(await confirm({ name: nm(stu[e.student_id]), text: `${year.name_bn} থেকে বাদ দেবেন? (ছাত্রের তথ্য মুছবে না, শুধু এই বর্ষের তালিকা থেকে সরবে)` }))) return
+    if (!(await confirm({ name: nm(stu[e.student_id]), text: `${year.name_bn} থেকে বাদ দেবেন? (শিক্ষার্থীর তথ্য মুছবে না, শুধু এই বর্ষের তালিকা থেকে সরবে)` }))) return
     const { error } = await supabase.from('enrollments').delete().eq('id', e.id)
     if (error) return setMsg(error.message)
     loadTarget()
@@ -100,7 +100,7 @@ export default function Enroll() {
   return (
     <>
       <div className="toolbar"><h2 style={{ margin: 0, flex: '1 1 auto' }}>শিক্ষাবর্ষে ভর্তি ও উত্তীর্ণ</h2></div>
-      <p className="muted" style={{ marginTop: -6 }}>উপরের সিলেক্টরে যে শিক্ষাবর্ষ বাছা আছে (<b>{year.name_bn}</b>) সেখানে ছাত্র ভর্তি হবে। আগের বর্ষ থেকে ছাত্র বেছে নতুন শ্রেণিতে তুলুন। যারা অনুত্তীর্ণ তাদের একই শ্রেণি রাখুন, আর যারা পাশ করে বেরিয়ে গেছে তাদের এখানে না বেছে ছাত্র পাতায় অবস্থা "পাশ / ফারেগ" করে দিন।</p>
+      <p className="muted" style={{ marginTop: -6 }}>উপরের সিলেক্টরে যে শিক্ষাবর্ষ বাছা আছে (<b>{year.name_bn}</b>) সেখানে শিক্ষার্থী ভর্তি হবে। আগের বর্ষ থেকে শিক্ষার্থী বেছে নতুন শ্রেণিতে তুলুন। যারা অনুত্তীর্ণ তাদের একই শ্রেণি রাখুন, আর যারা পাশ করে বেরিয়ে গেছে তাদের এখানে না বেছে শিক্ষার্থী পাতায় অবস্থা "পাশ / ফারেগ" করে দিন।</p>
       {msg && <div className={`alert ${msg.startsWith('ভর্তি হয়নি') ? 'err' : 'ok'}`} style={{ marginBottom: 12 }}>{msg}</div>}
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -110,7 +110,7 @@ export default function Enroll() {
           <div style={{ minWidth: 200 }}><Select value={srcCls} onChange={setSrcCls} options={[['', 'সব শ্রেণি'], ...classes.map((c) => [c.id, nm(c)])]} /></div>
           <span className="muted">{bnum(rows.length)} জন বাকি, {bnum(chosen.length)} জন বাছাই</span>
         </div>
-        {!srcId ? <p className="muted">কোন বর্ষ থেকে ছাত্র আনবেন তা বাছুন।</p> : rows.length === 0 ? <p className="muted">এই বর্ষে ভর্তি করার মতো কেউ বাকি নেই (সবাই ভর্তি হয়ে গেছে বা তালিকা ফাঁকা)।</p> : (
+        {!srcId ? <p className="muted">কোন বর্ষ থেকে শিক্ষার্থী আনবেন তা বাছুন।</p> : rows.length === 0 ? <p className="muted">এই বর্ষে ভর্তি করার মতো কেউ বাকি নেই (সবাই ভর্তি হয়ে গেছে বা তালিকা ফাঁকা)।</p> : (
           <>
             <div className="toolbar" style={{ marginBottom: 8 }}>
               <button className="btn small outline" onClick={() => selectAll(true)}>সব বাছুন</button>
@@ -140,7 +140,7 @@ export default function Enroll() {
       <div className="card">
         <div className="toolbar" style={{ marginBottom: 8 }}>
           <h3 style={{ margin: 0, flex: '1 1 auto' }}>২. {year.name_bn}-এ ভর্তি আছে: {bnum(target.length)} জন</h3>
-          <button className="btn small outline" disabled={busy} onClick={allActive}>সব সক্রিয় ছাত্রকে এই বর্ষে ভর্তি করুন</button>
+          <button className="btn small outline" disabled={busy} onClick={allActive}>সব সক্রিয় শিক্ষার্থীকে এই বর্ষে ভর্তি করুন</button>
         </div>
         {Object.keys(counts).length > 0 && <p className="muted" style={{ marginTop: 0 }}>{Object.entries(counts).map(([k, v]) => `${k}: ${bnum(v)}`).join(' · ')}</p>}
         {tRows.length === 0 ? <p className="muted">এই বর্ষে এখনো কেউ ভর্তি নেই।</p> : (

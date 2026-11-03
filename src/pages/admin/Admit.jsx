@@ -64,7 +64,7 @@ export default function Admit() {
   const routineOf = (classId) => routine.filter((x) => x.class_id === classId).map((r) => `${nm(r)}${r.exam_date ? ` — ${dateBn(r.exam_date)}` : ''}${r.exam_time ? ` ${r.exam_time}` : ''}`)  .join('\n')
   const common = { ...inst, ...(cfg.school_title ? { inst_name: cfg.school_title } : {}), doc_title: eff.doc_title, exam_name: eff.exam_name, year: eff.year, instructions: cfg.instructions, sign_left: cfg.sign_left, sign_right: cfg.sign_right }
   const items = chosen.map((s) => ({ ...common, ...studentData(s, clsNameOf(s.class_id)), routine: routineOf(s.class_id) }))
-  const sample = { ...common, ...studentData({ name_bn: 'নমুনা ছাত্র', student_no: '260001', father_name: 'নমুনা পিতা' }, 'নমুনা শ্রেণি'), routine: 'কুরআন — ১ নভেম্বর\nআরবি — ২ নভেম্বর' }
+  const sample = { ...common, ...studentData({ name_bn: 'নমুনা শিক্ষার্থী', student_no: '260001', father_name: 'নমুনা পিতা' }, 'নমুনা শ্রেণি'), routine: 'কুরআন — ১ নভেম্বর\nআরবি — ২ নভেম্বর' }
   const eff2 = mode || lay.cfg.print || 'front'
   return (
     <>
@@ -117,11 +117,11 @@ export default function Admit() {
                   <td>{eligible(s) ? <span className="pill ok">যোগ্য</span> : <span className="pill">বকেয়া {taka(dueOf(s.id))}</span>}</td>
                 </tr>
               ))}
-              {!students.length && <tr><td colSpan={4} className="muted">{cls ? 'এই শ্রেণিতে কোনো সক্রিয় ছাত্র নেই (ছাত্র-ছাত্রী পেজে ছাত্রের শ্রেণি ঠিক আছে কিনা দেখুন)' : 'কোনো সক্রিয় ছাত্র নেই'}</td></tr>}
+              {!students.length && <tr><td colSpan={4} className="muted">{cls ? 'এই শ্রেণিতে কোনো সক্রিয় শিক্ষার্থী নেই (ছাত্র-ছাত্রী পেজে শিক্ষার্থীর শ্রেণি ঠিক আছে কিনা দেখুন)' : 'কোনো সক্রিয় শিক্ষার্থী নেই'}</td></tr>}
             </tbody>
           </table></div>
           <h3 style={{ marginTop: 18 }}>প্রিভিউ</h3>
-          <div className="adm-scroll" ref={ref}>{chosen.length ? <CardSheets layout={lay.cfg} items={items} mode={eff2} page={{ w: 297, h: 210 }} margin={6} pad={1} /> : <p className="muted">ছাত্র বাছুন</p>}</div>
+          <div className="adm-scroll" ref={ref}>{chosen.length ? <CardSheets layout={lay.cfg} items={items} mode={eff2} page={{ w: 297, h: 210 }} margin={6} pad={1} /> : <p className="muted">শিক্ষার্থী বাছুন</p>}</div>
         </>
       )}
     </>

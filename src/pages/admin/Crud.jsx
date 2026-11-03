@@ -79,7 +79,13 @@ export default function Crud({ table, title, hint, fields, order = 'created_at',
   async function remove(row) {
     if (!(await confirm({ name: label(row), text: 'মুছে ফেলবেন? এটি আর ফিরিয়ে আনা যাবে না।' }))) return
     const { error } = await supabase.from(table).delete().eq('id', row.id)
-    if (error) setMsg(error.message)
+    if (error) {
+      const rel = { invoices: 'বিল/ফি', payments: 'আদায়ের রশিদ', student_incidents: 'আচরণ-রেকর্ড' }
+      const m = /on table "([^"]+)"/.exec(error.message || '')
+      setMsg(error.code === '23503' || /foreign key/i.test(error.message || '')
+        ? `এটি মোছা যাবে না, কারণ এর সাথে ${rel[m?.[1]] || 'অন্য তথ্য'} জুড়ে আছে — মুছলে হিসাব নষ্ট হবে। মোছার বদলে "সম্পাদনা" থেকে অবস্থা "নিষ্ক্রিয়" বা "ছেড়ে গেছে" করে দিন; তাহলে তালিকা/হাজিরা থেকে বাদ পড়বে কিন্তু হিসাব অক্ষত থাকবে।`
+        : error.message)
+    } else setMsg('')
     load()
   }
 

@@ -4,6 +4,7 @@ import { initFx } from './lib/fx'
 import { useSite } from './lib/store'
 import PublicLayout from './components/PublicLayout'
 import { About, Account, Admission, Contact, Departments, Donate, Events, Gallery, Home, Notices, Privacy, Teachers, Terms } from './pages/public/Public'
+import Result from './pages/public/Result'
 import AdminShell from './pages/admin/AdminShell'
 import Dashboard from './pages/admin/Dashboard'
 import TextsEditor from './pages/admin/TextsEditor'
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="teachers" element={<Teachers />} />
         <Route path="donate" element={<Donate />} />
         <Route path="contact" element={<Contact />} />
+        <Route path="result" element={<Result />} />
         <Route path="account" element={<Account />} />
         <Route path="privacy" element={<Privacy />} />
         <Route path="terms" element={<Terms />} />
@@ -62,8 +64,8 @@ export default function App() {
         <Route path="messages" element={<Messages />} />
         <Route path="texts" element={<TextsEditor />} />
         <Route path="departments" element={<DepartmentsAdmin />} />
-        <Route path="students" element={<Gate mod="students" name="ছাত্র ও ভর্তি"><StudentsAdmin /></Gate>} />
-        <Route path="classes" element={<Gate mod="students" name="ছাত্র ও ভর্তি"><ClassesAdmin /></Gate>} />
+        <Route path="students" element={<Gate mod="students" name="শিক্ষার্থী ও ভর্তি"><StudentsAdmin /></Gate>} />
+        <Route path="classes" element={<Gate mod="students" name="শিক্ষার্থী ও ভর্তি"><ClassesAdmin /></Gate>} />
         <Route path="staff" element={<Gate mod="teachers" name="শিক্ষক ব্যবস্থাপনা"><StaffAdmin /></Gate>} />
         <Route path="attendance" element={<Gate mod="attendance" name="হাজিরা"><Attendance /></Gate>} />
         <Route path="residence" element={<ResidenceAdmin />} />

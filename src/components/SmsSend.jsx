@@ -50,7 +50,7 @@ export default function SmsSend({ kind, rows, onClose, title }) {
               <div style={{ marginTop: 4 }}>{texts[0]}</div>
             </div>
           )}
-          {withPhone.length > 0 && <p>মোট প্রায় <b>{bn(segs)}</b> টি SMS (বাংলায় ৭০ অক্ষরে ১টি), আনুমানিক খরচ <b>৳ {(segs * rate).toLocaleString('bn-BD', { maximumFractionDigits: 2 })}</b> (প্রতি SMS {bn(rate)} টাকা ধরে)। আগে পাঠানো হয়ে থাকলে ওই ছাত্রকে আবার যাবে না।</p>}
+          {withPhone.length > 0 && <p>মোট প্রায় <b>{bn(segs)}</b> টি SMS (বাংলায় ৭০ অক্ষরে ১টি), আনুমানিক খরচ <b>৳ {(segs * rate).toLocaleString('bn-BD', { maximumFractionDigits: 2 })}</b> (প্রতি SMS {bn(rate)} টাকা ধরে)। আগে পাঠানো হয়ে থাকলে ওই শিক্ষার্থীকে আবার যাবে না।</p>}
           {err && <div className="alert err">{err}</div>}
           <div className="toolbar" style={{ marginTop: 12 }}>
             <button className="btn" disabled={busy || withPhone.length === 0} onClick={go}>{busy ? `পাঠানো হচ্ছে… ${prog || ''}` : `${bn(withPhone.length)} জনকে SMS পাঠান`}</button>

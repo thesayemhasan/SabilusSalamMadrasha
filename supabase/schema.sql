@@ -45,11 +45,11 @@ create table if not exists public.features (
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('applications','inbox','ইনবক্স','ভর্তির আবেদন','Admission applications',10),
   ('messages','inbox','ইনবক্স','যোগাযোগের বার্তা','Contact messages',11),
-  ('students','people','ছাত্র ও হাজিরা','ছাত্র-ছাত্রী','Students',20),
-  ('classes','people','ছাত্র ও হাজিরা','শ্রেণি ও হালকা','Classes',21),
-  ('staff','people','ছাত্র ও হাজিরা','শিক্ষক ও কর্মচারী','Teachers & staff',22),
-  ('attendance','people','ছাত্র ও হাজিরা','হাজিরা','Attendance',23),
-  ('att_setup','people','ছাত্র ও হাজিরা','আবাসিক ধরন ও হাজিরার সময়','Residence & sessions',24),
+  ('students','people','শিক্ষার্থী ও হাজিরা','ছাত্র-ছাত্রী','Students',20),
+  ('classes','people','শিক্ষার্থী ও হাজিরা','শ্রেণি ও হালকা','Classes',21),
+  ('staff','people','শিক্ষার্থী ও হাজিরা','শিক্ষক ও কর্মচারী','Teachers & staff',22),
+  ('attendance','people','শিক্ষার্থী ও হাজিরা','হাজিরা','Attendance',23),
+  ('att_setup','people','শিক্ষার্থী ও হাজিরা','আবাসিক ধরন ও হাজিরার সময়','Residence & sessions',24),
   ('fees','finance','ফি ও হিসাব','ফি আদায় ও রসিদ','Fee collection & receipts',30),
   ('billing','finance','ফি ও হিসাব','বিল তৈরি','Billing',31),
   ('fee_setup','finance','ফি ও হিসাব','ফি-র ধরন ও পরিমাণ','Fee setup',32),
@@ -438,7 +438,7 @@ select * from (values
 where not exists (select 1 from public.departments);
 
 -- =====================================================================
--- ধাপ ২: ছাত্র, শ্রেণি, শিক্ষক-কর্মচারী, হাজিরা, মেশিন (আবার চালালেও ক্ষতি নেই)
+-- ধাপ ২: শিক্ষার্থী, শ্রেণি, শিক্ষক-কর্মচারী, হাজিরা, মেশিন (আবার চালালেও ক্ষতি নেই)
 -- এই সব তথ্য শুধু অ্যাডমিন দেখতে ও বদলাতে পারবে
 -- =====================================================================
 
@@ -495,7 +495,7 @@ create table if not exists public.students (
   class_id uuid references public.classes(id) on delete set null,
   residence text,                         -- lookups(kind='residence') এর নাম
   admission_date date default current_date,
-  device_user_id text,                    -- হাজিরা মেশিনে এই ছাত্রের আইডি
+  device_user_id text,                    -- হাজিরা মেশিনে এই শিক্ষার্থীর আইডি
   application_id uuid,
   status text not null default 'active',  -- active | inactive | left | graduated
   note text,
@@ -646,7 +646,7 @@ create table if not exists public.fee_rates (
   created_at timestamptz not null default now()
 );
 
--- ছাত্রভিত্তিক আলাদা পরিমাণ / ছাড় / অব্যাহতি
+-- শিক্ষার্থীভিত্তিক আলাদা পরিমাণ / ছাড় / অব্যাহতি
 create table if not exists public.student_fees (
   id uuid primary key default gen_random_uuid(),
   student_id uuid not null references public.students(id) on delete cascade,
@@ -890,7 +890,7 @@ begin
   alter table public.audit_log enable row level security;
   drop policy if exists "audit_sel" on public.audit_log;
   create policy "audit_sel" on public.audit_log for select using (public.is_finance());
-  -- হিসাবরক্ষক ছাত্র, শিক্ষক-কর্মচারী, শ্রেণি, হাজিরা ও তালিকা দেখতে পারবে (বদলাতে নয়)
+  -- হিসাবরক্ষক শিক্ষার্থী, শিক্ষক-কর্মচারী, শ্রেণি, হাজিরা ও তালিকা দেখতে পারবে (বদলাতে নয়)
   foreach t in array array['students','staff','classes','lookups','attendance'] loop
     execute format('drop policy if exists "%1$s_fin_read" on public.%1$I', t);
     execute format('create policy "%1$s_fin_read" on public.%1$I for select using (public.is_finance())', t);
@@ -1046,7 +1046,7 @@ begin
   end loop;
 end $$;
 
--- ছাত্র-ভিত্তিক বকেয়া (প্রবেশপত্র ও পুনঃভর্তির যোগ্যতা যাচাইয়ে); যাদের ছাত্র-অনুমতি আছে তারা শুধু এই যোগফল দেখে, আর্থিক খাতা নয়
+-- শিক্ষার্থী-ভিত্তিক বকেয়া (প্রবেশপত্র ও পুনঃভর্তির যোগ্যতা যাচাইয়ে); যাদের শিক্ষার্থী-অনুমতি আছে তারা শুধু এই যোগফল দেখে, আর্থিক খাতা নয়
 create or replace function public.student_dues() returns table(student_id uuid, head_id uuid, due numeric)
 language sql security definer set search_path = public stable as $$
   select i.student_id, i.head_id, sum(i.amount - i.paid)
@@ -1072,7 +1072,275 @@ insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('admit','people','পরীক্ষা ও হিফজ','প্রবেশপত্র','Admit cards',28),
   ('readmit','people','পরীক্ষা ও হিফজ','পুনঃভর্তি ও ভর্তি ফরম','Re-admission & forms',29),
   ('receipt_cfg','finance','ফি ও হিসাব','রসিদের লেখা ও ডিজাইন','Receipt design',39),
-  ('import','people','ছাত্র ও হাজিরা','এক্সেল ইম্পোর্ট','Excel import',25)
+  ('import','people','শিক্ষার্থী ও হাজিরা','এক্সেল ইম্পোর্ট','Excel import',25)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
 
+-- হোম পেইজের পরিসংখ্যান রো (সংখ্যা + নাম, অ্যাডমিন সম্পাদনাযোগ্য)
+alter table public.home_blocks drop constraint if exists home_blocks_kind_check;
+alter table public.home_blocks add constraint home_blocks_kind_check check (kind in ('announce','text','cards','image_text','stats'));
+
+-- শুধু মোট সংখ্যা দেয় (কোনো ব্যক্তিগত তথ্য নয়), তাই সবাই ডাকতে পারে
+create or replace function public.public_counts() returns jsonb language sql security definer set search_path = public as $$
+  select jsonb_build_object(
+    'students', (select count(*) from public.students where status = 'active'),
+    'teachers', (select count(*) from public.public_teachers where published)
+  );
+$$;
+grant execute on function public.public_counts() to anon, authenticated;
+
+-- শুরুর পরিসংখ্যান রো (একবারই বসে): মোট শিক্ষার্থী নিজে গোনা; পাশের হার ও হাফেজ সংখ্যা ফাঁকা — অ্যাডমিন মান বসালে তবেই দেখাবে
+insert into public.home_blocks (kind, place, items, sort, published)
+select 'stats', 'after_stats',
+  '[{"value":"{students}","label_bn":"মোট শিক্ষার্থী","label_en":"Total students","label_ar":"إجمالي الطلاب"},{"value":"","label_bn":"পাশের হার","label_en":"Pass rate","label_ar":"نسبة النجاح"},{"value":"","label_bn":"হাফেজ (হিফজ সমাপ্ত)","label_en":"Huffaz (completed hifz)","label_ar":"الحفاظ"}]'::jsonb,
+  0, true
+where not exists (select 1 from public.home_blocks where kind = 'stats');
+
+notify pgrst, 'reload schema';
+
+-- ===== শিক্ষাবর্ষ (অ্যাডমিন প্যানেলের হিসাব/তথ্য এই সময় ধরে ফিল্টার হয়) =====
+create table if not exists public.academic_years (
+  id uuid primary key default gen_random_uuid(),
+  name_bn text not null,
+  name_en text,
+  start_date date not null,
+  end_date date not null,
+  sort int not null default 0,
+  created_at timestamptz not null default now(),
+  check (end_date >= start_date)
+);
+alter table public.academic_years enable row level security;
+drop policy if exists "years_read" on public.academic_years;
+create policy "years_read" on public.academic_years for select using (auth.uid() is not null);
+drop policy if exists "years_write" on public.academic_years;
+create policy "years_write" on public.academic_years for all using (public.has_area('system')) with check (public.has_area('system'));
+insert into public.academic_years (name_bn, name_en, start_date, end_date)
+  select to_char(current_date,'YYYY'), to_char(current_date,'YYYY'), date_trunc('year', current_date)::date, (date_trunc('year', current_date) + interval '1 year - 1 day')::date
+  where not exists (select 1 from public.academic_years);
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('years','system','সিস্টেম','শিক্ষাবর্ষ','Academic years',95)
+on conflict (key) do nothing;
+
+-- ===== শিক্ষাবর্ষে শিক্ষার্থীর ভর্তি (কোন শিক্ষার্থী কোন বর্ষে কোন শ্রেণিতে) =====
+create table if not exists public.enrollments (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.students(id) on delete cascade,
+  year_id uuid not null references public.academic_years(id) on delete cascade,
+  class_id uuid references public.classes(id) on delete set null,
+  note text,
+  created_at timestamptz not null default now(),
+  unique (student_id, year_id)
+);
+create index if not exists enrollments_year_idx on public.enrollments(year_id);
+alter table public.enrollments enable row level security;
+drop policy if exists "enrollments_admin" on public.enrollments;
+create policy "enrollments_admin" on public.enrollments for all using (public.has_area('people')) with check (public.has_area('people'));
+
+-- নতুন শিক্ষার্থী যোগ হলে: ভর্তির তারিখ (না থাকলে আজ) যে শিক্ষাবর্ষে পড়ে সেখানে নিজে ভর্তি হবে
+create or replace function public.enroll_new_student() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare yid uuid;
+begin
+  select id into yid from public.academic_years
+    where coalesce(new.admission_date, current_date) between start_date and end_date
+    order by start_date desc limit 1;
+  if yid is not null then
+    insert into public.enrollments (student_id, year_id, class_id) values (new.id, yid, new.class_id) on conflict do nothing;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_enroll_new_student on public.students;
+create trigger trg_enroll_new_student after insert on public.students for each row execute function public.enroll_new_student();
+
+-- শিক্ষার্থীর শ্রেণি বদলালে চলতি শিক্ষাবর্ষের ভর্তির শ্রেণিও বদলাবে
+create or replace function public.sync_enrollment_class() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.class_id is distinct from old.class_id then
+    update public.enrollments e set class_id = new.class_id
+      from public.academic_years y
+      where e.student_id = new.id and e.year_id = y.id and current_date between y.start_date and y.end_date
+        and e.class_id is distinct from new.class_id;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_sync_enrollment_class on public.students;
+create trigger trg_sync_enrollment_class after update of class_id on public.students for each row execute function public.sync_enrollment_class();
+
+-- ভর্তি চলতি শিক্ষাবর্ষের হলে শিক্ষার্থীর বর্তমান শ্রেণিও সেই শ্রেণি হবে
+create or replace function public.enrollment_to_student() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.class_id is not null and exists (select 1 from public.academic_years y where y.id = new.year_id and current_date between y.start_date and y.end_date) then
+    update public.students s set class_id = new.class_id where s.id = new.student_id and s.class_id is distinct from new.class_id;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_enrollment_to_student on public.enrollments;
+create trigger trg_enrollment_to_student after insert or update of class_id on public.enrollments for each row execute function public.enrollment_to_student();
+
+-- আগের সব শিক্ষার্থীকে বর্ষে ভর্তি: সক্রিয়রা (ভর্তির তারিখ থেকে আজ পর্যন্ত) সব বর্ষে, অন্যরা ভর্তির তারিখের বর্ষে
+insert into public.enrollments (student_id, year_id, class_id)
+select s.id, y.id, s.class_id
+from public.students s
+join public.academic_years y on (
+  (s.status = 'active' and y.end_date >= coalesce(s.admission_date, s.created_at::date) and y.start_date <= current_date)
+  or (s.status <> 'active' and coalesce(s.admission_date, s.created_at::date) between y.start_date and y.end_date)
+)
+on conflict do nothing;
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('enroll','people','শিক্ষার্থী ও হাজিরা','শিক্ষাবর্ষে ভর্তি ও উত্তীর্ণ','Year enrollment & promotion',26)
+on conflict (key) do nothing;
+
+-- নতুন শিক্ষাবর্ষ তৈরি/তারিখ বদলে আজ যদি তার ভেতরে পড়ে এবং কোনো শিক্ষার্থী ভর্তি না থাকে, তবে সব সক্রিয় শিক্ষার্থী নিজে ভর্তি হবে
+create or replace function public.enroll_on_year() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if current_date between new.start_date and new.end_date
+     and not exists (select 1 from public.enrollments where year_id = new.id) then
+    insert into public.enrollments (student_id, year_id, class_id)
+      select s.id, new.id, s.class_id from public.students s where s.status = 'active'
+      on conflict do nothing;
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_enroll_on_year on public.academic_years;
+create trigger trg_enroll_on_year after insert or update of start_date, end_date on public.academic_years for each row execute function public.enroll_on_year();
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('backup','system','সিস্টেম','ব্যাকআপ ও ডাউনলোড','Backup & download',96)
+on conflict (key) do nothing;
+
+-- ===== এসএমএস (অভিভাবককে অনুপস্থিতি ও বকেয়ার খবর) =====
+-- সেবাদাতার গোপন চাবি এখানে নয়; সেগুলো Supabase Edge Function-এর Secrets-এ থাকে।
+create table if not exists public.sms_templates (
+  key text primary key,
+  title text not null,
+  body_bn text not null,
+  enabled boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.sms_config (
+  key text primary key,
+  value jsonb not null default '{}'::jsonb
+);
+create table if not exists public.sms_log (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  kind text not null,
+  student_id uuid references public.students(id) on delete set null,
+  phone text,
+  message text,
+  segments int not null default 1,
+  status text not null check (status in ('sent','failed','skipped')),
+  detail text,
+  sent_by uuid
+);
+create index if not exists sms_log_created_idx on public.sms_log(created_at desc);
+create index if not exists sms_log_student_idx on public.sms_log(student_id, kind, created_at desc);
+
+create or replace function public.sms_allowed(k text) returns boolean
+language sql security definer set search_path = public stable as $$
+  select case
+    when k = 'absent' then public.has_area('people')
+    when k = 'dues' then public.has_area('finance')
+    else public.is_super()
+  end
+$$;
+grant execute on function public.sms_allowed(text) to authenticated;
+
+alter table public.sms_templates enable row level security;
+alter table public.sms_config enable row level security;
+alter table public.sms_log enable row level security;
+drop policy if exists "sms_tpl_read" on public.sms_templates;
+create policy "sms_tpl_read" on public.sms_templates for select using (public.has_area('people') or public.has_area('finance'));
+drop policy if exists "sms_tpl_write" on public.sms_templates;
+create policy "sms_tpl_write" on public.sms_templates for all using (public.has_area('system')) with check (public.has_area('system'));
+drop policy if exists "sms_cfg_read" on public.sms_config;
+create policy "sms_cfg_read" on public.sms_config for select using (public.has_area('people') or public.has_area('finance'));
+drop policy if exists "sms_cfg_write" on public.sms_config;
+create policy "sms_cfg_write" on public.sms_config for all using (public.has_area('system')) with check (public.has_area('system'));
+drop policy if exists "sms_log_read" on public.sms_log;
+create policy "sms_log_read" on public.sms_log for select using (public.has_area('people') or public.has_area('finance'));
+
+insert into public.sms_templates (key, title, body_bn) values
+  ('absent', 'অনুপস্থিতির খবর', '{name} আজ {date} মাদরাসায় অনুপস্থিত। -সাবিলুস সালাম'),
+  ('dues', 'ফি বকেয়ার তাগাদা', '{name}-এর বকেয়া ফি {amount} টাকা। অনুগ্রহ করে পরিশোধ করুন। -সাবিলুস সালাম')
+on conflict (key) do nothing;
+insert into public.sms_config (key, value) values ('rate', '0.5'::jsonb) on conflict (key) do nothing;
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('sms','system','সিস্টেম','এসএমএস','SMS',97)
+on conflict (key) do nothing;
+
+
+-- =====================================================================
+-- ছাপা রেজাল্ট শিট ইম্পোর্ট + অভিভাবকের ফলাফল খোঁজা (আবার চালালেও ক্ষতি নেই)
+-- =====================================================================
+create table if not exists public.exam_results (
+  id uuid primary key default gen_random_uuid(),
+  exam_id uuid not null references public.exams(id) on delete cascade,
+  student_id uuid not null references public.students(id) on delete cascade,
+  class_id uuid references public.classes(id) on delete set null,
+  serial text,
+  total_text text,      -- প্রাপ্ত নম্বর (শিটে যা ছিল)
+  avg_text text,        -- গড় নম্বর
+  division text,        -- বিভাগ (মুমতাজ/মাকবুল/রাসেব ইত্যাদি)
+  merit_text text,      -- মেধাস্থান
+  updated_at timestamptz not null default now(),
+  unique (exam_id, student_id)
+);
+create index if not exists exam_results_exam_idx on public.exam_results(exam_id);
+alter table public.exam_results enable row level security;
+drop policy if exists "exam_results_admin" on public.exam_results;
+create policy "exam_results_admin" on public.exam_results for all
+  using (public.has_area('people')) with check (public.has_area('people'));
+
+-- অভিভাবকের পাতার জন্য: প্রকাশিত পরীক্ষা ও শ্রেণির তালিকা (কোনো শিক্ষার্থীর তথ্য নেই)
+create or replace function public.public_result_options() returns json
+language sql stable security definer set search_path = public as $$
+  select json_build_object(
+    'exams', coalesce((
+      select json_agg(json_build_object('id', e.id, 'name_bn', e.name_bn, 'name_en', e.name_en, 'year', e.year) order by e.created_at desc)
+      from public.exams e
+      where e.published and exists (select 1 from public.exam_marks m where m.exam_id = e.id)
+    ), '[]'::json),
+    'classes', coalesce((
+      select json_agg(json_build_object(
+        'id', c.id, 'name_bn', c.name_bn, 'name_en', c.name_en,
+        'exam_ids', (select json_agg(distinct s.exam_id) from public.exam_subjects s join public.exams e on e.id = s.exam_id and e.published where s.class_id = c.id)
+      ) order by c.sort)
+      from public.classes c
+      where exists (select 1 from public.exam_subjects s join public.exams e on e.id = s.exam_id and e.published
+                    where s.class_id = c.id and exists (select 1 from public.exam_marks m where m.subject_id = s.id))
+    ), '[]'::json)
+  );
+$$;
+
+-- আইডি + জন্মতারিখ মিললে শুধু সেই শিক্ষার্থীর নিজের ফলাফল ফেরত দেয়; না মিললে null
+create or replace function public.public_result(p_exam uuid, p_class uuid, p_no text, p_dob date) returns json
+language plpgsql stable security definer set search_path = public as $$
+declare st record;
+begin
+  if p_no is null or btrim(p_no) = '' or p_dob is null then return null; end if;
+  select * into st from public.students where lower(btrim(student_no)) = lower(btrim(p_no)) and dob = p_dob limit 1;
+  if not found then return null; end if;
+  if not exists (select 1 from public.exams where id = p_exam and published) then return null; end if;
+  if not exists (select 1 from public.exam_marks m join public.exam_subjects s on s.id = m.subject_id
+                 where m.student_id = st.id and m.exam_id = p_exam and s.class_id = p_class) then return null; end if;
+  return json_build_object(
+    'student', json_build_object('student_no', st.student_no, 'name_bn', st.name_bn, 'name_en', st.name_en, 'father_name', st.father_name),
+    'exam', (select json_build_object('name_bn', name_bn, 'name_en', name_en, 'year', year) from public.exams where id = p_exam),
+    'class', (select json_build_object('name_bn', name_bn, 'name_en', name_en) from public.classes where id = p_class),
+    'subjects', coalesce((
+      select json_agg(json_build_object('name_bn', s.name_bn, 'name_en', s.name_en, 'full', s.full_marks, 'pass', s.pass_marks, 'marks', m.marks, 'absent', coalesce(m.absent, false)) order by s.sort, s.name_bn)
+      from public.exam_subjects s left join public.exam_marks m on m.subject_id = s.id and m.student_id = st.id
+      where s.exam_id = p_exam and s.class_id = p_class
+    ), '[]'::json),
+    'result', (select json_build_object('total', total_text, 'avg', avg_text, 'division', division, 'merit', merit_text)
+               from public.exam_results where exam_id = p_exam and student_id = st.id)
+  );
+end $$;
+grant execute on function public.public_result_options() to anon, authenticated;
+grant execute on function public.public_result(uuid, uuid, text, date) to anon, authenticated;
 notify pgrst, 'reload schema';

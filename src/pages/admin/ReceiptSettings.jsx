@@ -31,7 +31,7 @@ export default function ReceiptSettings() {
     setMsg(e ? `ত্রুটি: ${e.message}` : 'সংরক্ষিত হয়েছে')
   }
   const hdr = { logo: settings.logo_url, name: t('site.name') || 'সাবিলুস সালাম মাদরাসা', addr: `${t('site.address')}${settings.phone ? ` · ${settings.phone}` : ''}` }
-  const sample = { rows: [['মাসিক বেতন — জানুয়ারি', 1500], ['পরীক্ষা ফি', 300]], total: 1800, meta: [['ছাত্র', 'নমুনা ছাত্র (260001)'], ['মাধ্যম', 'নগদ']], no: 'R-000123', date: todayStr(), by: profile?.full_name || 'অ্যাডমিন', hdr }
+  const sample = { rows: [['মাসিক বেতন — জানুয়ারি', 1500], ['পরীক্ষা ফি', 300]], total: 1800, meta: [['শিক্ষার্থী', 'নমুনা শিক্ষার্থী (260001)'], ['মাধ্যম', 'নগদ']], no: 'R-000123', date: todayStr(), by: profile?.full_name || 'অ্যাডমিন', hdr }
   if (!ready) return <p>লোড হচ্ছে…</p>
   return (
     <>

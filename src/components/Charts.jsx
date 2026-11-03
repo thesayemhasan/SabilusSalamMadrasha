@@ -2,6 +2,9 @@ import { useState } from 'react'
 
 // রং: যাচাই করা ক্যাটাগরিক্যাল প্যালেট (CSS ভ্যারিয়েবলে লাইট/ডার্ক আলাদা)
 export const SERIES = ['var(--v1)', 'var(--v2)', 'var(--v3)', 'var(--v4)', 'var(--v5)']
+// আয় = নীল, ব্যয় = কমলা (সব চার্ট ও সংখ্যায় একই নিয়ম)
+const ramp = (c) => [`var(${c})`, `color-mix(in srgb, var(${c}) 68%, #000)`, `color-mix(in srgb, var(${c}) 62%, #fff)`, `color-mix(in srgb, var(${c}) 46%, #000)`, `color-mix(in srgb, var(${c}) 36%, #fff)`]
+export const TONES = { income: ramp('--v1'), expense: ramp('--v2') }
 const bn = (n) => Number(n || 0).toLocaleString('bn-BD')
 
 // চার্টের কার্ড: শিরোনাম, চার্ট/তালিকা বদল
@@ -38,8 +41,9 @@ export function HBars({ data, fmt = bn, empty = 'কোনো তথ্য ন�
 }
 
 // ডোনাট: [{label, value}] (সর্বোচ্চ ৫টি; বাকিগুলো "অন্যান্য")
-export function Donut({ data, size = 150 }) {
+export function Donut({ data, size = 150, tone }) {
   const [hi, setHi] = useState(null)
+  const COL = TONES[tone] || SERIES
   let items = data.filter((d) => d.value > 0).sort((a, b) => b.value - a.value)
   if (items.length > 5) items = [...items.slice(0, 4), { label: 'অন্যান্য', value: items.slice(4).reduce((a, d) => a + d.value, 0) }]
   const total = items.reduce((a, d) => a + d.value, 0)
@@ -53,7 +57,7 @@ export function Donut({ data, size = 150 }) {
         <g transform="rotate(-90 70 70)">
           {items.map((d, i) => {
             const len = (d.value / total) * C
-            const el = <circle key={d.label} cx="70" cy="70" r={r} fill="none" stroke={SERIES[i]} strokeWidth={hi === i ? 20 : 16} strokeDasharray={`${Math.max(0, len - 2)} ${C - Math.max(0, len - 2)}`} strokeDashoffset={-off} onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(null)} style={{ transition: 'stroke-width .4s var(--ease)' }}><title>{`${d.label}: ${bn(d.value)} (${Math.round((d.value / total) * 100)}%)`}</title></circle>
+            const el = <circle key={d.label} cx="70" cy="70" r={r} fill="none" stroke={COL[i]} strokeWidth={hi === i ? 20 : 16} strokeDasharray={`${Math.max(0, len - 2)} ${C - Math.max(0, len - 2)}`} strokeDashoffset={-off} onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(null)} style={{ transition: 'stroke-width .4s var(--ease)' }}><title>{`${d.label}: ${bn(d.value)} (${Math.round((d.value / total) * 100)}%)`}</title></circle>
             off += len
             return el
           })}
@@ -62,7 +66,7 @@ export function Donut({ data, size = 150 }) {
         <text x="70" y="84" textAnchor="middle" className="donut-s">{cur ? cur.label : 'মোট'}</text>
       </svg>
       <ul className="vz-legend">
-        {items.map((d, i) => <li key={d.label} onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(null)}><i style={{ background: SERIES[i] }} />{d.label} <b>{bn(d.value)}</b> <span className="muted">({Math.round((d.value / total) * 100)}%)</span></li>)}
+        {items.map((d, i) => <li key={d.label} onMouseEnter={() => setHi(i)} onMouseLeave={() => setHi(null)}><i style={{ background: COL[i] }} />{d.label} <b>{bn(d.value)}</b> <span className="muted">({Math.round((d.value / total) * 100)}%)</span></li>)}
       </ul>
     </div>
   )

@@ -105,7 +105,7 @@ export default function Backup() {
         '',
         withMedia ? `ছবি/ফাইল: ${media.files} টি${media.failed.length ? `, নামেনি ${media.failed.length} টি: ${media.failed.join(', ')}` : ''}` : 'ছবি/ফাইল: এই ব্যাকআপে নেই',
         '',
-        'সতর্কতা: এই ফাইলে ব্যবহারকারীর ইমেইল, ছাত্রদের ব্যক্তিগত তথ্য ও মেশিনের সেটিং থাকতে পারে। নিরাপদ জায়গায় রাখুন, অন্যকে দেবেন না।',
+        'সতর্কতা: এই ফাইলে ব্যবহারকারীর ইমেইল, শিক্ষার্থীদের ব্যক্তিগত তথ্য ও মেশিনের সেটিং থাকতে পারে। নিরাপদ জায়গায় রাখুন, অন্যকে দেবেন না।',
       ]
       zip.file('ব্যাকআপ-তথ্য.txt', lines.join('\r\n'))
       setStep('zip ফাইল তৈরি হচ্ছে…')
@@ -123,7 +123,7 @@ export default function Backup() {
   return (
     <>
       <div className="toolbar"><h2 style={{ margin: 0, flex: '1 1 auto' }}>ব্যাকআপ ও ডাউনলোড</h2></div>
-      <p className="muted" style={{ marginTop: -6 }}>এক ক্লিকে ছাত্র, হাজিরা, ফি, হিসাব, পরীক্ষাসহ সব তথ্য একটি zip ফাইলে নামান। সপ্তাহে অন্তত একবার নামিয়ে কম্পিউটারে ও আরেক জায়গায় (পেনড্রাইভ বা গুগল ড্রাইভ) রাখুন।</p>
+      <p className="muted" style={{ marginTop: -6 }}>এক ক্লিকে শিক্ষার্থী, হাজিরা, ফি, হিসাব, পরীক্ষাসহ সব তথ্য একটি zip ফাইলে নামান। সপ্তাহে অন্তত একবার নামিয়ে কম্পিউটারে ও আরেক জায়গায় (পেনড্রাইভ বা গুগল ড্রাইভ) রাখুন।</p>
 
       <div className="card" style={{ marginBottom: 14, borderInlineStart: `4px solid ${days === null || days > 7 ? 'var(--secondary)' : 'var(--primary)'}` }}>
         {lastDate ? <>এই ব্রাউজারে শেষ ব্যাকআপ: <b>{lastDate.toLocaleString('bn-BD')}</b> ({days === 0 ? 'আজ' : `${bn(days)} দিন আগে`}){days > 7 && <b style={{ color: 'var(--secondary)' }}> — ৭ দিনের বেশি হয়ে গেছে, নতুন ব্যাকআপ নিন।</b>}</> : <b style={{ color: 'var(--secondary)' }}>এই ব্রাউজারে এখনো কোনো ব্যাকআপ নেওয়া হয়নি।</b>}
@@ -132,7 +132,7 @@ export default function Backup() {
       <div className="card" style={{ marginBottom: 14 }}>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
           <input type="checkbox" checked={withMedia} onChange={(e) => setWithMedia(e.target.checked)} disabled={busy} />
-          ছবি ও ফাইলসহ (ছাত্র-শিক্ষকের ছবি, গ্যালারি; ধীর ও ফাইল বড় হবে)
+          ছবি ও ফাইলসহ (শিক্ষার্থী-শিক্ষকের ছবি, গ্যালারি; ধীর ও ফাইল বড় হবে)
         </label>
         <button className="btn" onClick={run} disabled={busy}><Icon name="upload" size={18} cls="cur" /> {busy ? 'ব্যাকআপ চলছে… পাতা বন্ধ করবেন না' : 'সব ডেটার ব্যাকআপ নামান'}</button>
         {step && <p className="muted" style={{ marginBottom: 0 }}>{step}</p>}

@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import Crud from './Crud'
+import Icon from '../../components/Icon'
 import { useYear, useEnrolled } from '../../lib/year'
 
 const bn = (r, f) => r[`${f}_bn`] || r[`${f}_en`] || '(নামহীন)'
@@ -26,7 +28,7 @@ export const ClassesAdmin = () => (
   <Crud
     table="classes"
     title="শ্রেণি ও হালকা"
-    hint="শ্রেণি, শাখা বা হিফজের হালকা (দল) এখানে তৈরি করুন। প্রতিটির বিভাগ ও দায়িত্বপ্রাপ্ত শিক্ষক বেছে দিতে পারবেন। ছাত্র যোগ করার সময় এখান থেকেই শ্রেণি বাছাই হবে।"
+    hint="শ্রেণি, শাখা বা হিফজের হালকা (দল) এখানে তৈরি করুন। প্রতিটির বিভাগ ও দায়িত্বপ্রাপ্ত শিক্ষক বেছে দিতে পারবেন। শিক্ষার্থী যোগ করার সময় এখান থেকেই শ্রেণি বাছাই হবে।"
     order="sort"
     asc
     eq={EQ_CLASS}
@@ -56,8 +58,9 @@ export function StudentsAdmin() {
     rowFilter={rowFilter}
     decorate={decorate}
     title={year ? `ছাত্র-ছাত্রী — ${year.name_bn || year.name_en}` : 'ছাত্র-ছাত্রী'}
-    addLabel="নতুন ছাত্র যোগ"
-    hint="আইডি নম্বর নিজে থেকে তৈরি হবে। ভর্তির আবেদন থেকে সরাসরি ছাত্র বানাতে 'ভর্তির আবেদন' পেইজের বাটন ব্যবহার করুন।"
+    addLabel="নতুন শিক্ষার্থী যোগ"
+    extra={() => <Link to="/admin/import" className="btn outline"><Icon name="apply" size={18} cls="cur" /> Excel ইম্পোর্ট</Link>}
+    hint="আইডি নম্বর নিজে থেকে তৈরি হবে। ভর্তির আবেদন থেকে সরাসরি শিক্ষার্থী বানাতে 'ভর্তির আবেদন' পেইজের বাটন ব্যবহার করুন।"
     order="created_at"
     toggle={null}
     nameOf={(r) => bn(r, 'name')}
@@ -71,7 +74,7 @@ export function StudentsAdmin() {
       { name: 'status', label: 'সব অবস্থা', options: STU_STATUS },
     ]}
     csv={{
-      file: 'ছাত্র-তালিকা.csv',
+      file: 'শিক্ষার্থী-তালিকা.csv',
       cols: [
         ['আইডি', (r) => r.student_no], ['নাম', (r) => bn(r, 'name')], ['পিতা', (r) => r.father_name], ['মাতা', (r) => r.mother_name],
         ['অভিভাবকের ফোন', (r) => r.guardian_phone], ['বিভাগ', (r, m) => m.department_id?.[r.department_id]], ['শ্রেণি', (r, m) => m.class_id?.[r.class_id]],
@@ -80,7 +83,7 @@ export function StudentsAdmin() {
     }}
     fields={[
       { name: 'photo_url', label: 'ছবি', type: 'image' },
-      { name: 'name', label: 'ছাত্রের নাম', i18n: true, required: true },
+      { name: 'name', label: 'শিক্ষার্থীর নাম', i18n: true, required: true },
       { name: 'gender', label: 'ছেলে / মেয়ে', type: 'select', options: [['', '— বাছাই করুন —'], ...GENDER] },
       { name: 'dob', label: 'জন্মতারিখ', type: 'date', required: false },
       { name: 'blood_group', label: 'রক্তের গ্রুপ', type: 'select', options: [['', '— জানা নেই —'], ...['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'].map((b) => [b, b])] },
@@ -160,7 +163,7 @@ const EQ_SES = { kind: 'session' }
 export const ResidenceAdmin = () => (
   <Crud
     table="lookups" eq={EQ_RES} title="আবাসিক / অনাবাসিক ধরন" order="sort" asc
-    hint="ছাত্র যোগ করার সময় যে ধরনগুলো থেকে বাছাই করা যাবে। নতুন ধরন যোগ বা বাদ দিতে পারেন।"
+    hint="শিক্ষার্থী যোগ করার সময় যে ধরনগুলো থেকে বাছাই করা যাবে। নতুন ধরন যোগ বা বাদ দিতে পারেন।"
     nameOf={(r) => bn(r, 'name')} blank={{ kind: 'residence', published: true, sort: 0 }}
     fields={[{ name: 'name', label: 'নাম', i18n: true, required: true }, { name: 'sort', label: 'ক্রম', type: 'number' }, { name: 'published', label: 'চালু', type: 'bool' }]}
     toggleLabel="চালু"

@@ -42,7 +42,7 @@ export default function IdCards() {
   const chosen = rows.filter((r) => pick[r.id])
   const items = chosen.map((r) => ({ ...inst, ...(kind === 'staff' ? staffData(r) : studentData(r, cname[r.class_id])) }))
   const eff = mode || lay.cfg.print || 'front'
-  const sample = { ...inst, ...(kind === 'staff' ? staffData({ name_bn: 'নমুনা শিক্ষক', staff_no: 'T001', designation_bn: 'মুহাদ্দিস', phone: '01700000000' }) : studentData({ name_bn: 'নমুনা ছাত্র', student_no: '260001', father_name: 'নমুনা পিতা', guardian_phone: '01700000000', blood_group: 'A+', address: 'ঢাকা', dob: '2015-01-01' }, 'হিফজ ১ম হালকা')) }
+  const sample = { ...inst, ...(kind === 'staff' ? staffData({ name_bn: 'নমুনা শিক্ষক', staff_no: 'T001', designation_bn: 'মুহাদ্দিস', phone: '01700000000' }) : studentData({ name_bn: 'নমুনা শিক্ষার্থী', student_no: '260001', father_name: 'নমুনা পিতা', guardian_phone: '01700000000', blood_group: 'A+', address: 'ঢাকা', dob: '2015-01-01' }, 'হিফজ ১ম হালকা')) }
   const toggleAll = (v) => setPick(v ? Object.fromEntries(rows.map((r) => [r.id, true])) : {})
   return (
     <>

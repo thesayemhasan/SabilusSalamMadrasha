@@ -5,7 +5,7 @@ import { fill, normPhone, segments } from '../../lib/sms'
 import { printedAt } from './fin'
 
 const bn = (n) => Number(n || 0).toLocaleString('bn-BD')
-const TOKENS = { absent: ['{name} = ছাত্রের নাম', '{date} = হাজিরার তারিখ'], dues: ['{name} = ছাত্রের নাম', '{amount} = মোট বকেয়া (টাকা)'] }
+const TOKENS = { absent: ['{name} = শিক্ষার্থীর নাম', '{date} = হাজিরার তারিখ'], dues: ['{name} = শিক্ষার্থীর নাম', '{amount} = মোট বকেয়া (টাকা)'] }
 const SAMPLE = { absent: { name: 'আব্দুল্লাহ', date: '২৯ অক্টো ২০২৬' }, dues: { name: 'আব্দুল্লাহ', amount: '১,২০০' } }
 const STATUS = { sent: 'সফল', failed: 'ব্যর্থ', skipped: 'বাদ' }
 
@@ -149,7 +149,7 @@ export default function Sms() {
           <button className="btn small outline" onClick={load}>নতুন করে আনুন</button>
         </div>
         <table>
-          <thead><tr><th>সময়</th><th>ধরন</th><th>ছাত্র</th><th>নম্বর</th><th>অবস্থা</th><th>বার্তা / কারণ</th></tr></thead>
+          <thead><tr><th>সময়</th><th>ধরন</th><th>শিক্ষার্থী</th><th>নম্বর</th><th>অবস্থা</th><th>বার্তা / কারণ</th></tr></thead>
           <tbody>
             {shown.length === 0 && <tr><td colSpan="6" className="muted">কোনো রেকর্ড নেই।</td></tr>}
             {shown.map((r) => (

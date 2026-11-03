@@ -110,13 +110,13 @@ function Take({ type, sessions, classes }) {
         <button className="btn outline" onClick={allPresent}><Icon name="check" size={17} cls="cur" /> বাকি সবাই উপস্থিত</button>
         {type === 'student' && <button className="btn outline" onClick={() => (changed.length ? setMsg('আগে হাজিরা সংরক্ষণ করুন, তারপর SMS পাঠান।') : setSmsOpen(true))}><Icon name="mail" size={17} cls="cur" /> অনুপস্থিতদের অভিভাবককে SMS</button>}
       </div>
-      {smsOpen && <SmsSend kind="absent" title="অনুপস্থিত ছাত্রদের অভিভাবককে SMS" onClose={() => setSmsOpen(false)} rows={people.filter((p) => marks[p.id] === 'absent').map((p) => ({ student_id: p.id, name: nm(p), phone: p.guardian_phone || p.phone2, vars: { date: new Date(`${date}T00:00:00`).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' }) } }))} />}
+      {smsOpen && <SmsSend kind="absent" title="অনুপস্থিত শিক্ষার্থীদের অভিভাবককে SMS" onClose={() => setSmsOpen(false)} rows={people.filter((p) => marks[p.id] === 'absent').map((p) => ({ student_id: p.id, name: nm(p), phone: p.guardian_phone || p.phone2, vars: { date: new Date(`${date}T00:00:00`).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' }) } }))} />}
       <div className="grid g4" style={{ marginBottom: 14 }}>
         {[['উপস্থিত', count('present')], ['অনুপস্থিত', count('absent')], ['দেরি', count('late')], ['ছুটি', count('leave')]].map(([l, n]) => (
           <div className="card stat" key={l}><b>{dig(n, 'bn')}</b><span className="muted">{l}</span></div>
         ))}
       </div>
-      {people.length === 0 && <div className="card muted">{type === 'student' ? 'এই শ্রেণিতে কোনো সক্রিয় ছাত্র নেই। আগে "ছাত্র-ছাত্রী" পেইজে ছাত্র যোগ করুন।' : 'কোনো সক্রিয় শিক্ষক/কর্মচারী নেই।'}</div>}
+      {people.length === 0 && <div className="card muted">{type === 'student' ? 'এই শ্রেণিতে কোনো সক্রিয় শিক্ষার্থী নেই। আগে "ছাত্র-ছাত্রী" পেইজে শিক্ষার্থী যোগ করুন।' : 'কোনো সক্রিয় শিক্ষক/কর্মচারী নেই।'}</div>}
       <div className="stack">
         {people.map((p) => (
           <div className="card att-row" key={p.id}>
@@ -234,11 +234,11 @@ function Device() {
       <div className="card" style={{ marginBottom: 14 }}>
         <h3 style={{ marginTop: 0 }}>ZKTeco হাজিরা মেশিন <span className={`pill ${on ? 'ok' : ''}`}>{on ? 'চালু' : 'বন্ধ'}</span></h3>
         {on ? (
-          <p>মেশিন থেকে পাঞ্চ এলে ছাত্র/শিক্ষকের হাজিরা নিজে থেকে "উপস্থিত" হিসেবে বসে যাবে। প্রথম পাঞ্চ আগমনের সময়, পরের পাঞ্চ (১০ মিনিট পর) প্রস্থানের সময় হিসেবে ধরা হয়।</p>
+          <p>মেশিন থেকে পাঞ্চ এলে শিক্ষার্থী/শিক্ষকের হাজিরা নিজে থেকে "উপস্থিত" হিসেবে বসে যাবে। প্রথম পাঞ্চ আগমনের সময়, পরের পাঞ্চ (১০ মিনিট পর) প্রস্থানের সময় হিসেবে ধরা হয়।</p>
         ) : (
           <p>মেশিন এখনো চালু করা হয়নি। হাতে হাজিরা নিতে কোনো সমস্যা নেই। মেশিন কিনলে <Link to="/admin/integrations">"মেশিন ও বাইরের সেবা"</Link> পেইজে ZKTeco-র তথ্য ও "পুশ সার্ভার কী" দিয়ে "চালু" করুন, বাকি কাজ নিজে থেকে হবে।</p>
         )}
-        <p className="muted" style={{ marginBottom: 0 }}>মেশিনের আইডি দেওয়া আছে: {dig(counts.s, 'bn')} জন ছাত্র, {dig(counts.t, 'bn')} জন শিক্ষক-কর্মচারী। ছাত্র বা কর্মচারীর ফর্মে "হাজিরা মেশিনের আইডি" ঘরে মেশিনে নথিভুক্ত আইডি বসাতে হবে।</p>
+        <p className="muted" style={{ marginBottom: 0 }}>মেশিনের আইডি দেওয়া আছে: {dig(counts.s, 'bn')} জন শিক্ষার্থী, {dig(counts.t, 'bn')} জন শিক্ষক-কর্মচারী। শিক্ষার্থী বা কর্মচারীর ফর্মে "হাজিরা মেশিনের আইডি" ঘরে মেশিনে নথিভুক্ত আইডি বসাতে হবে।</p>
       </div>
       <details className="card" style={{ marginBottom: 14 }}>
         <summary style={{ cursor: 'pointer' }}><b>ডেভেলপারের জন্য সংযোগের তথ্য</b></summary>
@@ -255,7 +255,7 @@ Content-Type: application/json
           <thead><tr><th>সময়</th><th>মেশিনের আইডি</th><th>মেশিন</th><th>মিলেছে</th></tr></thead>
           <tbody>
             {punches.length === 0 && <tr><td colSpan="4" className="muted">এখনো কোনো পাঞ্চ আসেনি।</td></tr>}
-            {punches.map((p) => <tr key={p.id}><td>{new Date(p.punched_at).toLocaleString('bn-BD')}</td><td>{p.device_user_id}</td><td>{p.serial_no}</td><td>{p.matched_type ? (p.matched_type === 'student' ? 'ছাত্র' : 'স্টাফ') : 'মেলেনি'}</td></tr>)}
+            {punches.map((p) => <tr key={p.id}><td>{new Date(p.punched_at).toLocaleString('bn-BD')}</td><td>{p.device_user_id}</td><td>{p.serial_no}</td><td>{p.matched_type ? (p.matched_type === 'student' ? 'শিক্ষার্থী' : 'স্টাফ') : 'মেলেনি'}</td></tr>)}
           </tbody>
         </table>
       </div>

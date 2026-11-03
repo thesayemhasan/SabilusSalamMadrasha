@@ -159,7 +159,7 @@ export default function Readmit() {
   const common = { ...inst, form_heading: `${cfg.title} — শিক্ষাবর্ষ ${cfg.year}`, form_year: cfg.year, policy_title: cfg.policy_title, policy, declaration: cfg.declaration, sign_guardian: cfg.sign_guardian, sign_authority: cfg.sign_authority }
   const dataOf = (r) => ({ ...common, ...studentData(r.s, nm(clsById[r.s.class_id])), prev_class: nm(clsById[r.s.class_id]), prev_result: RES[r.result], next_class: nextClass(r.s.class_id), decision: DEC[r.decision], reasons: [...r.reasons, r.override?.note].filter(Boolean).join('; ') })
   const items = [...chosen.map(dataOf), ...Array.from({ length: blank }, () => ({ ...common }))]
-  const sample = { ...common, ...studentData({ name_bn: 'নমুনা ছাত্র', father_name: 'নমুনা পিতা', mother_name: 'নমুনা মাতা', guardian_phone: '01700000000', blood_group: 'A+', address: 'ঢাকা', gender: 'male', dob: '2015-01-01' }, 'নমুনা শ্রেণি'), prev_class: 'নমুনা শ্রেণি', prev_result: 'উত্তীর্ণ', next_class: 'পরবর্তী শ্রেণি', decision: 'উপযুক্ত', reasons: '' }
+  const sample = { ...common, ...studentData({ name_bn: 'নমুনা শিক্ষার্থী', father_name: 'নমুনা পিতা', mother_name: 'নমুনা মাতা', guardian_phone: '01700000000', blood_group: 'A+', address: 'ঢাকা', gender: 'male', dob: '2015-01-01' }, 'নমুনা শ্রেণি'), prev_class: 'নমুনা শ্রেণি', prev_result: 'উত্তীর্ণ', next_class: 'পরবর্তী শ্রেণি', decision: 'উপযুক্ত', reasons: '' }
   const pm = pmode || lay.cfg.print || 'both'
   return (
     <>
@@ -214,7 +214,7 @@ export default function Readmit() {
             <button className="btn" disabled={!items.length} onClick={() => printNode(ref.current, 'A4', '0')}>ফরম প্রিন্ট ({bn(items.length)}টি, A4)</button>
           </div>
           <div className="table-wrap"><table>
-            <thead><tr><th></th><th>ছাত্র</th><th>ফল</th><th>উপস্থিতি</th><th>বকেয়া</th><th>ঘটনা</th><th>অবস্থা</th><th>সিদ্ধান্ত বদলান</th></tr></thead>
+            <thead><tr><th></th><th>শিক্ষার্থী</th><th>ফল</th><th>উপস্থিতি</th><th>বকেয়া</th><th>ঘটনা</th><th>অবস্থা</th><th>সিদ্ধান্ত বদলান</th></tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.s.id}>
@@ -228,10 +228,10 @@ export default function Readmit() {
                   <td style={{ minWidth: 150 }}><Select small placeholder="স্বয়ংক্রিয়" value={r.override?.decision || ''} onChange={(v) => setDecision(r, v)} options={[['', 'স্বয়ংক্রিয়'], ...Object.entries(DEC)]} /></td>
                 </tr>
               ))}
-              {!rows.length && <tr><td colSpan={8} className="muted">কোনো ছাত্র নেই</td></tr>}
+              {!rows.length && <tr><td colSpan={8} className="muted">কোনো শিক্ষার্থী নেই</td></tr>}
             </tbody>
           </table></div>
-          <p className="muted">শর্ত বদলাতে “ফরমের ডিজাইন ও শর্ত” ট্যাবে যান। ফরমে ছাত্রের আগের তথ্য নিজে থেকে বসে এবং পরবর্তী শ্রেণি শ্রেণির ক্রম অনুযায়ী দেওয়া হয়।</p>
+          <p className="muted">শর্ত বদলাতে “ফরমের ডিজাইন ও শর্ত” ট্যাবে যান। ফরমে শিক্ষার্থীর আগের তথ্য নিজে থেকে বসে এবং পরবর্তী শ্রেণি শ্রেণির ক্রম অনুযায়ী দেওয়া হয়।</p>
           {items.length > 0 && <><h3>প্রিভিউ</h3><div className="adm-scroll" ref={ref}><PageSheets layout={lay.cfg} items={items} mode={pm} /></div></>}
         </>
       )}

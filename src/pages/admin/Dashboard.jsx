@@ -71,7 +71,7 @@ function StudentCharts() {
         <ChartCard title="ছেলে ও মেয়ে" table={tbl(byGender)}><Donut data={byGender} /></ChartCard>
         <ChartCard title="শ্রেণি অনুযায়ী" table={tbl(byClass)}><HBars data={byClass} /></ChartCard>
         <ChartCard title="বিভাগ অনুযায়ী" table={tbl(byDept)}><HBars data={byDept} /></ChartCard>
-        <ChartCard title="রক্তের গ্রুপ" sub="ছাত্রের তথ্যে রক্তের গ্রুপ দিলে এখানে দেখাবে" table={tbl(byBlood)}><HBars data={byBlood} /></ChartCard>
+        <ChartCard title="রক্তের গ্রুপ" sub="শিক্ষার্থীর তথ্যে রক্তের গ্রুপ দিলে এখানে দেখাবে" table={tbl(byBlood)}><HBars data={byBlood} /></ChartCard>
         <ChartCard title="আবাসিক / অনাবাসিক" table={tbl(byRes)}><Donut data={byRes} /></ChartCard>
       </div>
     </>
@@ -224,7 +224,7 @@ function FinanceCharts({ onTiles }) {
     const monthFee = d.pay.filter((p) => !p.void && String(p.paid_at).slice(0, 7) === mNow).reduce((a, p) => a + num(p.amount), 0)
     const catIn = {}
     d.led.filter((l) => !l.void && l.kind === 'income' && String(l.date).slice(0, 7) === mNow).forEach((l) => { catIn[l.category_name || 'আয়'] = (catIn[l.category_name || 'আয়'] || 0) + num(l.amount) })
-    if (monthFee) catIn['ছাত্র ফি'] = monthFee
+    if (monthFee) catIn['শিক্ষার্থী ফি'] = monthFee
     // এই মাসের ব্যয়ের খাত: খরচের খাতসমূহ + শিক্ষক-কর্মচারীর বেতন + অগ্রিম
     const catEx = {}
     d.led.filter((l) => !l.void && l.kind === 'expense' && String(l.date).slice(0, 7) === mNow).forEach((l) => { catEx[l.category_name || 'ব্যয়'] = (catEx[l.category_name || 'ব্যয়'] || 0) + num(l.amount) })
@@ -270,9 +270,9 @@ export default function Dashboard() {
   }, [])
   const enabled = MODULES.filter((m) => (BUILT.has(m.key) ? modules[m.key] !== false : modules[m.key])).length
   const tiles = [
-    ['সক্রিয় ছাত্র', enD.active ? (stuY ?? undefined) : cnt.stu, '/admin/students'],
+    ['সক্রিয় শিক্ষার্থী', enD.active ? (stuY ?? undefined) : cnt.stu, '/admin/students'],
     ['শিক্ষক-কর্মচারী', cnt.staff, '/admin/staff'],
-    ['আজ উপস্থিত ছাত্র', c.marked === undefined ? undefined : `${bnum(c.here)} / ${bnum(c.marked)}`, '/admin/attendance'],
+    ['আজ উপস্থিত শিক্ষার্থী', c.marked === undefined ? undefined : `${bnum(c.here)} / ${bnum(c.marked)}`, '/admin/attendance'],
     ['নতুন ভর্তির আবেদন', c.apps, '/admin/applications'],
     ['অপঠিত বার্তা', c.msgs, '/admin/messages'],
     ...(fin ? [['আজকের আদায়', taka(fin.todayIn), '/admin/fees'], [fin.curM === false ? `${fin.mName}-এর ফি আদায়` : 'এই মাসের ফি আদায়', taka(fin.monthFee), '/admin/fees'], ['মোট বকেয়া', taka(fin.dueTotal), '/admin/reports']] : []),

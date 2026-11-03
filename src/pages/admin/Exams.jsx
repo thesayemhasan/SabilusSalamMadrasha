@@ -1,3 +1,5 @@
+import Icon from '../../components/Icon'
+import ResultSheet from './ResultSheet'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
@@ -242,7 +244,7 @@ function Entry({ exams, classes }) {
                   </tr>
                 )
               })}
-              {!students.length && <tr><td colSpan={4} className="muted">এই শ্রেণিতে সক্রিয় ছাত্র নেই</td></tr>}
+              {!students.length && <tr><td colSpan={4} className="muted">এই শ্রেণিতে সক্রিয় শিক্ষার্থী নেই</td></tr>}
             </tbody>
           </table></div>
           {msg && <div className="alert info" style={{ marginTop: 10 }}>{msg}</div>}
@@ -319,7 +321,7 @@ function Results({ exams, classes }) {
         <>
           <div className="row-actions" style={{ marginBottom: 12 }}>
             <button className={`btn ${mode === 'merit' ? '' : 'outline'}`} onClick={() => setMode('merit')}>মেধাতালিকা</button>
-            <button className={`btn ${mode === 'sheet' ? '' : 'outline'}`} onClick={() => setMode('sheet')}>মার্কশিট (প্রতি ছাত্র)</button>
+            <button className={`btn ${mode === 'sheet' ? '' : 'outline'}`} onClick={() => setMode('sheet')}>মার্কশিট (প্রতি শিক্ষার্থী)</button>
             <button className="btn outline" onClick={() => printNode(ref.current, 'A4')}>প্রিন্ট (A4)</button>
             <button className="btn outline" onClick={() => downloadCsv(`ফলাফল-${nm(cl)}.csv`, ['অবস্থান', 'আইডি', 'নাম', ...subs.map(nm), 'মোট', 'GPA', 'গ্রেড'], sorted.map((r) => [r.pos || '', r.st.student_no, nm(r.st), ...r.cells.map((c) => (c.none ? '' : c.absent ? 'অনুপস্থিত' : c.v)), r.total, r.gpa.toFixed(2), r.grade || '']))}>CSV</button>
           </div>
@@ -374,15 +376,19 @@ export default function Exams() {
   const [tab, setTab] = useState('exams')
   const [exams, reload] = useExams()
   const classes = useClassList()
-  const TABS = [['exams', 'পরীক্ষা'], ['subjects', 'বিষয়'], ['entry', 'নম্বর এন্ট্রি'], ['results', 'ফলাফল']]
+  const TABS = [['exams', 'পরীক্ষা'], ['subjects', 'বিষয়'], ['entry', 'নম্বর এন্ট্রি'], ['results', 'ফলাফল'], ['sheet', 'শিট থেকে ফলাফল']]
   return (
     <>
-      <h2>পরীক্ষা ও ফলাফল</h2>
+      <div className="toolbar">
+        <h2 style={{ margin: 0, flex: '1 1 auto' }}>পরীক্ষা ও ফলাফল</h2>
+        <button className="btn outline" onClick={() => setTab('sheet')}><Icon name="apply" size={18} cls="cur" /> ফলাফল ইম্পোর্ট</button>
+      </div>
       <div className="tabs">{TABS.map(([k, l]) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
       {tab === 'exams' && <ExamList exams={exams} reload={reload} />}
       {tab === 'subjects' && <Subjects exams={exams} classes={classes} />}
       {tab === 'entry' && <Entry exams={exams} classes={classes} />}
       {tab === 'results' && <Results exams={exams} classes={classes} />}
+      {tab === 'sheet' && <ResultSheet />}
     </>
   )
 }

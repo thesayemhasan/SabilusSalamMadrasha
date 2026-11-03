@@ -99,7 +99,7 @@ export function Billing() {
         <h3 style={{ marginTop: 0 }}>প্রিভিউ</h3>
         <p style={{ marginBottom: 6 }}>তৈরি হবে: <b>{plan.rows.length}টি</b> বিল, মোট <b>{taka(plan.total)}</b></p>
         {plan.skipped > 0 && <p className="muted" style={{ marginTop: 0 }}>আগে থেকেই বিল আছে বলে বাদ: {plan.skipped}টি</p>}
-        {data.students.length === 0 && <p className="muted">কোনো সক্রিয় ছাত্র পাওয়া যায়নি।</p>}
+        {data.students.length === 0 && <p className="muted">কোনো সক্রিয় শিক্ষার্থী পাওয়া যায়নি।</p>}
         {plan.rows.length === 0 && data.students.length > 0 && <p className="muted">নতুন কোনো বিল নেই। পরিমাণ ০ হলে বিল তৈরি হয় না, তাই ফি-র পরিমাণ দিয়েছেন কিনা দেখুন।</p>}
         {msg && <div className={`alert ${msg.startsWith('ত্রুটি') ? 'err' : 'ok'}`}>{msg}</div>}
         <button className="btn" disabled={busy || !plan.rows.length} onClick={generate}>{busy ? 'তৈরি হচ্ছে…' : 'বিল তৈরি করুন'}</button>
@@ -159,7 +159,7 @@ function Collect() {
       setBusy(false); return setMsg(`ত্রুটি: ${e2.message}`)
     }
     setBusy(false)
-    setDoc({ no: p.receipt_no, date, rows: items.map((x) => [x.inv.title || x.inv.period, x.amt]), total, meta: [['ছাত্র', `${nm(st)} (${st.student_no || ''})`], ['মাধ্যম', methods.label(method)], ['প্রদানকারী', p.payer], ['রেফারেন্স', ref]] })
+    setDoc({ no: p.receipt_no, date, rows: items.map((x) => [x.inv.title || x.inv.period, x.amt]), total, meta: [['শিক্ষার্থী', `${nm(st)} (${st.student_no || ''})`], ['মাধ্যম', methods.label(method)], ['প্রদানকারী', p.payer], ['রেফারেন্স', ref]] })
     setRef(''); setNote(''); loadDues(st)
   }
 
@@ -175,7 +175,7 @@ function Collect() {
     <>
       <div className="card form" style={{ marginBottom: 14 }}>
         <div className="field" style={{ position: 'relative' }}>
-          <label>ছাত্র খুঁজুন (নাম, আইডি, অভিভাবকের নাম বা ফোন)</label>
+          <label>শিক্ষার্থী খুঁজুন (নাম, আইডি, অভিভাবকের নাম বা ফোন)</label>
           <input value={q} onChange={(e) => { setQ(e.target.value); setSt(null) }} placeholder="যেমন: রাকিব বা ২৬০০০১" autoComplete="off" />
           {found.length > 0 && !st && (
             <div className="pick-list">
@@ -272,7 +272,7 @@ function Receipts() {
     const { data: inv } = ids.length ? await supabase.from('invoices').select('*').in('id', ids) : { data: [] }
     const im = Object.fromEntries((inv || []).map((x) => [x.id, x]))
     const s = stu[r.student_id]
-    setDoc({ no: r.receipt_no, date: r.paid_at, rows: (items || []).map((x) => [im[x.invoice_id]?.title || im[x.invoice_id]?.period || 'ফি', x.amount]), total: r.amount, meta: [['ছাত্র', s ? `${nm(s)} (${s.student_no || ''})` : ''], ['মাধ্যম', methods.label(r.method)], ['প্রদানকারী', r.payer], ['রেফারেন্স', r.txn_ref]], note: r.void ? `বাতিল: ${r.void_reason}` : '' })
+    setDoc({ no: r.receipt_no, date: r.paid_at, rows: (items || []).map((x) => [im[x.invoice_id]?.title || im[x.invoice_id]?.period || 'ফি', x.amount]), total: r.amount, meta: [['শিক্ষার্থী', s ? `${nm(s)} (${s.student_no || ''})` : ''], ['মাধ্যম', methods.label(r.method)], ['প্রদানকারী', r.payer], ['রেফারেন্স', r.txn_ref]], note: r.void ? `বাতিল: ${r.void_reason}` : '' })
   }
 
   return (
@@ -281,13 +281,13 @@ function Receipts() {
         <input type="date" value={from} min={yMin} max={yMax} onChange={(e) => setFrom(e.target.value)} style={{ maxWidth: 170 }} />
         <input type="date" value={to} min={yMin} max={yMax} onChange={(e) => setTo(e.target.value)} style={{ maxWidth: 170 }} />
         <div style={{ minWidth: 170 }}><Select value={m} onChange={setM} options={[['', 'সব মাধ্যম'], ...methods.list]} /></div>
-        <input className="search-in" placeholder="রসিদ নং বা ছাত্রের নাম" value={q} onChange={(e) => setQ(e.target.value)} />
-        <button className="btn outline" onClick={() => downloadCsv(`রসিদ-${from}-${to}.csv`, ['রসিদ নং', 'তারিখ', 'ছাত্র', 'আইডি', 'মাধ্যম', 'টাকা', 'অবস্থা'], shown.map((r) => [r.receipt_no, r.paid_at, nm(stu[r.student_id]), stu[r.student_id]?.student_no, methods.label(r.method), r.amount, r.void ? `বাতিল: ${r.void_reason}` : 'সক্রিয়']))}><Icon name="upload" size={17} cls="cur" /> Excel</button>
+        <input className="search-in" placeholder="রসিদ নং বা শিক্ষার্থীর নাম" value={q} onChange={(e) => setQ(e.target.value)} />
+        <button className="btn outline" onClick={() => downloadCsv(`রসিদ-${from}-${to}.csv`, ['রসিদ নং', 'তারিখ', 'শিক্ষার্থী', 'আইডি', 'মাধ্যম', 'টাকা', 'অবস্থা'], shown.map((r) => [r.receipt_no, r.paid_at, nm(stu[r.student_id]), stu[r.student_id]?.student_no, methods.label(r.method), r.amount, r.void ? `বাতিল: ${r.void_reason}` : 'সক্রিয়']))}><Icon name="upload" size={17} cls="cur" /> Excel</button>
       </div>
       <div className="card" style={{ marginBottom: 12 }}>মোট আদায় (বাতিল বাদে): <b>{taka(total)}</b> · রসিদ {shown.length}টি</div>
       <div className="card table-wrap">
         <table>
-          <thead><tr><th>রসিদ নং</th><th>তারিখ</th><th>ছাত্র</th><th>মাধ্যম</th><th>টাকা</th><th></th></tr></thead>
+          <thead><tr><th>রসিদ নং</th><th>তারিখ</th><th>শিক্ষার্থী</th><th>মাধ্যম</th><th>টাকা</th><th></th></tr></thead>
           <tbody>
             {shown.length === 0 && <tr><td colSpan="6" className="muted">কোনো রসিদ নেই।</td></tr>}
             {shown.map((r) => (
