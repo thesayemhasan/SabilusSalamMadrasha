@@ -244,7 +244,7 @@ export function Home() {
 
   const feats = [['book', 'home.why1'], ['moon', 'home.why2'], ['lotus', 'home.why3'], ['chat', 'home.why4']]
   const depts = useDepartments()
-  const quick = [['/admission', 'apply', 'nav.admission'], ['/notices', 'megaphone', 'nav.notices'], ['/events', 'calendar', 'nav.events'], ['/gallery', 'image', 'nav.gallery'], ['/teachers', 'teacher', 'nav.teachers'], ['/contact', 'phone', 'nav.contact']]
+  const quick = [['/admission', 'apply', 'nav.admission'], ['/result', 'clipboard', 'nav.result'], ['/notices', 'megaphone', 'nav.notices'], ['/events', 'calendar', 'nav.events'], ['/gallery', 'image', 'nav.gallery'], ['/teachers', 'teacher', 'nav.teachers'], ['/contact', 'phone', 'nav.contact']]
 
   return (
     <>

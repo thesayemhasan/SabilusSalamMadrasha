@@ -21,6 +21,7 @@ export const TEXT_GROUPS = [
       ['nav.about', 'পরিচিতি', 'عن المدرسة', 'About'],
       ['nav.departments', 'বিভাগসমূহ', 'الأقسام', 'Departments'],
       ['nav.admission', 'ভর্তি', 'القبول', 'Admission'],
+      ['nav.result', 'ফলাফল', '', 'Results'],
       ['nav.notices', 'নোটিশ', 'الإعلانات', 'Notices'],
       ['nav.events', 'ইভেন্ট', 'الفعاليات', 'Events'],
       ['nav.gallery', 'গ্যালারি', 'المعرض', 'Gallery'],
