@@ -243,7 +243,7 @@ export function Events() {
       <span className="date-chip">{fmtDate(e.event_date, lang)}</span>
       <h3>{pick(e, 'title', lang)}</h3>
       <p className="pre muted" style={{ margin: 0 }}>{pick(e, 'desc', lang)}</p>
-      <Countdown start={e.start_at} end={e.end_at} showStart={e.show_start_timer} showEnd={e.show_end_timer} />
+      <Countdown date={e.event_date} start={e.start_at} end={e.end_at} showStart={e.show_start_timer} showEnd={e.show_end_timer} />
     </article>
   )
   return (

@@ -3,13 +3,15 @@ import { useSite } from '../lib/store'
 import { dig } from '../lib/util'
 
 // ইভেন্টের টাইমার: শুরুর আগে "শুরু হতে বাকি", চলাকালে "শেষ হতে বাকি"
-export default function Countdown({ start, end, showStart, showEnd }) {
+export default function Countdown({ start, end, showStart, showEnd, date }) {
   const { t, lang } = useSite()
   const [now, setNow] = useState(Date.now())
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(i) }, [])
   if (!showStart && !showEnd) return null
-  const s = start ? new Date(start).getTime() : null
-  const e = end ? new Date(end).getTime() : null
+  // সময় না দিয়ে শুধু তারিখ দিলে সেই দিনের শুরু–শেষ ধরে টাইমার চলবে
+  const dateOnly = !start && !end && date
+  const s = start ? new Date(start).getTime() : dateOnly ? new Date(date + 'T00:00:00').getTime() : null
+  const e = end ? new Date(end).getTime() : dateOnly ? new Date(date + 'T23:59:59').getTime() : null
   let label = '', target = null, kind = 'start'
   if (s && now < s) { if (showStart) { label = t('events.timer.start'); target = s } }
   else if (e && now < e) { kind = 'end'; if (showEnd) { label = t('events.timer.end'); target = e } else return <span className="cd-chip live">{t('events.timer.running')}</span> }

@@ -1317,9 +1317,73 @@ language sql stable security definer set search_path = public as $$
   );
 $$;
 
+-- মার্কশিটের QR যাচাই: প্রতিটি (পরীক্ষা, শিক্ষার্থী)-র জন্য একটি এলোমেলো গোপন কোড
+create table if not exists public.result_verify (
+  code text primary key,
+  exam_id uuid not null references public.exams(id) on delete cascade,
+  student_id uuid not null references public.students(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (exam_id, student_id)
+);
+alter table public.result_verify enable row level security;
+drop policy if exists "result_verify_admin" on public.result_verify;
+create policy "result_verify_admin" on public.result_verify for select using (public.has_area('people'));
+
+create or replace function public._verify_code(p_exam uuid, p_student uuid) returns text
+language plpgsql security definer set search_path = public as $$
+declare c text;
+begin
+  select code into c from public.result_verify where exam_id = p_exam and student_id = p_student;
+  while c is null loop
+    begin
+      insert into public.result_verify(code, exam_id, student_id) values (substr(replace(gen_random_uuid()::text, '-', ''), 1, 12), p_exam, p_student) returning code into c;
+    exception when unique_violation then
+      select code into c from public.result_verify where exam_id = p_exam and student_id = p_student;
+    end;
+  end loop;
+  return c;
+end $$;
+revoke all on function public._verify_code(uuid, uuid) from public, anon, authenticated;
+
+-- অ্যাডমিনের জন্য: শিক্ষার্থীদের যাচাই-কোড (না থাকলে তৈরি হয়)
+create or replace function public.admin_verify_codes(p_exam uuid, p_students uuid[]) returns json
+language plpgsql security definer set search_path = public as $$
+declare r json;
+begin
+  if not public.has_area('people') then raise exception 'অনুমতি নেই'; end if;
+  select coalesce(json_object_agg(sid::text, public._verify_code(p_exam, sid)), '{}'::json) into r from unnest(p_students) as sid;
+  return r;
+end $$;
+grant execute on function public.admin_verify_codes(uuid, uuid[]) to authenticated;
+
+-- QR স্ক্যান: কোড মিললে মার্কশিটে যা ছাপা থাকে শুধু তাই ফেরত দেয় (জন্মতারিখ/ফোন/ঠিকানা নয়)
+create or replace function public.public_verify(p_code text) returns json
+language plpgsql stable security definer set search_path = public as $$
+declare v record; st record; cid uuid;
+begin
+  if p_code is null or btrim(p_code) = '' then return null; end if;
+  select * into v from public.result_verify where code = btrim(p_code);
+  if not found then return null; end if;
+  if not exists (select 1 from public.exams where id = v.exam_id and published) then return null; end if;
+  select * into st from public.students where id = v.student_id;
+  select s.class_id into cid from public.exam_marks m join public.exam_subjects s on s.id = m.subject_id where m.student_id = v.student_id and m.exam_id = v.exam_id limit 1;
+  return json_build_object(
+    'student', json_build_object('student_no', st.student_no, 'name_bn', st.name_bn, 'name_en', st.name_en),
+    'exam', (select json_build_object('name_bn', name_bn, 'name_en', name_en, 'year', year) from public.exams where id = v.exam_id),
+    'class', (select json_build_object('name_bn', name_bn, 'name_en', name_en) from public.classes where id = cid),
+    'subjects', coalesce((
+      select json_agg(json_build_object('name_bn', s.name_bn, 'name_en', s.name_en, 'full', s.full_marks, 'pass', s.pass_marks, 'marks', m.marks, 'absent', coalesce(m.absent, false)) order by s.sort, s.name_bn)
+      from public.exam_subjects s left join public.exam_marks m on m.subject_id = s.id and m.student_id = v.student_id
+      where s.exam_id = v.exam_id and s.class_id = cid
+    ), '[]'::json),
+    'result', (select json_build_object('total', total_text, 'avg', avg_text, 'division', division, 'merit', merit_text) from public.exam_results where exam_id = v.exam_id and student_id = v.student_id)
+  );
+end $$;
+grant execute on function public.public_verify(text) to anon, authenticated;
+
 -- আইডি + জন্মতারিখ মিললে শুধু সেই শিক্ষার্থীর নিজের ফলাফল ফেরত দেয়; না মিললে null
 create or replace function public.public_result(p_exam uuid, p_class uuid, p_no text, p_dob date) returns json
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql security definer set search_path = public as $$
 declare st record;
 begin
   if p_no is null or btrim(p_no) = '' or p_dob is null then return null; end if;
@@ -1329,8 +1393,10 @@ begin
   if not exists (select 1 from public.exam_marks m join public.exam_subjects s on s.id = m.subject_id
                  where m.student_id = st.id and m.exam_id = p_exam and s.class_id = p_class) then return null; end if;
   return json_build_object(
-    'student', json_build_object('student_no', st.student_no, 'name_bn', st.name_bn, 'name_en', st.name_en, 'father_name', st.father_name),
-    'exam', (select json_build_object('name_bn', name_bn, 'name_en', name_en, 'year', year) from public.exams where id = p_exam),
+    'student', json_build_object('student_no', st.student_no, 'name_bn', st.name_bn, 'name_en', st.name_en, 'father_name', st.father_name, 'mother_name', st.mother_name, 'dob', st.dob, 'photo_url', st.photo_url),
+    'exam', (select json_build_object('name_bn', name_bn, 'name_en', name_en, 'year', year, 'date_from', date_from, 'date_to', date_to) from public.exams where id = p_exam),
+    'layout', (select value from public.print_configs where key = 'layout_marksheet'),
+    'verify_code', public._verify_code(p_exam, st.id),
     'class', (select json_build_object('name_bn', name_bn, 'name_en', name_en) from public.classes where id = p_class),
     'subjects', coalesce((
       select json_agg(json_build_object('name_bn', s.name_bn, 'name_en', s.name_en, 'full', s.full_marks, 'pass', s.pass_marks, 'marks', m.marks, 'absent', coalesce(m.absent, false)) order by s.sort, s.name_bn)

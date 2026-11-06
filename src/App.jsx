@@ -5,6 +5,7 @@ import { useSite } from './lib/store'
 import PublicLayout from './components/PublicLayout'
 import { About, Account, Admission, Contact, Departments, Donate, Events, Gallery, Home, Notices, Privacy, Teachers, Terms } from './pages/public/Public'
 import Result from './pages/public/Result'
+import Verify from './pages/public/Verify'
 import AdminShell from './pages/admin/AdminShell'
 import Dashboard from './pages/admin/Dashboard'
 import TextsEditor from './pages/admin/TextsEditor'
@@ -52,6 +53,7 @@ export default function App() {
         <Route path="donate" element={<Donate />} />
         <Route path="contact" element={<Contact />} />
         <Route path="result" element={<Result />} />
+        <Route path="verify/:code" element={<Verify />} />
         <Route path="account" element={<Account />} />
         <Route path="privacy" element={<Privacy />} />
         <Route path="terms" element={<Terms />} />

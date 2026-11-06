@@ -1,5 +1,6 @@
 import Icon from '../../components/Icon'
 import ResultSheet from './ResultSheet'
+import Marksheet from './Marksheet'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
@@ -376,7 +377,7 @@ export default function Exams() {
   const [tab, setTab] = useState('exams')
   const [exams, reload] = useExams()
   const classes = useClassList()
-  const TABS = [['exams', 'পরীক্ষা'], ['subjects', 'বিষয়'], ['entry', 'নম্বর এন্ট্রি'], ['results', 'ফলাফল'], ['sheet', 'শিট থেকে ফলাফল']]
+  const TABS = [['exams', 'পরীক্ষা'], ['subjects', 'বিষয়'], ['entry', 'নম্বর এন্ট্রি'], ['results', 'ফলাফল'], ['sheet', 'শিট থেকে ফলাফল'], ['marksheet', 'মার্কশিট']]
   return (
     <>
       <div className="toolbar">
@@ -389,6 +390,7 @@ export default function Exams() {
       {tab === 'entry' && <Entry exams={exams} classes={classes} />}
       {tab === 'results' && <Results exams={exams} classes={classes} />}
       {tab === 'sheet' && <ResultSheet />}
+      {tab === 'marksheet' && <Marksheet exams={exams} classes={classes} />}
     </>
   )
 }

@@ -59,7 +59,11 @@ export default function LayoutDesigner({ type, sample, layoutHook }) {
   function addField(key) {
     if (!key) return
     const k = fieldKind(type, key)
-    const e = k === 'image'
+    const e = k === 'qr'
+      ? { id: uid(), kind: 'field', key, x: 5, y: 5, w: 22, h: 22 }
+      : k === 'table'
+      ? { id: uid(), kind: 'field', key, x: 14, y: 100, w: Math.min(182, layout.size.w - 20), h: 80, size: 10.5, fill: '#e8f5ec', color: '#000000', passcol: false }
+      : k === 'image'
       ? { id: uid(), kind: 'field', key, x: 5, y: 5, w: key === 'logo' ? 12 : 22, h: key === 'logo' ? 12 : 27, border: key !== 'logo' }
       : { id: uid(), kind: 'field', key, x: 5, y: 5, w: Math.min(60, layout.size.w - 10), h: k === 'multi' ? 20 : 6, size: 10, bold: false, align: 'left', color: '#000000', prefix: `${fieldLabel(type, key)}: `, underline: false, multi: k === 'multi' }
     patchSide((s) => s.els.push(e))
@@ -80,6 +84,8 @@ export default function LayoutDesigner({ type, sample, layoutHook }) {
 
   const kind = el?.kind === 'field' ? fieldKind(type, el.key) : null
   const isImgField = kind === 'image'
+  const isTable = kind === 'table'
+  const isQr = kind === 'qr'
   return (
     <div>
       <div className="alert info" style={{ marginBottom: 12 }}>
@@ -116,11 +122,22 @@ export default function LayoutDesigner({ type, sample, layoutHook }) {
               <h4 style={{ margin: 0 }}>{el.kind === 'field' ? fieldLabel(type, el.key) : el.kind === 'text' ? 'নিজের লেখা' : el.kind === 'image' ? 'ছবি' : 'রেখা / বাক্স'}</h4>
               {el.kind === 'text' && <div className="field"><label>লেখা</label><textarea rows={2} value={el.text} onChange={(e) => patchEl(el.id, { text: e.target.value })} /></div>}
               {el.kind === 'image' && <div className="field"><label>ছবি</label><ImageUpload folder="designs" value={el.src} onChange={(v) => patchEl(el.id, { src: v || '' })} /></div>}
-              {el.kind === 'field' && !isImgField && <div className="field"><label>তথ্যের আগে যে লেখা বসবে</label><input value={el.prefix || ''} onChange={(e) => patchEl(el.id, { prefix: e.target.value })} /></div>}
+              {el.kind === 'field' && !isImgField && !isTable && !isQr && <div className="field"><label>তথ্যের আগে যে লেখা বসবে</label><input value={el.prefix || ''} onChange={(e) => patchEl(el.id, { prefix: e.target.value })} /></div>}
               <div className="grid g2">
                 {['x', 'y', 'w', 'h'].map((k) => <div className="field" key={k}><label>{{ x: 'বাঁ থেকে', y: 'উপর থেকে', w: 'প্রস্থ', h: 'উচ্চতা' }[k]} (মিমি)</label><input type="number" step="0.5" value={el[k]} onChange={(e) => patchEl(el.id, { [k]: num(e.target.value) })} /></div>)}
               </div>
-              {(el.kind === 'field' && !isImgField || el.kind === 'text') && (
+              {isQr && <p className="muted" style={{ margin: 0, fontSize: '.85rem' }}>স্ক্যান করলে সাইটের যাচাই পাতা খুলবে। বর্গাকার রাখুন (প্রস্থ = উচ্চতা), অন্তত ১৮ মিমি।</p>}
+              {isTable && (
+                <>
+                  <div className="grid g2">
+                    <div className="field"><label>লেখার মাপ (pt)</label><input type="number" step="0.5" min="5" value={el.size || 10} onChange={(e) => patchEl(el.id, { size: num(e.target.value) })} /></div>
+                    <div className="field"><label>শিরোনাম সারির রং</label><input type="color" value={el.fill || '#e8f5ec'} onChange={(e) => patchEl(el.id, { fill: e.target.value })} /></div>
+                  </div>
+                  <label className="toggle-row"><Switch checked={!!el.passcol} onChange={(v) => patchEl(el.id, { passcol: v })} /><span>"পাশ নম্বর" কলাম দেখান</span></label>
+                  <p className="muted" style={{ margin: 0, fontSize: '.85rem' }}>টেবিলের উচ্চতা বিষয়ের সংখ্যা অনুযায়ী নিজে বাড়ে; নিচের বাক্সগুলো সেই অনুযায়ী সরিয়ে নিন।</p>
+                </>
+              )}
+              {(el.kind === 'field' && !isImgField && !isTable && !isQr || el.kind === 'text') && (
                 <>
                   <div className="grid g2">
                     <div className="field"><label>লেখার মাপ (pt)</label><input type="number" step="0.5" min="4" value={el.size || 9} onChange={(e) => patchEl(el.id, { size: num(e.target.value) })} /></div>

@@ -3,14 +3,17 @@ import { supabase } from '../../lib/supabase'
 import { useSite, pick } from '../../lib/store'
 import { dig } from '../../lib/util'
 import { Select } from '../../components/Ui'
-import { resultCanvas, canvasToPdf } from '../../lib/resultPdf'
+import { canvasToPdf } from '../../lib/resultPdf'
+import { layoutCanvas } from '../../lib/layoutCanvas'
+import { defaultLayout } from '../../lib/layout'
+import { marksheetData, verifyLink } from '../../lib/marksheet'
 import { saveBlob } from '../../lib/xlsx'
 import PageHead from '../../components/PageHead'
 
 const num = (v) => (v === null || v === undefined ? '' : Number(v))
 
 export default function Result() {
-  const { t, lang } = useSite()
+  const { t, lang, settings } = useSite()
   const [opt, setOpt] = useState(null)
   const [examId, setExamId] = useState('')
   const [clsId, setClsId] = useState('')
@@ -26,16 +29,15 @@ export default function Result() {
     if (!res) return
     setPdfBusy(true)
     try {
-      const rr = res.result || {}
-      const exName = `${pick(res.exam, 'name', lang)}${res.exam.year ? ` (${d(res.exam.year)})` : ''}`
-      const canvas = await resultCanvas({
-        title: t('site.name'),
-        rows: [[t('result.name'), pick(res.student, 'name', lang)], [t('result.id'), d(res.student.student_no)], [t('result.class'), pick(res.class, 'name', lang)], [t('result.exam'), exName], ...(res.student.father_name ? [[t('result.father'), res.student.father_name]] : [])],
-        head: [t('result.subject'), t('result.full'), t('result.marks')],
-        table: res.subjects.map((s) => [pick(s, 'name', lang), d(num(s.full)), s.absent ? t('result.absent') : s.marks === null ? '—' : d(num(s.marks)), s.absent || (s.marks !== null && Number(s.marks) < Number(s.pass))]),
-        boxes: [['total', 'result.total'], ['avg', 'result.avg'], ['division', 'result.division'], ['merit', 'result.merit']].filter(([k]) => rr[k]).map(([k, l]) => [t(l), d(rr[k])]),
+      const layout = res.layout && res.layout.sides ? res.layout : defaultLayout('marksheet')
+      const data = marksheetData({
+        inst: { inst_name: t('site.name'), inst_addr: t('site.address'), inst_phone: settings.phone || '', logo: settings.logo_url },
+        student: res.student, className: pick(res.class, 'name', lang), exam: res.exam,
+        subjects: res.subjects.map((x) => ({ name_bn: x.name_bn, name_en: x.name_en, full: x.full, pass: x.pass, marks: x.marks, absent: x.absent })),
+        result: res.result, lang, verifyUrl: verifyLink(res.verify_code),
       })
-      saveBlob(await canvasToPdf(canvas), `result-${res.student.student_no}.pdf`)
+      const canvas = await layoutCanvas(layout, 'front', data)
+      saveBlob(await canvasToPdf(canvas), `marksheet-${res.student.student_no}.pdf`)
     } catch (e) { setErr(String(e.message || e)) }
     setPdfBusy(false)
   }

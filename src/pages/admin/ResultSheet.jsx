@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
 import { readXlsx, saveBlob, writeXlsx } from '../../lib/xlsx'
@@ -36,17 +36,22 @@ const cleanAvg = (v) => {
   return c !== null && /^\d+(\.\d+)?$/.test(c) ? Number(c).toFixed(2) : c
 }
 
-function parse(sheets, ctx, exam, cls, opt) {
-  const sheet = sheets.find((s) => s.name === 'তথ্য') || sheets[0]
-  let at = -1; let map = {}
+function findHeader(sheet) {
   const rows = sheet ? sheet.rows : []
   for (let i = 0; i < Math.min(rows.length, 15); i++) {
     const m = {}
     ;(rows[i] || []).forEach((h, ci) => { const f = fieldOf(h); if (f && m[f] === undefined) m[f] = ci })
-    if (m.name !== undefined) { at = i; map = m; break }
+    if (m.name !== undefined) return { at: i, map: m }
   }
-  if (at < 0) return { fatal: 'শিরোনাম সারিতে "নাম" কলাম পাওয়া যায়নি। প্রথম সারিতে ক্র., আইডি, নাম, বিষয়ের নাম… প্রাপ্ত নম্বর, গড় নম্বর, বিভাগ, মেধাস্থান লিখুন (টেমপ্লেট নামিয়ে দেখতে পারেন)।' }
-  if (map.no === undefined) return { fatal: 'শিটে "আইডি" কলাম নেই। শিক্ষার্থী সঠিকভাবে চেনার জন্য নামের আগে বা পরে একটি "আইডি" কলাম যোগ করে প্রতিটি শিক্ষার্থীর আইডি লিখুন।' }
+  return null
+}
+
+function parse(sheet, ctx, exam, cls, opt) {
+  const rows = sheet ? sheet.rows : []
+  const hd = findHeader(sheet)
+  if (!hd) return { fatal: `"${sheet ? sheet.name : ''}" পাতায় শিরোনাম সারিতে "নাম" কলাম পাওয়া যায়নি।` }
+  const { at, map } = hd
+  const byName = map.no === undefined // আইডি কলাম না থাকলে নাম মিলিয়ে চেনা হয়
   const used = new Set(Object.values(map))
   const head = rows[at] || []
   const firstSummary = Math.min(...['total', 'avg', 'division', 'merit'].map((k) => (map[k] === undefined ? 9999 : map[k])))
@@ -55,24 +60,28 @@ function parse(sheets, ctx, exam, cls, opt) {
   if (!subjCols.length) return { fatal: 'বিষয়ের কলাম পাওয়া যায়নি। নাম কলামের পরে প্রতিটি বিষয়ের নাম শিরোনামে লিখুন।' }
   const existing = ctx.subs
   const subjects = subjCols.map((s) => ({ ...s, site: existing[nk(s.name)] || null }))
-  const seen = new Set(); const out = []
+  const out = []
   const warnSub = (s, full) => full
   for (let i = at + 1; i < rows.length; i++) {
     const cells = rows[i] || []
     if (!cells.some((v) => !blank(v))) continue
     const n = i + 1
     const issues = []
-    const no = idKey(cells[map.no])
     const nameCell = blank(cells[map.name]) ? '' : String(cells[map.name]).trim()
-    const rec = { n, no, name: nameCell, status: 'ok', issues, marks: [] }
-    if (!no) { if (!nameCell) continue; issues.push(['err', 'আইডি ফাঁকা']); rec.status = 'error'; out.push(rec); continue }
-    const st = ctx.byNo[no]
-    if (!st) { issues.push(['err', `আইডি "${no}" সাইটে পাওয়া যায়নি`]); rec.status = 'error'; out.push(rec); continue }
-    rec.st = st
-    if (seen.has(st.id)) { issues.push(['err', 'এই শিক্ষার্থী ফাইলে আগেও আছে']); rec.status = 'error'; out.push(rec); continue }
-    seen.add(st.id)
-    if (nameCell && nk(nameCell) !== nk(st.name_bn)) issues.push(['warn', `শিটের নাম "${nameCell}", সাইটে "${st.name_bn}" — আইডি অনুযায়ী ধরা হয়েছে`])
-    if (st.class_id && st.class_id !== cls.id) issues.push(['warn', 'শিক্ষার্থীটি সাইটে অন্য শ্রেণিতে আছে — তবু ফলাফল যোগ হবে'])
+    const no = byName ? '' : idKey(cells[map.no])
+    const rec = { n, no, name: nameCell, issues, marks: [], stIssues: [] }
+    if (byName) {
+      if (!nameCell) continue
+      const c = ctx.inClass.filter((x) => nk(x.name_bn) === nk(nameCell))
+      if (c.length === 1) rec.st = c[0]
+      else rec.stIssues.push(c.length ? 'এই নামে একাধিক শিক্ষার্থী আছে — তালিকা থেকে বাছুন' : 'নাম এই শ্রেণির কারও সাথে মেলেনি — তালিকা থেকে বাছুন')
+    } else if (!no) {
+      if (!nameCell) continue
+      rec.stIssues.push('আইডি ফাঁকা — তালিকা থেকে বাছুন')
+    } else if (ctx.byNo[no]) {
+      rec.st = ctx.byNo[no]
+      if (nameCell && nk(nameCell) !== nk(rec.st.name_bn)) rec.nameWarn = `শিটের নাম "${nameCell}", সাইটে "${rec.st.name_bn}" — আইডি অনুযায়ী ধরা হয়েছে`
+    } else rec.stIssues.push(`আইডি "${no}" সাইটে পাওয়া যায়নি — তালিকা থেকে বাছুন`)
     let any = false
     subjects.forEach((s) => {
       const v = cells[s.ci]
@@ -92,10 +101,9 @@ function parse(sheets, ctx, exam, cls, opt) {
       division: map.division === undefined ? null : (blank(cells[map.division]) ? null : String(cells[map.division]).trim()),
       merit: map.merit === undefined ? null : clean(cells[map.merit]),
     }
-    rec.status = issues.some((x) => x[0] === 'err') ? 'error' : issues.length ? 'warn' : 'ok'
     out.push(rec)
   }
-  return { rows: out, subjects, hasSummary: ['total', 'avg', 'division', 'merit'].filter((k) => map[k] !== undefined), warnSub, firstSummary }
+  return { rows: out, subjects, byName, hasSummary: ['total', 'avg', 'division', 'merit'].filter((k) => map[k] !== undefined), warnSub, firstSummary }
 }
 
 export default function ResultSheet() {
@@ -107,7 +115,10 @@ export default function ResultSheet() {
   const [clsId, setClsId] = useState('')
   const [full, setFull] = useState('100')
   const [pass, setPass] = useState('33')
-  const [res, setRes] = useState(null)
+  const [book, setBook] = useState(null) // { sheets, cands }
+  const [sheetName, setSheetName] = useState('')
+  const [parsed, setParsed] = useState(null)
+  const [picks, setPicks] = useState({})
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState('')
   const [out, setOut] = useState(null)
@@ -124,13 +135,13 @@ export default function ResultSheet() {
     return { students: st.data || [], subjects: sb.data || [] }
   }
   useEffect(() => { load() }, [])
-  useEffect(() => { setRes(null); setOut(null); setMsg('') }, [examId, clsId])
+  useEffect(() => { setBook(null); setParsed(null); setPicks({}); setOut(null); setMsg('') }, [examId, clsId])
 
   const mk = (d) => {
     const byNo = {}; d.students.forEach((s) => { if (s.student_no) byNo[idKey(s.student_no)] = s })
     const subs = {}
     d.subjects.filter((s) => s.exam_id === examId && s.class_id === clsId).forEach((s) => { [s.name_bn, s.name_en].forEach((x) => { if (x) subs[nk(x)] = s }) })
-    return { byNo, subs }
+    return { byNo, subs, inClass: d.students.filter((s) => s.class_id === clsId) }
   }
 
   async function template() {
@@ -139,12 +150,12 @@ export default function ResultSheet() {
     const d = await load()
     const ctx = mk(d)
     const subs = [...new Map(Object.values(ctx.subs).map((s) => [s.id, s])).values()].sort((a, b) => a.sort - b.sort)
-    const list = d.students.filter((s) => s.class_id === clsId)
+    const list = ctx.inClass
     const head = ['ক্র.', 'আইডি', 'নাম', ...subs.map((s) => s.name_bn || s.name_en), 'প্রাপ্ত নম্বর', 'গড় নম্বর', 'বিভাগ', 'মেধাস্থান']
     const rows = list.map((s, i) => [String(i + 1), s.student_no || '', s.name_bn || ''])
     const doc = [
       ['নির্দেশনা'],
-      ['১. "তথ্য" পাতায় আপনার ছাপা শিটের মতোই কলাম আছে। শুধু "আইডি" কলামটি বাড়তি — এটি দিয়ে শিক্ষার্থী চেনা হয়।'],
+      ['১. "তথ্য" পাতায় আপনার ছাপা শিটের মতোই কলাম আছে। "আইডি" কলামটি বাড়তি — এটি থাকলে শিক্ষার্থী নির্ভুলভাবে চেনা হয়। (আইডি কলাম না থাকলেও চলে; তখন নাম মিলিয়ে চেনা হয়।)'],
       ['২. বিষয়ের কলামে নম্বর লিখুন। অনুপস্থিত হলে "অনুপস্থিত" লিখুন, নম্বর না দিতে চাইলে ঘর ফাঁকা রাখুন।'],
       ['৩. প্রাপ্ত নম্বর, গড় নম্বর, বিভাগ ও মেধাস্থান শিটে যা লিখবেন সাইটে হুবহু তাই দেখাবে — সাইট নিজে হিসাব করে না।'],
       ['৪. বিষয় সাইটে না থাকলে ইম্পোর্টের সময় নতুন বিষয় হিসেবে তৈরি হবে। বিষয়ের কলামের নাম আপনার পছন্দমতো দিতে পারেন।'],
@@ -155,24 +166,59 @@ export default function ResultSheet() {
     ]), 'ফলাফল-শিট-টেমপ্লেট.xlsx')
   }
 
+  async function runParse(sheets, name) {
+    const d = await load()
+    const sh = sheets.find((x) => x.name === name)
+    setPicks({}); setOut(null); setMsg('')
+    const r = parse(sh, mk(d), null, null, { full: Number(dig(full)) || 100 })
+    if (r.fatal) { setMsg(r.fatal); setParsed(null) } else setParsed(r)
+  }
+
   async function onFile(e) {
     const f = e.target.files && e.target.files[0]
     const inp = e.target
-    setRes(null); setOut(null); setMsg('')
+    setParsed(null); setBook(null); setOut(null); setMsg(''); setPicks({})
     if (!f) return
     setTimeout(() => { try { inp.value = '' } catch (x) { /* ignore */ } }, 0)
     if (!examId || !clsId) return setMsg('আগে পরীক্ষা ও শ্রেণি বাছুন, তারপর ফাইল দিন।')
     if (!/\.xlsx$/i.test(f.name)) return setMsg('শুধু .xlsx ফাইল চলবে। পুরোনো .xls হলে এক্সেলে খুলে "Save as .xlsx" করুন।')
     try {
       setBusy('read')
-      const d = await load()
-      const r = parse(await readXlsx(await f.arrayBuffer()), mk(d), exams.find((x) => x.id === examId), classes.find((x) => x.id === clsId), { full: Number(dig(full)) || 100 })
-      if (r.fatal) setMsg(r.fatal); else setRes(r)
+      const sheets = await readXlsx(await f.arrayBuffer())
+      const cands = sheets.filter((x) => findHeader(x))
+      if (!cands.length) { setMsg(`ফাইলের কোনো পাতায় "নাম" শিরোনাম পাওয়া যায়নি। পাতাগুলো: ${sheets.map((x) => x.name).join(', ')}। প্রথম সারিতে ক্র., নাম, বিষয়ের নাম… প্রাপ্ত নম্বর, গড় নম্বর, বিভাগ, মেধাস্থান লিখুন।`); return }
+      const first = (cands.find((x) => x.name === 'তথ্য') || cands[0]).name
+      setBook({ sheets, cands: cands.map((x) => x.name) }); setSheetName(first)
+      await runParse(sheets, first)
     } catch (ex) { setMsg(`ফাইল পড়া যায়নি: ${ex.message}`) } finally { setBusy('') }
   }
 
-  const good = res ? res.rows.filter((r) => r.status === 'ok' || r.status === 'warn') : []
-  const newSubs = res ? res.subjects.filter((s) => !s.site) : []
+  async function changeSheet(n) {
+    setSheetName(n)
+    try { setBusy('read'); await runParse(book.sheets, n) } finally { setBusy('') }
+  }
+
+  // ছাত্র চূড়ান্ত করা: নিজে বাছাই > স্বয়ংক্রিয় মিল; ফাইলে একই ছাত্র দুবার থাকলে ভুল
+  const rows = useMemo(() => {
+    if (!parsed) return []
+    const byId = Object.fromEntries(students.map((s) => [s.id, s]))
+    const used = {}
+    return parsed.rows.map((r) => {
+      const st = picks[r.n] ? byId[picks[r.n]] : r.st
+      const errs = r.issues.filter((x) => x[0] === 'err').map((x) => x[1]); const warns = r.issues.filter((x) => x[0] === 'warn').map((x) => x[1])
+      if (!st) errs.unshift(...(r.stIssues.length ? r.stIssues : ['শিক্ষার্থী বাছুন']))
+      else {
+        if (used[st.id]) errs.push('এই শিক্ষার্থী ফাইলে আগেও আছে')
+        used[st.id] = true
+        if (!picks[r.n] && r.nameWarn) warns.push(r.nameWarn)
+        if (st.class_id && st.class_id !== clsId) warns.push('শিক্ষার্থী সাইটে অন্য শ্রেণিতে আছে — তবু ফলাফল যোগ হবে')
+      }
+      return { ...r, st, status: errs.length ? 'error' : warns.length ? 'warn' : 'ok', msgs: [...errs, ...warns] }
+    })
+  }, [parsed, picks, students, clsId])
+
+  const good = rows.filter((r) => r.status === 'ok' || r.status === 'warn')
+  const newSubs = parsed ? parsed.subjects.filter((s) => !s.site) : []
 
   async function doImport() {
     if (!good.length) return
@@ -180,7 +226,7 @@ export default function ResultSheet() {
     try {
       const fullN = Number(dig(full)) || 100; const passN = Number(dig(pass)) || 0
       const ids = {}
-      res.subjects.forEach((s) => { if (s.site) ids[s.ci] = s.site.id })
+      parsed.subjects.forEach((s) => { if (s.site) ids[s.ci] = s.site.id })
       const base = subjects.filter((s) => s.exam_id === examId && s.class_id === clsId)
       const max = base.reduce((m, s) => Math.max(m, s.sort || 0), 0)
       let created = 0
@@ -201,20 +247,21 @@ export default function ResultSheet() {
         const { error } = await supabase.from('exam_results').upsert(results.slice(i, i + 200), { onConflict: 'exam_id,student_id' })
         if (error) { rfail += Math.min(200, results.length - i); firstErr = firstErr || error.message }
       }
-      setOut({ students: good.length, marks: marks.length - failed, failed: failed + rfail, created, firstErr, skipped: res.rows.length - good.length })
-      setRes(null)
+      setOut({ students: good.length, marks: marks.length - failed, failed: failed + rfail, created, firstErr, skipped: rows.length - good.length })
+      setParsed(null); setBook(null)
       await load()
     } catch (ex) { setMsg(ex.message) } finally { setBusy('') }
   }
 
   const exOpts = exams.map((x) => [x.id, `${nm(x)}${x.year ? ` (${x.year})` : ''}`])
   const clOpts = classes.map((x) => [x.id, nm(x)])
-  const cnt = res ? { ok: res.rows.filter((r) => r.status === 'ok').length, warn: res.rows.filter((r) => r.status === 'warn').length, error: res.rows.filter((r) => r.status === 'error').length } : null
+  const cnt = { ok: rows.filter((r) => r.status === 'ok').length, warn: rows.filter((r) => r.status === 'warn').length, error: rows.filter((r) => r.status === 'error').length }
+  const stuOpts = students.filter((s) => s.class_id === clsId).map((s) => [s.id, `${s.name_bn || ''} (${s.student_no || '—'})`])
 
   return (
     <div className="card">
       <h3 style={{ marginTop: 0 }}>ছাপা রেজাল্ট শিট থেকে ফলাফল ইম্পোর্ট</h3>
-      <p className="muted">আপনার ছাপা ফলাফলের ছকেই এক্সেল ফাইল দিন: <b>ক্র. | আইডি | নাম | বিষয়গুলো | প্রাপ্ত নম্বর | গড় নম্বর | বিভাগ | মেধাস্থান</b>। শুধু "আইডি" কলামটি বাড়তি, শিক্ষার্থী চেনার জন্য। প্রাপ্ত নম্বর, গড়, বিভাগ ও মেধাস্থান শিটে যা আছে অভিভাবক সাইটে হুবহু তাই দেখবেন।</p>
+      <p className="muted">আপনার ছাপা ফলাফলের ছকেই এক্সেল ফাইল দিন: <b>ক্র. | (আইডি) | নাম | বিষয়গুলো | প্রাপ্ত নম্বর | গড় নম্বর | বিভাগ | মেধাস্থান</b>। "আইডি" কলাম থাকলে শিক্ষার্থী আইডি দিয়ে চেনা হয়, না থাকলে নাম মিলিয়ে (না মিললে আপনি তালিকা থেকে বেছে দেবেন)। প্রাপ্ত নম্বর, গড়, বিভাগ ও মেধাস্থান শিটে যা আছে অভিভাবক সাইটে হুবহু তাই দেখবেন।</p>
       <div className="grid g2" style={{ marginBottom: 10 }}>
         <div className="field"><label>পরীক্ষা</label><Select placeholder="পরীক্ষা বাছুন" value={examId} onChange={setExamId} options={exOpts} /></div>
         <div className="field"><label>শ্রেণি</label><Select placeholder="শ্রেণি বাছুন" value={clsId} onChange={setClsId} options={clOpts} /></div>
@@ -228,22 +275,32 @@ export default function ResultSheet() {
       </div>
       {msg && <div className="alert err" style={{ marginTop: 12 }}>{msg}</div>}
 
-      {res && (
+      {book && book.cands.length > 1 && (
+        <div className="field" style={{ marginTop: 12, maxWidth: 360 }}>
+          <label>ফাইলে একাধিক পাতা আছে — কোনটি ইম্পোর্ট করবেন?</label>
+          <Select value={sheetName} onChange={changeSheet} options={book.cands} />
+        </div>
+      )}
+
+      {parsed && (
         <div style={{ marginTop: 14 }}>
           <div className="alert">
-            মোট {bn(res.rows.length)} জন শিক্ষার্থী: ঠিক {bn(cnt.ok)}, ওয়ার্নিং {bn(cnt.warn)}, ভুল {bn(cnt.error)} (ভুলের সারি বাদ যাবে)।
-            বিষয় পাওয়া গেছে {bn(res.subjects.length)} টি{newSubs.length ? `; এর মধ্যে সাইটে নেই, নতুন তৈরি হবে: ${newSubs.map((s) => s.name).join('، ')}` : ''}।
-            {res.hasSummary.length < 4 && ' শিটে প্রাপ্ত নম্বর/গড়/বিভাগ/মেধাস্থানের সব কলাম নেই — যেগুলো নেই সেগুলো অভিভাবকের পাতায় দেখাবে না।'}
+            পাতা "{sheetName}": মোট {bn(rows.length)} জন শিক্ষার্থী — ঠিক {bn(cnt.ok)}, ওয়ার্নিং {bn(cnt.warn)}, ভুল {bn(cnt.error)} (ভুলের সারি বাদ যাবে)।
+            {parsed.byName && ' ফাইলে "আইডি" কলাম নেই, তাই নাম মিলিয়ে শিক্ষার্থী চেনা হয়েছে।'}
+            {' '}বিষয় পাওয়া গেছে {bn(parsed.subjects.length)} টি{newSubs.length ? `; এর মধ্যে সাইটে নেই, নতুন তৈরি হবে: ${newSubs.map((s) => s.name).join('، ')}` : ''}।
+            {parsed.hasSummary.length < 4 && ' শিটে প্রাপ্ত নম্বর/গড়/বিভাগ/মেধাস্থানের সব কলাম নেই — যেগুলো নেই সেগুলো অভিভাবকের পাতায় দেখাবে না।'}
           </div>
           <div className="table-wrap" style={{ marginTop: 10 }}>
             <table>
-              <thead><tr><th>সারি</th><th>আইডি</th><th>নাম</th><th>নম্বর</th><th>প্রাপ্ত</th><th>গড়</th><th>বিভাগ</th><th>মেধা</th><th>অবস্থা</th></tr></thead>
+              <thead><tr><th>সারি</th><th>{parsed.byName ? 'শিটের নাম' : 'আইডি'}</th><th>শিক্ষার্থী</th><th>নম্বর</th><th>প্রাপ্ত</th><th>গড়</th><th>বিভাগ</th><th>মেধা</th><th>অবস্থা</th></tr></thead>
               <tbody>
-                {res.rows.map((r) => (
+                {rows.map((r) => (
                   <tr key={r.n}>
-                    <td>{bn(r.n)}</td><td>{r.no}</td><td>{r.st ? r.st.name_bn : r.name}</td><td>{bn(r.marks.length)}</td>
+                    <td>{bn(r.n)}</td><td>{parsed.byName ? r.name : r.no}</td>
+                    <td style={{ minWidth: 200 }}>{!r.st || picks[r.n] || r.stIssues.length ? <Select small placeholder="শিক্ষার্থী বাছুন" value={picks[r.n] || (r.st ? r.st.id : '')} onChange={(v) => setPicks({ ...picks, [r.n]: v })} options={stuOpts} /> : r.st.name_bn}</td>
+                    <td>{bn(r.marks.length)}</td>
                     <td>{r.result?.total ?? ''}</td><td>{r.result?.avg ?? ''}</td><td>{r.result?.division ?? ''}</td><td>{r.result?.merit ?? ''}</td>
-                    <td style={{ color: r.status === 'error' ? 'var(--secondary)' : undefined }}>{r.status === 'ok' ? 'ঠিক' : r.issues.map((x) => x[1]).join('; ')}</td>
+                    <td style={{ color: r.status === 'error' ? 'var(--secondary)' : undefined }}>{r.status === 'ok' ? 'ঠিক' : r.msgs.join('; ')}</td>
                   </tr>
                 ))}
               </tbody>
