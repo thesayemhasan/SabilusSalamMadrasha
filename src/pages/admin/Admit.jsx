@@ -44,6 +44,12 @@ export default function Admit() {
     if (!exam) { setRoutine([]); return }
     supabase.from('exam_subjects').select('*').eq('exam_id', exam).order('exam_date', { ascending: true }).then(({ data }) => setRoutine(data || []))
   }, [exam])
+  // সিট প্ল্যান থাকলে প্রতিটি কার্ডে কক্ষ ও সিট নম্বর বসানোর জন্য
+  const [seatOf, setSeatOf] = useState({})
+  useEffect(() => {
+    if (!exam) { setSeatOf({}); return }
+    fetchAll((a, b) => supabase.from('exam_seats').select('student_id,hall_name,seat_no').eq('exam_id', exam).order('id').range(a, b)).then(({ data }) => setSeatOf(Object.fromEntries((data || []).map((r) => [r.student_id, r]))))
+  }, [exam])
   // নির্বাচিত পরীক্ষার নাম ডিজাইনে না বদলে থাকলে স্বয়ংক্রিয়ভাবে নেওয়া যায়
   const ex = exams.find((e) => e.id === exam)
 
@@ -63,8 +69,8 @@ export default function Admit() {
   const inst = instData(settings, t)
   const routineOf = (classId) => routine.filter((x) => x.class_id === classId).map((r) => `${nm(r)}${r.exam_date ? ` — ${dateBn(r.exam_date)}` : ''}${r.exam_time ? ` ${r.exam_time}` : ''}`)  .join('\n')
   const common = { ...inst, ...(cfg.school_title ? { inst_name: cfg.school_title } : {}), doc_title: eff.doc_title, exam_name: eff.exam_name, year: eff.year, instructions: cfg.instructions, sign_left: cfg.sign_left, sign_right: cfg.sign_right }
-  const items = chosen.map((s) => ({ ...common, ...studentData(s, clsNameOf(s.class_id)), routine: routineOf(s.class_id) }))
-  const sample = { ...common, ...studentData({ name_bn: 'নমুনা শিক্ষার্থী', student_no: '260001', father_name: 'নমুনা পিতা' }, 'নমুনা শ্রেণি'), routine: 'কুরআন — ১ নভেম্বর\nআরবি — ২ নভেম্বর' }
+  const items = chosen.map((s) => ({ ...common, ...studentData(s, clsNameOf(s.class_id)), routine: routineOf(s.class_id), hall: seatOf[s.id]?.hall_name || '', seat_no: seatOf[s.id] ? String(seatOf[s.id].seat_no) : '' }))
+  const sample = { ...common, ...studentData({ name_bn: 'নমুনা শিক্ষার্থী', student_no: '260001', father_name: 'নমুনা পিতা' }, 'নমুনা শ্রেণি'), routine: 'কুরআন — ১ নভেম্বর\nআরবি — ২ নভেম্বর', hall: 'কক্ষ ১', seat_no: '25' }
   const eff2 = mode || lay.cfg.print || 'front'
   return (
     <>
