@@ -10,7 +10,7 @@ import { nm, todayStr } from './fin'
 // ---------- ছোট সহায়ক ----------
 const BND = '০১২৩৪৫৬৭৮৯'
 const dig = (s) => String(s).replace(/[০-৯]/g, (d) => BND.indexOf(d))
-const norm = (s) => String(s ?? '').replace(/\*/g, '').replace(/\s+/g, '').toLowerCase()
+const norm = (s) => String(s ?? '').normalize('NFD').replace(/\*/g, '').replace(/\s+/g, '').toLowerCase()
 const nk = (s) => String(s ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
 const idKey = (v) => dig(String(v ?? '')).replace(/\s+/g, '').toUpperCase()
 const blank = (v) => v === null || v === undefined || String(v).trim() === ''

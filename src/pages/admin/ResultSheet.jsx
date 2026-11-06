@@ -1,3 +1,4 @@
+import { fixLegacy } from '../../lib/bijoy'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
@@ -8,8 +9,8 @@ import { nm } from './fin'
 /* মাদরাসার ছাপা রেজাল্ট শিট (ক্র. | আইডি | নাম | বিষয়গুলো… | প্রাপ্ত নম্বর | গড় নম্বর | বিভাগ | মেধাস্থান) থেকে ইম্পোর্ট */
 const BND = '০১২৩৪৫৬৭৮৯'
 const dig = (s) => String(s ?? '').replace(/[০-৯]/g, (d) => BND.indexOf(d))
-const norm = (s) => String(s ?? '').replace(/[\s*‌‍]+/g, '').toLowerCase()
-const nk = (s) => String(s ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
+const norm = (s) => String(s ?? '').normalize('NFD').replace(/[\s*‌‍]+/g, '').toLowerCase()
+const nk = (s) => String(s ?? '').normalize('NFD').trim().replace(/\s+/g, ' ').toLowerCase()
 const idKey = (v) => dig(v).replace(/\s+/g, '').toUpperCase()
 const blank = (v) => v === null || v === undefined || String(v).trim() === ''
 const bn = (n) => String(n).replace(/\d/g, (d) => BND[d])
@@ -98,7 +99,7 @@ function parse(sheet, ctx, exam, cls, opt) {
       serial: map.serial === undefined ? null : clean(cells[map.serial]),
       total: map.total === undefined ? null : clean(cells[map.total]),
       avg: map.avg === undefined ? null : cleanAvg(cells[map.avg]),
-      division: map.division === undefined ? null : (blank(cells[map.division]) ? null : String(cells[map.division]).trim()),
+      division: map.division === undefined ? null : (blank(cells[map.division]) ? null : fixLegacy(String(cells[map.division]).trim())),
       merit: map.merit === undefined ? null : clean(cells[map.merit]),
     }
     out.push(rec)
