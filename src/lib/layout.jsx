@@ -16,6 +16,9 @@ const FORM = [['form_heading', 'ফরমের শিরোনাম (সাল
 // মার্কশিট: নম্বরের টেবিল ('table') একটি বিশেষ উপাদান; বাকিগুলো সাধারণ লেখা
 const MARK = [['exam_name', 'পরীক্ষার নাম'], ['year', 'শিক্ষাবর্ষ / সাল'], ['exam_period', 'পরীক্ষার সময়কাল'], ['marks_table', 'নম্বরের টেবিল (বিষয়ভিত্তিক)', 'table'], ['total', 'মোট প্রাপ্ত নম্বর'], ['full_total', 'মোট পূর্ণমান'], ['avg', 'গড় নম্বর'], ['division', 'বিভাগ'], ['merit', 'মেধাস্থান'], ['issue_date', 'প্রদানের তারিখ'], ['verify_qr', 'যাচাই QR কোড', 'qr']]
 
+// টিসি ও সনদপত্র: ছাড়পত্র, প্রশংসাপত্র, ফারেগীন সনদ (একই ক্ষেত্র, শিরোনাম ও লেখা আলাদা)
+const CERT = [['cert_title', 'সনদের শিরোনাম'], ['cert_no', 'সনদ নম্বর'], ['issue_date', 'প্রদানের তারিখ'], ['body', 'মূল লেখা (অনুচ্ছেদ)', 'multi'], ['reason', 'ছাড়ার কারণ'], ['conduct', 'আচরণ'], ['last_class', 'শেষ শ্রেণি'], ['result_text', 'ফলাফল'], ['pass_year', 'সাল / শিক্ষাবর্ষ'], ['remarks', 'মন্তব্য', 'multi'], ['sign_left', 'বাঁ স্বাক্ষরের লেখা'], ['sign_right', 'ডান স্বাক্ষরের লেখা']]
+
 // রসিদ-প্যাড: প্রেসের ছাপানো A5 কাগজে শুধু তথ্য ছাপার নকশা
 const RPAD = [['title', 'রসিদের শিরোনাম'], ['no', 'রসিদ নং'], ['date', 'তারিখ'], ['meta', 'নাম/মাধ্যম ইত্যাদি (সব লাইন একসাথে)', 'multi'], ['meta_শিক্ষার্থী', 'শিক্ষার্থী (নাম ও আইডি)'], ['meta_নাম', 'নাম (শিক্ষক-কর্মচারী)'], ['meta_দাতা', 'দাতা'], ['meta_প্রদানকারী', 'প্রদানকারী'], ['meta_পদবি', 'পদবি'], ['meta_আইডি', 'আইডি'], ['meta_ফোন', 'ফোন'], ['meta_মাধ্যম', 'পেমেন্টের মাধ্যম'], ['meta_রেফারেন্স', 'রেফারেন্স / ট্রান্স. নং'], ['items_desc', 'বিবরণ (প্রতি লাইনে একটি)', 'multi'], ['items_amt', 'টাকার অঙ্ক (প্রতি লাইনে একটি)', 'multi'], ['total', 'মোট টাকা'], ['note', 'নিচের লেখা/নোট', 'multi'], ['printed_by', 'Printed by (কে ছাপাল)']]
 export const FIELD_SETS = {
@@ -25,8 +28,11 @@ export const FIELD_SETS = {
   admit: [...STU, ...ADMIT, ...INST],
   form: [...STU, ...FORM, ...INST],
   marksheet: [...STU, ...MARK, ...INST],
+  cert_tc: [...STU, ...CERT, ...INST],
+  cert_testimonial: [...STU, ...CERT, ...INST],
+  cert_farigh: [...STU, ...CERT, ...INST],
 }
-export const TYPE_TITLE = { receipt_pad: 'রসিদ প্যাড', idcard_student: 'শিক্ষার্থী আইডি কার্ড', idcard_staff: 'শিক্ষক-কর্মচারী আইডি কার্ড', admit: 'প্রবেশপত্র', form: 'ভর্তি ফরম', marksheet: 'মার্কশিট' }
+export const TYPE_TITLE = { receipt_pad: 'রসিদ প্যাড', idcard_student: 'শিক্ষার্থী আইডি কার্ড', idcard_staff: 'শিক্ষক-কর্মচারী আইডি কার্ড', admit: 'প্রবেশপত্র', form: 'ভর্তি ফরম', marksheet: 'মার্কশিট', cert_tc: 'ছাড়পত্র (টিসি)', cert_testimonial: 'প্রশংসাপত্র', cert_farigh: 'ফারেগীন সনদ' }
 export const fieldLabel = (type, key) => (FIELD_SETS[type].find((f) => f[0] === key) || [key, key])[1]
 export const fieldKind = (type, key) => (FIELD_SETS[type].find((f) => f[0] === key) || [])[2] || 'text'
 
@@ -89,6 +95,29 @@ export function defaultLayout(type) {
   if (type === 'receipt_pad') return receiptPadDefault(RECEIPT_DEFAULTS)
   if (type === 'idcard_student') return idcard(false)
   if (type === 'idcard_staff') return idcard(true)
+  if (type === 'cert_tc' || type === 'cert_testimonial' || type === 'cert_farigh') {
+    const G = '#16603a'
+    return {
+      size: { w: 210, h: 297 }, print: 'front', mirror: 'none',
+      sides: {
+        front: { bg_url: '', els: [
+          B(5, 5, 200, 287, { border: 0.8, color: G }), B(7, 7, 196, 283, { border: 0.25, color: G }),
+          IMG('logo', 16, 14, 26, 26, { border: false }),
+          F('inst_name', 44, 14, 122, 10, { size: 19, bold: true, align: 'center', color: G }),
+          F('inst_addr', 44, 25, 122, 5, { size: 9, align: 'center' }), F('inst_phone', 44, 31, 122, 5, { size: 9, align: 'center', prefix: 'ফোন: ' }),
+          IMG('photo', 170, 14, 28, 34),
+          B(14, 52, 182, 0.5, { fill: G }),
+          B(50, 58, 110, 11, { fill: G }), F('cert_title', 50, 59.2, 110, 9, { size: 17, bold: true, align: 'center', color: '#ffffff' }),
+          F('cert_no', 16, 78, 90, 6, { size: 10.5, prefix: 'সনদ নং: ' }), F('issue_date', 110, 78, 86, 6, { size: 10.5, align: 'right', prefix: 'তারিখ: ' }),
+          F('body', 18, 94, 174, 100, { size: 14, multi: true }),
+          F('remarks', 18, 200, 174, 20, { size: 11, multi: true, color: '#333333' }),
+          B(18, 268, 55, 0.25, { fill: '#000000' }), F('sign_left', 18, 268.8, 55, 5, { size: 10, align: 'center' }),
+          B(137, 268, 55, 0.25, { fill: '#000000' }), F('sign_right', 137, 268.8, 55, 5, { size: 10, align: 'center' }),
+        ] },
+        back: { bg_url: '', els: [] },
+      },
+    }
+  }
   if (type === 'marksheet') {
     const G = '#16603a'
     const box = (x, label, key) => [B(x, 238, 43, 15, { border: 0.3, color: G }), T(label, x, 239, 43, 5, { size: 8.5, align: 'center', color: '#444444' }), F(key, x, 244.5, 43, 7, { size: 13, bold: true, align: 'center' })]

@@ -1327,7 +1327,7 @@ create table if not exists public.result_verify (
 );
 alter table public.result_verify enable row level security;
 drop policy if exists "result_verify_admin" on public.result_verify;
-create policy "result_verify_admin" on public.result_verify for select using (public.has_area('people'));
+create policy "result_verify_admin" on public.result_verify for all using (public.has_area('people')) with check (public.has_area('people'));
 
 create or replace function public._verify_code(p_exam uuid, p_student uuid) returns text
 language plpgsql security definer set search_path = public as $$
@@ -1410,3 +1410,25 @@ end $$;
 grant execute on function public.public_result_options() to anon, authenticated;
 grant execute on function public.public_result(uuid, uuid, text, date) to anon, authenticated;
 notify pgrst, 'reload schema';
+
+
+-- ===== টিসি ও সনদপত্র: প্রদত্ত সনদের খাতা (সনদ নম্বর + প্রদানের সময়কার তথ্য) =====
+create table if not exists public.certificates (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('tc','testimonial','farigh')),
+  serial_no int not null,
+  student_id uuid references public.students(id) on delete set null,
+  student_name text,
+  issued_on date not null default current_date,
+  data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  unique (kind, serial_no)
+);
+alter table public.certificates enable row level security;
+drop policy if exists "certificates_admin" on public.certificates;
+create policy "certificates_admin" on public.certificates for all
+  using (public.has_area('people')) with check (public.has_area('people'));
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('certs','people','পরীক্ষা ও হিফজ','টিসি ও সনদপত্র','Certificates',30)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
