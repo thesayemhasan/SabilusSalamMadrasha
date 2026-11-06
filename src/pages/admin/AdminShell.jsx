@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { configured } from '../../lib/supabase'
 import { useAuth, useSite } from '../../lib/store'
 import { ScrollToTop } from '../../components/ScrollTools'
@@ -18,6 +18,42 @@ const MENU = [
 ]
 
 const PATH_MOD = { '/admin/sms': 'sms', '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance', '/admin/fees': 'fees', '/admin/billing': 'fees', '/admin/fee-setup': 'fees', '/admin/income': 'accounts_basic', '/admin/expense': 'accounts_basic', '/admin/account-setup': 'accounts_basic', '/admin/salary': 'hr_payroll', '/admin/reports': 'reports', '/admin/audit': 'activity_log', '/admin/exams': 'exams', '/admin/hifz': 'hifz', '/admin/idcards': 'id_print', '/admin/admit': 'admit_card', '/admin/readmit': 'readmission', '/admin/certificates': 'tc_certificate' }
+
+// মেনু খোঁজার সময় বিকল্প নামেও পাওয়ার জন্য (বাংলা/ইংরেজি সমার্থক শব্দ)
+const ALIASES = {
+  '/admin/applications': 'ভর্তি আবেদন admission application',
+  '/admin/messages': 'বার্তা মেসেজ যোগাযোগ contact message',
+  '/admin/students': 'ছাত্র ছাত্রী শিক্ষার্থী student ভর্তি',
+  '/admin/classes': 'শ্রেণি ক্লাস হালকা class',
+  '/admin/staff': 'শিক্ষক কর্মচারী স্টাফ teacher staff',
+  '/admin/attendance': 'হাজিরা উপস্থিতি attendance',
+  '/admin/import': 'ইম্পোর্ট আপলোড এক্সেল excel import',
+  '/admin/enroll': 'প্রমোশন উত্তীর্ণ নতুন বছর ভর্তি promotion',
+  '/admin/exams': 'পরীক্ষা ফলাফল রেজাল্ট মার্কশিট নম্বর মেধা result marksheet exam',
+  '/admin/hifz': 'হিফজ সবক আমুখতা hifz',
+  '/admin/idcards': 'আইডি কার্ড পরিচয়পত্র id card',
+  '/admin/admit': 'প্রবেশপত্র অ্যাডমিট admit',
+  '/admin/certificates': 'টিসি tc ছাড়পত্র সনদ প্রশংসাপত্র ফারেগীন certificate',
+  '/admin/readmit': 'পুনঃভর্তি ফরম readmission',
+  '/admin/fees': 'বেতন ফি আদায় রসিদ টাকা payment fee',
+  '/admin/billing': 'বিল মাসিক স্বয়ংক্রিয় অটো invoice billing',
+  '/admin/fee-setup': 'ফি পরিমাণ হার ছাড় fee setup',
+  '/admin/income': 'আয় দান income donation',
+  '/admin/expense': 'ব্যয় খরচ expense',
+  '/admin/salary': 'বেতন শিক্ষক কর্মচারী salary payroll',
+  '/admin/reports': 'রিপোর্ট হিসাব report',
+  '/admin/notices': 'নোটিশ বিজ্ঞপ্তি notice',
+  '/admin/events': 'ইভেন্ট অনুষ্ঠান কর্মসূচি টাইমার event',
+  '/admin/texts': 'লেখা টেক্সট সম্পাদনা text',
+  '/admin/slides': 'স্লাইড ব্যানার হিরো slider',
+  '/admin/gallery': 'গ্যালারি ছবি ভিডিও gallery',
+  '/admin/sms': 'এসএমএস মেসেজ sms',
+  '/admin/backup': 'ব্যাকআপ রিস্টোর ডাউনলোড backup restore',
+  '/admin/users': 'ব্যবহারকারী অনুমতি ইউজার পাসওয়ার্ড user',
+  '/admin/settings': 'সেটিংস হেডার ফুটার লোগো settings',
+  '/admin/years': 'শিক্ষাবর্ষ বছর সাল year',
+}
+const nk = (v) => String(v || '').normalize('NFD').toLowerCase()
 
 function YearPick() {
   const { years, year, setYearId } = useYear()
@@ -71,6 +107,8 @@ export default function AdminShell() {
   const { session, profile, loading, isStaff, isSuper, can, signOut } = useAuth()
   const { settings, theme, setTheme, modules } = useSite()
   const [open, setOpen] = useState(false)
+  const [mq, setMq] = useState('')
+  const nav = useNavigate()
   const { pathname } = useLocation()
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }) }, [pathname])
 
@@ -103,6 +141,18 @@ export default function AdminShell() {
   const featKey = PATH_FEATURE[seg] || (seg.startsWith('/admin/m/') ? PATH_FEATURE['/admin/m'] : null)
   const allowed = (seg === '/admin/users' || seg === '/admin/backup') ? isSuper : !featKey || can(featKey)
 
+  const permitted = (to) => (to === '/admin/users' || to === '/admin/backup' ? isSuper : !PATH_FEATURE[to] || can(PATH_FEATURE[to])) && modules[PATH_MOD[to]] !== false
+  const hits = (() => {
+    const k = nk(mq).trim()
+    if (!k) return null
+    const all = []
+    MENU.forEach(([title, items]) => items.forEach(([to, ic, label]) => { if (permitted(to)) all.push({ to, ic, label, group: title, key: `${label} ${ALIASES[to] || ''}` }) }))
+    if (can('modules')) MODULES.forEach((m) => all.push({ to: `/admin/m/${m.key}`, ic: 'sliders', label: m.name, group: 'ম্যানেজমেন্ট মডিউল', key: m.name }))
+    const words = k.split(/\s+/)
+    return all.filter((x) => words.every((w) => nk(x.key).includes(w)))
+  })()
+  const goHit = (to) => { setMq(''); setOpen(false); nav(to) }
+
   return (
     <YearProvider>
     <div className="adm">
@@ -113,7 +163,22 @@ export default function AdminShell() {
           <img src={settings.logo_url} alt="" style={{ background: '#fff', borderRadius: '50%', padding: 2 }} />
           <span>অ্যাডমিন প্যানেল</span>
         </div>
-        {MENU.map(([title, items]) => [title, items.filter(([to]) => (to === '/admin/users' || to === '/admin/backup' ? isSuper : !PATH_FEATURE[to] || can(PATH_FEATURE[to])) && modules[PATH_MOD[to]] !== false)]).filter(([, items]) => items.length > 0).map(([title, items]) => (
+        <div className="adm-search">
+          <input type="search" value={mq} placeholder="মেনু খুঁজুন…" aria-label="মেনু খুঁজুন" onChange={(e) => setMq(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && hits && hits[0]) goHit(hits[0].to); if (e.key === 'Escape') setMq('') }} />
+        </div>
+        {hits && (
+          <div>
+            <h5>খোঁজার ফলাফল ({hits.length.toLocaleString('bn-BD')})</h5>
+            {hits.map((h) => (
+              <a key={h.to} href={`#${h.to}`} onClick={(e) => { e.preventDefault(); goHit(h.to) }}>
+                <span className="ic"><Icon name={h.ic} size={20} cls="cur" /></span>
+                <span style={{ display: 'grid' }}>{h.label}<small style={{ opacity: 0.6, fontSize: '.72rem' }}>{h.group}</small></span>
+              </a>
+            ))}
+            {hits.length === 0 && <p style={{ margin: '8px 12px', opacity: 0.7, fontSize: '.9rem' }}>কোনো মেনু পাওয়া যায়নি।</p>}
+          </div>
+        )}
+        {!hits && MENU.map(([title, items]) => [title, items.filter(([to]) => (to === '/admin/users' || to === '/admin/backup' ? isSuper : !PATH_FEATURE[to] || can(PATH_FEATURE[to])) && modules[PATH_MOD[to]] !== false)]).filter(([, items]) => items.length > 0).map(([title, items]) => (
           <div key={title}>
             <h5>{title}</h5>
             {items.map(([to, ic, label, end]) => (
@@ -123,8 +188,8 @@ export default function AdminShell() {
             ))}
           </div>
         ))}
-        {can('modules') && <h5>ম্যানেজমেন্ট মডিউল</h5>}
-        {can('modules') && MODULE_GROUPS.map((g) => (
+        {!hits && can('modules') && <h5>ম্যানেজমেন্ট মডিউল</h5>}
+        {!hits && can('modules') && MODULE_GROUPS.map((g) => (
           <details key={g.id} style={{ margin: '2px 0' }}>
             <summary style={{ cursor: 'pointer', padding: '8px 12px', fontSize: '.95rem' }}>{g.label}</summary>
             {MODULES.filter((m) => m.group === g.id).map((m) => (
@@ -135,8 +200,8 @@ export default function AdminShell() {
             ))}
           </details>
         ))}
-        <h5>অন্যান্য</h5>
-        <Link to="/"><span className="ic"><Icon name="globe" size={20} cls="cur" /></span>ওয়েবসাইট দেখুন</Link>
+        {!hits && <h5>অন্যান্য</h5>}
+        {!hits && <Link to="/"><span className="ic"><Icon name="globe" size={20} cls="cur" /></span>ওয়েবসাইট দেখুন</Link>}
       </aside>
       <div className="adm-main">
         <div className="adm-top">
