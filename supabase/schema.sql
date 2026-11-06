@@ -1512,3 +1512,58 @@ begin
   return public.auto_billing_status();
 end $$;
 grant execute on function public.set_auto_billing(boolean, int) to authenticated;
+
+
+-- ===== বোর্ডিং: রুম ও সিট বরাদ্দ =====
+create table if not exists public.boarding_rooms (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  building text,
+  capacity int not null default 4,
+  note text,
+  sort int not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table public.boarding_rooms enable row level security;
+drop policy if exists "boarding_rooms_admin" on public.boarding_rooms;
+create policy "boarding_rooms_admin" on public.boarding_rooms for all
+  using (public.has_area('people')) with check (public.has_area('people'));
+alter table public.students add column if not exists room_id uuid references public.boarding_rooms(id) on delete set null;
+alter table public.students add column if not exists seat_no text;
+create index if not exists students_room_idx on public.students(room_id);
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('boarding','people','শিক্ষার্থী ও হাজিরা','বোর্ডিং ও রুম','Boarding & rooms',26)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== পরীক্ষার সিট প্ল্যান: কক্ষ ও সিট বরাদ্দ =====
+create table if not exists public.exam_halls (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  capacity int not null default 30,
+  sort int not null default 0,
+  note text,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.exam_seats (
+  id uuid primary key default gen_random_uuid(),
+  exam_id uuid not null references public.exams(id) on delete cascade,
+  student_id uuid not null references public.students(id) on delete cascade,
+  hall_id uuid references public.exam_halls(id) on delete set null,
+  hall_name text,
+  seat_no int not null,
+  created_at timestamptz not null default now(),
+  unique (exam_id, student_id)
+);
+create index if not exists exam_seats_exam_idx on public.exam_seats(exam_id);
+alter table public.exam_halls enable row level security;
+alter table public.exam_seats enable row level security;
+drop policy if exists "exam_halls_admin" on public.exam_halls;
+create policy "exam_halls_admin" on public.exam_halls for all using (public.has_area('people')) with check (public.has_area('people'));
+drop policy if exists "exam_seats_admin" on public.exam_seats;
+create policy "exam_seats_admin" on public.exam_seats for all using (public.has_area('people')) with check (public.has_area('people'));
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('seatplan','people','পরীক্ষা ও হিফজ','পরীক্ষার সিট প্ল্যান','Exam seat plan',31)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;

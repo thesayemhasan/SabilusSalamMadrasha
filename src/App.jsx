@@ -21,6 +21,8 @@ import IdCards from './pages/admin/IdCards'
 import Admit from './pages/admin/Admit'
 import Readmit from './pages/admin/Readmit'
 import Certificates from './pages/admin/Certificates'
+import Boarding from './pages/admin/Boarding'
+import SeatPlan from './pages/admin/SeatPlan'
 import ReceiptSettings from './pages/admin/ReceiptSettings'
 import ModulePage from './pages/admin/ModulePage'
 import Enroll from './pages/admin/Enroll'
@@ -82,6 +84,8 @@ export default function App() {
         <Route path="hifz" element={<Gate mod="hifz" name="হিফজ ট্র্যাকিং"><Hifz /></Gate>} />
         <Route path="idcards" element={<Gate mod="id_print" name="আইডি কার্ড ও প্রিন্ট"><IdCards /></Gate>} />
         <Route path="admit" element={<Gate mod="admit_card" name="প্রবেশপত্র"><Admit /></Gate>} />
+        <Route path="seatplan" element={<Gate mod="seat_plan" name="পরীক্ষার সিট প্ল্যান"><SeatPlan /></Gate>} />
+        <Route path="boarding" element={<Gate mod="boarding" name="বোর্ডিং ব্যবস্থাপনা"><Boarding /></Gate>} />
         <Route path="certificates" element={<Gate mod="tc_certificate" name="টিসি ও সনদপত্র"><Certificates /></Gate>} />
         <Route path="readmit" element={<Gate mod="readmission" name="পুনঃভর্তি ও ভর্তি ফরম"><Readmit /></Gate>} />
         <Route path="receipt-settings" element={<ReceiptSettings />} />

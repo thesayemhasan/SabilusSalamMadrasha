@@ -18,6 +18,7 @@ const L = [
   ['accounts_basic', 'আয়-ব্যয় হিসাব', 'money', 3, false, 'খাত অনুযায়ী আয়-ব্যয়, ক্যাশ ব্যালেন্স'],
   ['reports', 'রিপোর্ট', 'money', 3, false, 'শিক্ষার্থী, আদায়, বকেয়া, উপস্থিতির রিপোর্ট'],
   ['exams', 'পরীক্ষা ও রেজাল্ট', 'exam', 4, false, 'নম্বর এন্ট্রি, মার্কশিট, মেধাতালিকা'],
+  ['seat_plan', 'পরীক্ষার সিট প্ল্যান', 'exam', 4, false, 'কক্ষ ও সিট বরাদ্দ, সিট নং স্টিকার, কক্ষভিত্তিক তালিকা'],
   ['hifz', 'হিফজ ট্র্যাকিং', 'exam', 4, false, 'সবক, সাত সবক, আমুখতা, শবিনা'],
   ['id_print', 'আইডি কার্ড ও প্রিন্ট', 'exam', 4, false, 'আইডি কার্ড, প্রশংসাপত্র, রশিদ'],
   ['receipt_online', 'অনলাইন রসিদ (ওয়েবসাইটের ডিজাইনে)', 'money', 3, false, 'প্যাড না থাকলে সম্পূর্ণ ডিজাইনসহ রসিদ প্রিন্ট'],
@@ -59,7 +60,7 @@ const L = [
 export const MODULES = L.map(([key, name, group, step, free, desc]) => ({ key, name, group, step, free, desc }))
 
 // যেগুলো ধাপ ১ এ ইতিমধ্যে তৈরি
-export const BUILT = new Set(['settings', 'events', 'website', 'students', 'teachers', 'attendance', 'fees', 'accounts_basic', 'reports', 'hr_payroll', 'activity_log', 'exams', 'hifz', 'id_print', 'receipt_online', 'receipt_pad', 'admit_card', 'readmission', 'sms', 'tc_certificate'])
+export const BUILT = new Set(['settings', 'events', 'website', 'students', 'teachers', 'attendance', 'fees', 'accounts_basic', 'reports', 'hr_payroll', 'activity_log', 'exams', 'hifz', 'id_print', 'receipt_online', 'receipt_pad', 'admit_card', 'readmission', 'sms', 'tc_certificate', 'boarding', 'seat_plan'])
 
 // বাইরের সেবা, যেগুলো চালু করলে সংশ্লিষ্ট মডিউল নিজে থেকে কাজ শুরু করবে
 export const INTEGRATIONS = [

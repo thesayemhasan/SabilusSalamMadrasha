@@ -10,20 +10,21 @@ import { YearProvider, useYear } from '../../lib/year'
 
 const MENU = [
   ['প্রধান', [['/admin', 'dashboard', 'ড্যাশবোর্ড', true], ['/admin/applications', 'clipboard', 'ভর্তির আবেদন'], ['/admin/messages', 'mail', 'যোগাযোগের বার্তা']]],
-  ['শিক্ষার্থী ও হাজিরা', [['/admin/students', 'users', 'ছাত্র-ছাত্রী'], ['/admin/classes', 'books', 'শ্রেণি ও হালকা'], ['/admin/staff', 'teacher', 'শিক্ষক ও কর্মচারী'], ['/admin/attendance', 'clipboard', 'হাজিরা'], ['/admin/residence', 'building', 'আবাসিক/অনাবাসিক ধরন'], ['/admin/sessions', 'clock', 'হাজিরার সময়'], ['/admin/import', 'apply', 'এক্সেল ইম্পোর্ট'], ['/admin/enroll', 'users', 'শিক্ষাবর্ষে ভর্তি ও উত্তীর্ণ']]],
-  ['পরীক্ষা ও হিফজ', [['/admin/exams', 'clipboard', 'পরীক্ষা ও ফলাফল'], ['/admin/hifz', 'books', 'হিফজ ট্র্যাকিং'], ['/admin/idcards', 'users', 'আইডি কার্ড'], ['/admin/admit', 'clipboard', 'প্রবেশপত্র'], ['/admin/certificates', 'clipboard', 'টিসি ও সনদপত্র'], ['/admin/readmit', 'apply', 'পুনঃভর্তি ও ভর্তি ফরম']]],
+  ['শিক্ষার্থী ও হাজিরা', [['/admin/students', 'users', 'ছাত্র-ছাত্রী'], ['/admin/classes', 'books', 'শ্রেণি ও হালকা'], ['/admin/staff', 'teacher', 'শিক্ষক ও কর্মচারী'], ['/admin/attendance', 'clipboard', 'হাজিরা'], ['/admin/residence', 'building', 'আবাসিক/অনাবাসিক ধরন'], ['/admin/boarding', 'building', 'বোর্ডিং ও রুম'], ['/admin/sessions', 'clock', 'হাজিরার সময়'], ['/admin/import', 'apply', 'এক্সেল ইম্পোর্ট'], ['/admin/enroll', 'users', 'শিক্ষাবর্ষে ভর্তি ও উত্তীর্ণ']]],
+  ['পরীক্ষা ও হিফজ', [['/admin/exams', 'clipboard', 'পরীক্ষা ও ফলাফল'], ['/admin/hifz', 'books', 'হিফজ ট্র্যাকিং'], ['/admin/idcards', 'users', 'আইডি কার্ড'], ['/admin/admit', 'clipboard', 'প্রবেশপত্র'], ['/admin/seatplan', 'clipboard', 'পরীক্ষার সিট প্ল্যান'], ['/admin/certificates', 'clipboard', 'টিসি ও সনদপত্র'], ['/admin/readmit', 'apply', 'পুনঃভর্তি ও ভর্তি ফরম']]],
   ['ফি ও হিসাব', [['/admin/fees', 'wallet', 'ফি আদায় ও রসিদ'], ['/admin/billing', 'clipboard', 'বিল তৈরি'], ['/admin/fee-setup', 'sliders', 'ফি-র ধরন ও পরিমাণ'], ['/admin/income', 'coins', 'দান ও অন্যান্য আয়'], ['/admin/expense', 'coins', 'ব্যয়'], ['/admin/salary', 'users', 'শিক্ষক-কর্মচারীর বেতন'], ['/admin/reports', 'chart', 'হিসাব ও রিপোর্ট'], ['/admin/account-setup', 'gear', 'খাত ও পেমেন্ট মাধ্যম'], ['/admin/audit', 'shield', 'আর্থিক লগ'], ['/admin/receipt-settings', 'printer', 'রসিদের লেখা ও ডিজাইন']]],
   ['ওয়েবসাইট', [['/admin/texts', 'edit', 'সাইটের লেখা'], ['/admin/slides', 'image', 'হোম স্লাইড'], ['/admin/departments', 'books', 'বিভাগসমূহ'], ['/admin/home-blocks', 'building', 'হোম সেকশন (নতুন রো)'], ['/admin/notices', 'megaphone', 'নোটিশ'], ['/admin/events', 'calendar', 'ইভেন্ট ও টাইমার'], ['/admin/gallery', 'video', 'গ্যালারি'], ['/admin/teachers', 'teacher', 'শিক্ষকবৃন্দ (পাবলিক)'], ['/admin/admission-form', 'apply', 'ভর্তি ফরম']]],
   ['সিস্টেম', [['/admin/years', 'calendar', 'শিক্ষাবর্ষ'], ['/admin/sms', 'mail', 'এসএমএস'], ['/admin/backup', 'upload', 'ব্যাকআপ ও ডাউনলোড'], ['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'সাইটের সেটিংস (হেডার, ফুটার…)'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
 ]
 
-const PATH_MOD = { '/admin/sms': 'sms', '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance', '/admin/fees': 'fees', '/admin/billing': 'fees', '/admin/fee-setup': 'fees', '/admin/income': 'accounts_basic', '/admin/expense': 'accounts_basic', '/admin/account-setup': 'accounts_basic', '/admin/salary': 'hr_payroll', '/admin/reports': 'reports', '/admin/audit': 'activity_log', '/admin/exams': 'exams', '/admin/hifz': 'hifz', '/admin/idcards': 'id_print', '/admin/admit': 'admit_card', '/admin/readmit': 'readmission', '/admin/certificates': 'tc_certificate' }
+const PATH_MOD = { '/admin/sms': 'sms', '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance', '/admin/fees': 'fees', '/admin/billing': 'fees', '/admin/fee-setup': 'fees', '/admin/income': 'accounts_basic', '/admin/expense': 'accounts_basic', '/admin/account-setup': 'accounts_basic', '/admin/salary': 'hr_payroll', '/admin/reports': 'reports', '/admin/audit': 'activity_log', '/admin/exams': 'exams', '/admin/hifz': 'hifz', '/admin/idcards': 'id_print', '/admin/admit': 'admit_card', '/admin/readmit': 'readmission', '/admin/certificates': 'tc_certificate', '/admin/boarding': 'boarding', '/admin/seatplan': 'seat_plan' }
 
 // মেনু খোঁজার সময় বিকল্প নামেও পাওয়ার জন্য (বাংলা/ইংরেজি সমার্থক শব্দ)
 const ALIASES = {
   '/admin/applications': 'ভর্তি আবেদন admission application',
   '/admin/messages': 'বার্তা মেসেজ যোগাযোগ contact message',
   '/admin/students': 'ছাত্র ছাত্রী শিক্ষার্থী student ভর্তি',
+  '/admin/boarding': 'বোর্ডিং রুম সিট হোস্টেল আবাসিক মেস boarding hostel room seat',
   '/admin/classes': 'শ্রেণি ক্লাস হালকা class',
   '/admin/staff': 'শিক্ষক কর্মচারী স্টাফ teacher staff',
   '/admin/attendance': 'হাজিরা উপস্থিতি attendance',
@@ -32,6 +33,7 @@ const ALIASES = {
   '/admin/exams': 'পরীক্ষা ফলাফল রেজাল্ট মার্কশিট নম্বর মেধা result marksheet exam',
   '/admin/hifz': 'হিফজ সবক আমুখতা hifz',
   '/admin/idcards': 'আইডি কার্ড পরিচয়পত্র id card',
+  '/admin/seatplan': 'সিট প্ল্যান সিট স্টিকার আসন কক্ষ পরীক্ষা seat plan sticker hall',
   '/admin/admit': 'প্রবেশপত্র অ্যাডমিট admit',
   '/admin/certificates': 'টিসি tc ছাড়পত্র সনদ প্রশংসাপত্র ফারেগীন certificate',
   '/admin/readmit': 'পুনঃভর্তি ফরম readmission',

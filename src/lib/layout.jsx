@@ -19,6 +19,8 @@ const MARK = [['exam_name', 'পরীক্ষার নাম'], ['year', 'শ
 // টিসি ও সনদপত্র: ছাড়পত্র, প্রশংসাপত্র, ফারেগীন সনদ (একই ক্ষেত্র, শিরোনাম ও লেখা আলাদা)
 const CERT = [['cert_title', 'সনদের শিরোনাম'], ['cert_no', 'সনদ নম্বর'], ['issue_date', 'প্রদানের তারিখ'], ['body', 'মূল লেখা (অনুচ্ছেদ)', 'multi'], ['reason', 'ছাড়ার কারণ'], ['conduct', 'আচরণ'], ['last_class', 'শেষ শ্রেণি'], ['result_text', 'ফলাফল'], ['pass_year', 'সাল / শিক্ষাবর্ষ'], ['remarks', 'মন্তব্য', 'multi'], ['sign_left', 'বাঁ স্বাক্ষরের লেখা'], ['sign_right', 'ডান স্বাক্ষরের লেখা']]
 
+const SEAT = [['seat_no', 'সিট নম্বর (বড় করে)'], ['hall', 'পরীক্ষার কক্ষ'], ['exam_name', 'পরীক্ষার নাম'], ['year', 'সাল / শিক্ষাবর্ষ']]
+
 // রসিদ-প্যাড: প্রেসের ছাপানো A5 কাগজে শুধু তথ্য ছাপার নকশা
 const RPAD = [['title', 'রসিদের শিরোনাম'], ['no', 'রসিদ নং'], ['date', 'তারিখ'], ['meta', 'নাম/মাধ্যম ইত্যাদি (সব লাইন একসাথে)', 'multi'], ['meta_শিক্ষার্থী', 'শিক্ষার্থী (নাম ও আইডি)'], ['meta_নাম', 'নাম (শিক্ষক-কর্মচারী)'], ['meta_দাতা', 'দাতা'], ['meta_প্রদানকারী', 'প্রদানকারী'], ['meta_পদবি', 'পদবি'], ['meta_আইডি', 'আইডি'], ['meta_ফোন', 'ফোন'], ['meta_মাধ্যম', 'পেমেন্টের মাধ্যম'], ['meta_রেফারেন্স', 'রেফারেন্স / ট্রান্স. নং'], ['items_desc', 'বিবরণ (প্রতি লাইনে একটি)', 'multi'], ['items_amt', 'টাকার অঙ্ক (প্রতি লাইনে একটি)', 'multi'], ['total', 'মোট টাকা'], ['note', 'নিচের লেখা/নোট', 'multi'], ['printed_by', 'Printed by (কে ছাপাল)']]
 export const FIELD_SETS = {
@@ -28,11 +30,12 @@ export const FIELD_SETS = {
   admit: [...STU, ...ADMIT, ...INST],
   form: [...STU, ...FORM, ...INST],
   marksheet: [...STU, ...MARK, ...INST],
+  seat_sticker: [...STU, ...SEAT, ...INST],
   cert_tc: [...STU, ...CERT, ...INST],
   cert_testimonial: [...STU, ...CERT, ...INST],
   cert_farigh: [...STU, ...CERT, ...INST],
 }
-export const TYPE_TITLE = { receipt_pad: 'রসিদ প্যাড', idcard_student: 'শিক্ষার্থী আইডি কার্ড', idcard_staff: 'শিক্ষক-কর্মচারী আইডি কার্ড', admit: 'প্রবেশপত্র', form: 'ভর্তি ফরম', marksheet: 'মার্কশিট', cert_tc: 'ছাড়পত্র (টিসি)', cert_testimonial: 'প্রশংসাপত্র', cert_farigh: 'ফারেগীন সনদ' }
+export const TYPE_TITLE = { receipt_pad: 'রসিদ প্যাড', idcard_student: 'শিক্ষার্থী আইডি কার্ড', idcard_staff: 'শিক্ষক-কর্মচারী আইডি কার্ড', admit: 'প্রবেশপত্র', form: 'ভর্তি ফরম', marksheet: 'মার্কশিট', seat_sticker: 'সিট নং স্টিকার', cert_tc: 'ছাড়পত্র (টিসি)', cert_testimonial: 'প্রশংসাপত্র', cert_farigh: 'ফারেগীন সনদ' }
 export const fieldLabel = (type, key) => (FIELD_SETS[type].find((f) => f[0] === key) || [key, key])[1]
 export const fieldKind = (type, key) => (FIELD_SETS[type].find((f) => f[0] === key) || [])[2] || 'text'
 
@@ -95,6 +98,28 @@ export function defaultLayout(type) {
   if (type === 'receipt_pad') return receiptPadDefault(RECEIPT_DEFAULTS)
   if (type === 'idcard_student') return idcard(false)
   if (type === 'idcard_staff') return idcard(true)
+  if (type === 'seat_sticker') {
+    const G = '#16603a'
+    return {
+      size: { w: 138, h: 47 }, print: 'front', mirror: 'none',
+      sides: {
+        front: { bg_url: '', els: [
+          B(0, 0, 138, 47, { border: 0.4, color: G }),
+          F('inst_name', 3, 2, 92, 5, { size: 10, bold: true, color: G }),
+          F('exam_name', 3, 8, 92, 5, { size: 9.5, bold: true }),
+          B(3, 14, 92, 0.3, { fill: G }),
+          F('name_bn', 3, 16.5, 92, 6, { size: 12, bold: true, prefix: 'নাম: ' }),
+          F('student_no', 3, 23.5, 46, 5, { size: 10, prefix: 'আইডি: ' }), F('class', 50, 23.5, 45, 5, { size: 10, prefix: 'শ্রেণি: ' }),
+          F('hall', 3, 30, 92, 5, { size: 10, prefix: 'কক্ষ: ' }),
+          T('কক্ষে প্রবেশের সময় এই স্টিকার সঙ্গে রাখুন।', 3, 38, 92, 4, { size: 7.5, color: '#555555' }),
+          B(98, 3, 37, 41, { fill: G }),
+          T('সিট নং', 98, 5, 37, 6, { size: 11, bold: true, align: 'center', color: '#ffffff' }),
+          F('seat_no', 98, 12, 37, 28, { size: 44, bold: true, align: 'center', color: '#ffffff' }),
+        ] },
+        back: { bg_url: '', els: [] },
+      },
+    }
+  }
   if (type === 'cert_tc' || type === 'cert_testimonial' || type === 'cert_farigh') {
     const G = '#16603a'
     return {
