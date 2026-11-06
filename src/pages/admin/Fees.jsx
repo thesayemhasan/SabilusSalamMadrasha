@@ -17,6 +17,47 @@ function resolveAmount(st, head, rates, sf) {
   return Math.max(0, base - num(o?.discount))
 }
 
+// স্বয়ংক্রিয় মাসিক বিল: ডাটাবেজের সময়সূচি (pg_cron) চালু/বন্ধ করা
+function AutoBilling() {
+  const [st, setSt] = useState(null)
+  const [day, setDay] = useState(1)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  useEffect(() => {
+    supabase.rpc('auto_billing_status').then(({ data, error }) => {
+      if (error) return setSt({ available: false, error: error.message })
+      setSt(data); if (data?.day) setDay(data.day)
+    })
+  }, [])
+  async function apply(on) {
+    setBusy(true); setErr('')
+    const { data, error } = await supabase.rpc('set_auto_billing', { p_on: on, p_day: Number(day) })
+    setBusy(false)
+    if (error) return setErr(error.message)
+    setSt(data)
+  }
+  if (!st) return null
+  return (
+    <div className="card form" style={{ marginBottom: 14 }}>
+      <h3 style={{ marginTop: 0 }}>স্বয়ংক্রিয় মাসিক বিল</h3>
+      {!st.available ? (
+        <p className="muted" style={{ margin: 0 }}>এটা চালু করতে Supabase-এ <b>Database → Extensions</b> থেকে <b>pg_cron</b> চালু করে সর্বশেষ <b>schema.sql</b> আবার চালান, তারপর এই পাতা রিফ্রেশ করুন।{st.error ? ` (${st.error})` : ''}</p>
+      ) : (
+        <>
+          <p className="muted" style={{ marginTop: 0 }}>চালু থাকলে প্রতি মাসের নির্ধারিত তারিখে সকাল ৬:৩০-এ সব সক্রিয় শিক্ষার্থীর মাসিক ফি-র বিল নিজে তৈরি হবে। যাদের বিল আগে থেকে আছে তাদের বাদ যাবে। এককালীন ফি এতে ধরা হয় না।</p>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span>অবস্থা: <b>{st.on ? `চালু (প্রতি মাসের ${Number(st.day).toLocaleString('bn-BD')} তারিখ)` : 'বন্ধ'}</b></span>
+            <div style={{ minWidth: 150 }}><Select value={String(day)} onChange={(v) => setDay(v)} options={Array.from({ length: 28 }, (_, i) => [String(i + 1), `${(i + 1).toLocaleString('bn-BD')} তারিখ`])} /></div>
+            <button className="btn small" disabled={busy} onClick={() => apply(true)}>{st.on ? 'তারিখ বদলান' : 'চালু করুন'}</button>
+            {st.on && <button className="btn small outline" disabled={busy} onClick={() => apply(false)}>বন্ধ করুন</button>}
+          </div>
+          {err && <div className="alert err" style={{ marginTop: 10 }}>{err}</div>}
+        </>
+      )}
+    </div>
+  )
+}
+
 export function Billing() {
   const confirm = useConfirm()
   const [heads, setHeads] = useState([])
@@ -74,6 +115,7 @@ export function Billing() {
   return (
     <>
       <h2>বিল তৈরি</h2>
+      <AutoBilling />
       <p className="muted">মাস, ফি-র ধরন ও শ্রেণি বেছে পুরো মাসের বিল এক ক্লিকে তৈরি করুন। আগে "ফি-র ধরন ও পরিমাণ" পেইজে পরিমাণ ঠিক করে নিন।</p>
       <div className="card form" style={{ marginBottom: 14 }}>
         <div className="row2">

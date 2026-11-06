@@ -1432,3 +1432,83 @@ create policy "certificates_admin" on public.certificates for all
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('certs','people','পরীক্ষা ও হিফজ','টিসি ও সনদপত্র','Certificates',30)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+-- ===== স্বয়ংক্রিয় মাসিক বিল =====
+-- সব সক্রিয় শিক্ষার্থীর জন্য মাসিক ফি-র বিল তৈরি (যাদের বিল আগে থেকে আছে তাদের বাদ; বারবার চালালে ক্ষতি নেই)।
+-- হিসাব অ্যাডমিনের "বিল তৈরি" পাতার মতোই: শিক্ষার্থীভিত্তিক পরিমাণ > শ্রেণি/বিভাগ/ধরনের হার > ডিফল্ট; ছাড় বাদ; অব্যাহতি হলে বিল নেই।
+create or replace function public.generate_monthly_invoices(p_month text default to_char(current_date, 'YYYY-MM')) returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  n int;
+  mnames text[] := array['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+  mlabel text;
+begin
+  if auth.uid() is not null and not public.has_area('finance') then
+    raise exception 'অনুমতি নেই';
+  end if;
+  if p_month !~ '^\d{4}-(0[1-9]|1[0-2])$' then
+    raise exception 'মাসের ফরম্যাট ভুল (২০২৬-০৩ এর মতো হতে হবে)';
+  end if;
+  mlabel := mnames[substr(p_month, 6, 2)::int] || ' ' || translate(substr(p_month, 1, 4), '0123456789', '০১২৩৪৫৬৭৮৯');
+  insert into public.invoices (student_id, head_id, period, title, amount)
+  select s.id, h.id, p_month, coalesce(nullif(h.name_bn, ''), h.name_en, '') || ' — ' || mlabel, x.amt
+  from public.students s
+  cross join public.fee_heads h
+  left join public.student_fees sf on sf.student_id = s.id and sf.head_id = h.id
+  cross join lateral (
+    select case
+      when coalesce(sf.exempt, false) then 0
+      else greatest(0, coalesce(sf.amount, (
+        select r.amount from public.fee_rates r
+        where r.head_id = h.id
+          and (r.class_id is null or r.class_id = s.class_id)
+          and (r.department_id is null or r.department_id = s.department_id)
+          and (r.residence is null or r.residence = s.residence)
+        order by ((r.class_id is not null)::int + (r.department_id is not null)::int + (r.residence is not null)::int) desc
+        limit 1), h.default_amount) - coalesce(sf.discount, 0))
+    end as amt
+  ) x
+  where s.status = 'active' and h.kind = 'monthly' and h.published and x.amt > 0
+  on conflict (student_id, head_id, period) do nothing;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function public.generate_monthly_invoices(text) from public, anon;
+grant execute on function public.generate_monthly_invoices(text) to authenticated;
+
+-- pg_cron থাকলে সময়সূচি বসানো যায় (Supabase: Database → Extensions → pg_cron চালু করতে হয়)
+do $$ begin create extension if not exists pg_cron; exception when others then null; end $$;
+
+create or replace function public.auto_billing_status() returns json
+language plpgsql security definer set search_path = public as $$
+declare v_on boolean := false; v_day int; v_sched text;
+begin
+  if not public.has_area('finance') then raise exception 'অনুমতি নেই'; end if;
+  if to_regclass('cron.job') is null then return json_build_object('available', false, 'on', false); end if;
+  execute 'select schedule from cron.job where jobname = $1' into v_sched using 'auto-monthly-invoices';
+  if v_sched is not null then
+    v_on := true;
+    v_day := nullif(split_part(v_sched, ' ', 3), '')::int;
+  end if;
+  return json_build_object('available', true, 'on', v_on, 'day', v_day);
+end $$;
+grant execute on function public.auto_billing_status() to authenticated;
+
+create or replace function public.set_auto_billing(p_on boolean, p_day int default 1) returns json
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.has_area('finance') then raise exception 'অনুমতি নেই'; end if;
+  if to_regclass('cron.job') is null then raise exception 'pg_cron চালু নেই'; end if;
+  if p_on then
+    if p_day < 1 or p_day > 28 then raise exception 'তারিখ ১ থেকে ২৮-এর মধ্যে দিন'; end if;
+    -- ইউটিসি ০০:৩০ = ঢাকার সকাল ৬:৩০
+    execute 'select cron.schedule($1, $2, $3)' using 'auto-monthly-invoices', format('30 0 %s * *', p_day), 'select public.generate_monthly_invoices()';
+  else
+    begin
+      execute 'select cron.unschedule($1)' using 'auto-monthly-invoices';
+    exception when others then null;
+    end;
+  end if;
+  return public.auto_billing_status();
+end $$;
+grant execute on function public.set_auto_billing(boolean, int) to authenticated;
