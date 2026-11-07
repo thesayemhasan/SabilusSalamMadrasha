@@ -1702,3 +1702,27 @@ create policy "library_loans_admin" on public.library_loans for all using (publi
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('library','people','শিক্ষার্থী ও হাজিরা','লাইব্রেরি','Library',31)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== বোর্ড পরীক্ষার নিবন্ধন: শিক্ষার্থীর বোর্ড, রেজিস্ট্রেশন/রোল নম্বর ও ফলাফল =====
+create table if not exists public.board_registrations (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.students(id) on delete cascade,
+  board text not null,
+  exam_name text,
+  exam_year text,
+  reg_no text,
+  roll_no text,
+  fee numeric(12,2) not null default 0,
+  status text not null default 'registered' check (status in ('registered','appeared','passed','failed')),
+  result text,
+  note text,
+  created_at timestamptz not null default now()
+);
+create index if not exists board_reg_student_idx on public.board_registrations(student_id);
+alter table public.board_registrations enable row level security;
+drop policy if exists "board_reg_admin" on public.board_registrations;
+create policy "board_reg_admin" on public.board_registrations for all using (public.has_area('people')) with check (public.has_area('people'));
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('board_exam','people','পরীক্ষা ও হিফজ','বোর্ড পরীক্ষা','Board exam',32)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;

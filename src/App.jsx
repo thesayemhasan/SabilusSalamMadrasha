@@ -28,6 +28,7 @@ import Holidays from './pages/admin/Holidays'
 import Reminders from './pages/admin/Reminders'
 import Health from './pages/admin/Health'
 import Library from './pages/admin/Library'
+import BoardExam from './pages/admin/BoardExam'
 import TeacherSubjects from './pages/admin/TeacherSubjects'
 import ReceiptSettings from './pages/admin/ReceiptSettings'
 import ModulePage from './pages/admin/ModulePage'
@@ -91,6 +92,7 @@ export default function App() {
         <Route path="idcards" element={<Gate mod="id_print" name="আইডি কার্ড ও প্রিন্ট"><IdCards /></Gate>} />
         <Route path="admit" element={<Gate mod="admit_card" name="প্রবেশপত্র"><Admit /></Gate>} />
         <Route path="teacher-subjects" element={<Gate mod="subject_assign" name="শিক্ষক অনুযায়ী বিষয় নির্ধারণ"><TeacherSubjects /></Gate>} />
+        <Route path="board-exam" element={<Gate mod="board_exam" name="বোর্ড পরীক্ষা"><BoardExam /></Gate>} />
         <Route path="library" element={<Gate mod="library" name="লাইব্রেরি"><Library /></Gate>} />
         <Route path="health" element={<Gate mod="health" name="স্বাস্থ্য ব্যবস্থাপনা"><Health /></Gate>} />
         <Route path="reminders" element={<Gate mod="reminders" name="রিমাইন্ডার"><Reminders /></Gate>} />

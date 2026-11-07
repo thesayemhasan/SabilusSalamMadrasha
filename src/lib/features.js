@@ -19,6 +19,7 @@ export const FEATURES = [
   ['hifz', 'people', 'পরীক্ষা ও হিফজ', 'হিফজ ট্র্যাকিং', '/admin/hifz'],
   ['idcards', 'people', 'পরীক্ষা ও হিফজ', 'আইডি কার্ড', '/admin/idcards'],
   ['admit', 'people', 'পরীক্ষা ও হিফজ', 'প্রবেশপত্র', '/admin/admit'],
+  ['board_exam', 'people', 'পরীক্ষা ও হিফজ', 'বোর্ড পরীক্ষা', '/admin/board-exam'],
   ['seatplan', 'people', 'পরীক্ষা ও হিফজ', 'পরীক্ষার সিট প্ল্যান', '/admin/seatplan'],
   ['certs', 'people', 'পরীক্ষা ও হিফজ', 'টিসি ও সনদপত্র', '/admin/certificates'],
   ['readmit', 'people', 'পরীক্ষা ও হিফজ', 'পুনঃভর্তি ও ভর্তি ফরম', '/admin/readmit'],
