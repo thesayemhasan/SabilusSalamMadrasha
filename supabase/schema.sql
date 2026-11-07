@@ -1645,3 +1645,24 @@ create policy "teacher_subjects_admin" on public.teacher_subjects for all using 
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('subject_assign','people','শিক্ষার্থী ও হাজিরা','শিক্ষকের বিষয় নির্ধারণ','Teacher subjects',29)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== স্বাস্থ্য ব্যবস্থাপনা: শিক্ষার্থীর অসুস্থতা, আঘাত, চিকিৎসা ও ব্যয়ের খাতা =====
+create table if not exists public.health_records (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.students(id) on delete cascade,
+  rec_date date not null default current_date,
+  kind text not null default 'illness' check (kind in ('illness','injury','checkup','other')),
+  problem text,
+  treatment text,
+  cost numeric(12,2) not null default 0,
+  note text,
+  created_at timestamptz not null default now()
+);
+create index if not exists health_student_idx on public.health_records(student_id, rec_date desc);
+alter table public.health_records enable row level security;
+drop policy if exists "health_admin" on public.health_records;
+create policy "health_admin" on public.health_records for all using (public.has_area('people')) with check (public.has_area('people'));
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('health','people','শিক্ষার্থী ও হাজিরা','স্বাস্থ্য ব্যবস্থাপনা','Health',30)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;

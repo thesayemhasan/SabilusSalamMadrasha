@@ -9,5 +9,5 @@ export const TABLES = [
   ['ledger_categories', 'আয়-ব্যয়ের খাত', 'id'], ['ledger', 'আয়-ব্যয়ের খাতা', 'id'], ['staff_advances', 'অগ্রিম', 'id'], ['salary_payments', 'বেতন', 'id'], ['audit_log', 'আর্থিক লগ', 'id'],
   ['exams', 'পরীক্ষা', 'id'], ['exam_halls', 'পরীক্ষার কক্ষ', 'id'], ['exam_seats', 'পরীক্ষার সিট', 'id'], ['exam_subjects', 'পরীক্ষার বিষয়', 'id'], ['exam_marks', 'নম্বর', 'id'], ['hifz_logs', 'হিফজ', 'id'],
   ['print_configs', 'প্রিন্ট ডিজাইন', 'key'], ['student_incidents', 'আচরণগত ঘটনা', 'id'], ['readmissions', 'পুনঃভর্তির সিদ্ধান্ত', 'id'],
-  ['exam_results', 'শিটের ফলাফল', 'id'], ['result_verify', 'মার্কশিট যাচাইয়ের কোড', 'code'], ['certificates', 'টিসি ও সনদপত্র', 'id'], ['student_savings_tx', 'শিক্ষার্থী সঞ্চয়', 'id'], ['teacher_subjects', 'শিক্ষকের বিষয়', 'id'],
+  ['exam_results', 'শিটের ফলাফল', 'id'], ['result_verify', 'মার্কশিট যাচাইয়ের কোড', 'code'], ['certificates', 'টিসি ও সনদপত্র', 'id'], ['student_savings_tx', 'শিক্ষার্থী সঞ্চয়', 'id'], ['teacher_subjects', 'শিক্ষকের বিষয়', 'id'], ['health_records', 'স্বাস্থ্য রেকর্ড', 'id'],
 ]
