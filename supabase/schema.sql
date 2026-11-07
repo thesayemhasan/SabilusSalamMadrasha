@@ -1726,3 +1726,107 @@ create policy "board_reg_admin" on public.board_registrations for all using (pub
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('board_exam','people','পরীক্ষা ও হিফজ','বোর্ড পরীক্ষা','Board exam',32)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== শিক্ষক পোর্টাল: শিক্ষক শুধু নিজের নির্ধারিত শ্রেণির হাজিরা ও নম্বর এন্ট্রি করতে পারবেন =====
+alter table public.profiles add column if not exists staff_id uuid references public.staff(id) on delete set null;
+
+create or replace function public.teacher_class_ids() returns setof uuid
+language sql security definer set search_path = public stable as $$
+  select distinct ts.class_id from public.teacher_subjects ts
+  join public.profiles p on p.staff_id = ts.staff_id
+  where p.id = auth.uid() and p.role = 'teacher' and ts.class_id is not null;
+$$;
+
+create or replace function public.is_teacher() returns boolean
+language sql security definer set search_path = public stable as $$
+  select exists (select 1 from public.profiles where id = auth.uid() and role = 'teacher' and staff_id is not null);
+$$;
+
+-- শিক্ষক অ্যাকাউন্ট তৈরি (আগের ৫ প্যারামিটারের সংস্করণ সরিয়ে নতুনটি; p_staff ঐচ্ছিক)
+drop function if exists public.admin_create_user(text, text, text, text, jsonb);
+create or replace function public.admin_create_user(
+  p_email text, p_password text, p_name text, p_role text, p_perms jsonb, p_staff uuid default null
+) returns uuid
+language plpgsql security definer set search_path = public, auth, extensions as $$
+declare uid uuid := gen_random_uuid(); em text := lower(trim(p_email));
+begin
+  if not public.is_super() then raise exception 'শুধু সুপার অ্যাডমিন পারে'; end if;
+  if em is null or em = '' then raise exception 'ইমেইল দিন'; end if;
+  if length(coalesce(p_password,'')) < 6 then raise exception 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'; end if;
+  if p_role not in ('none','admin','accountant','staff','teacher') then raise exception 'ভূমিকা সঠিক নয়'; end if;
+  if p_role = 'teacher' and p_staff is null then raise exception 'শিক্ষকের রেকর্ড বাছুন'; end if;
+  if exists (select 1 from auth.users where lower(email) = em) then raise exception 'এই ইমেইলে আগেই অ্যাকাউন্ট আছে'; end if;
+
+  insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+    raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change)
+  values ('00000000-0000-0000-0000-000000000000', uid, 'authenticated', 'authenticated', em,
+    crypt(p_password, gen_salt('bf')), now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    jsonb_build_object('full_name', coalesce(nullif(trim(p_name),''), em)), now(), now(), '', '', '', '');
+
+  insert into auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
+  values (gen_random_uuid(), uid, jsonb_build_object('sub', uid::text, 'email', em, 'email_verified', true),
+    'email', uid::text, now(), now(), now());
+
+  update public.profiles set role = p_role, permissions = coalesce(p_perms, '{}'::jsonb),
+    full_name = coalesce(nullif(trim(p_name),''), em),
+    staff_id = case when p_role = 'teacher' then p_staff else null end where id = uid;
+  return uid;
+end; $$;
+
+-- শিক্ষকের জন্য নিয়ন্ত্রিত অ্যাক্সেস (অ্যাডমিন নীতির পাশাপাশি, শুধু নিজের শ্রেণি)
+drop policy if exists "teacher_students_sel" on public.students;
+create policy "teacher_students_sel" on public.students for select
+  using (public.is_teacher() and class_id in (select public.teacher_class_ids()));
+
+drop policy if exists "teacher_classes_sel" on public.classes;
+create policy "teacher_classes_sel" on public.classes for select
+  using (public.is_teacher() and id in (select public.teacher_class_ids()));
+
+drop policy if exists "teacher_att_sel" on public.attendance;
+drop policy if exists "teacher_att_ins" on public.attendance;
+drop policy if exists "teacher_att_upd" on public.attendance;
+create policy "teacher_att_sel" on public.attendance for select
+  using (public.is_teacher() and person_type = 'student'
+    and person_id in (select id from public.students where class_id in (select public.teacher_class_ids())));
+create policy "teacher_att_ins" on public.attendance for insert
+  with check (public.is_teacher() and person_type = 'student'
+    and person_id in (select id from public.students where class_id in (select public.teacher_class_ids())));
+create policy "teacher_att_upd" on public.attendance for update
+  using (public.is_teacher() and person_type = 'student'
+    and person_id in (select id from public.students where class_id in (select public.teacher_class_ids())))
+  with check (public.is_teacher() and person_type = 'student'
+    and person_id in (select id from public.students where class_id in (select public.teacher_class_ids())));
+
+drop policy if exists "teacher_exams_sel" on public.exams;
+create policy "teacher_exams_sel" on public.exams for select using (public.is_teacher());
+
+drop policy if exists "teacher_exsub_sel" on public.exam_subjects;
+create policy "teacher_exsub_sel" on public.exam_subjects for select
+  using (public.is_teacher() and class_id in (select public.teacher_class_ids()));
+
+drop policy if exists "teacher_marks_sel" on public.exam_marks;
+drop policy if exists "teacher_marks_ins" on public.exam_marks;
+drop policy if exists "teacher_marks_upd" on public.exam_marks;
+create policy "teacher_marks_sel" on public.exam_marks for select
+  using (public.is_teacher() and subject_id in (select id from public.exam_subjects where class_id in (select public.teacher_class_ids())));
+create policy "teacher_marks_ins" on public.exam_marks for insert
+  with check (public.is_teacher()
+    and subject_id in (select id from public.exam_subjects where class_id in (select public.teacher_class_ids()))
+    and student_id in (select id from public.students where class_id in (select public.teacher_class_ids())));
+create policy "teacher_marks_upd" on public.exam_marks for update
+  using (public.is_teacher() and subject_id in (select id from public.exam_subjects where class_id in (select public.teacher_class_ids())))
+  with check (public.is_teacher()
+    and subject_id in (select id from public.exam_subjects where class_id in (select public.teacher_class_ids()))
+    and student_id in (select id from public.students where class_id in (select public.teacher_class_ids())));
+
+drop policy if exists "teacher_ts_sel" on public.teacher_subjects;
+create policy "teacher_ts_sel" on public.teacher_subjects for select
+  using (staff_id = (select staff_id from public.profiles where id = auth.uid() and role = 'teacher'));
+
+drop policy if exists "teacher_staff_sel" on public.staff;
+create policy "teacher_staff_sel" on public.staff for select
+  using (id = (select staff_id from public.profiles where id = auth.uid() and role = 'teacher'));
+

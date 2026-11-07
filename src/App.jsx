@@ -29,6 +29,7 @@ import Reminders from './pages/admin/Reminders'
 import Health from './pages/admin/Health'
 import Library from './pages/admin/Library'
 import BoardExam from './pages/admin/BoardExam'
+import TeacherPortal from './pages/admin/TeacherPortal'
 import TeacherSubjects from './pages/admin/TeacherSubjects'
 import ReceiptSettings from './pages/admin/ReceiptSettings'
 import ModulePage from './pages/admin/ModulePage'
@@ -70,6 +71,7 @@ export default function App() {
         <Route path="signup" element={<Account />} />
       </Route>
 
+      <Route path="teacher" element={<TeacherPortal />} />
       <Route path="admin" element={<AdminShell />}>
         <Route index element={<Dashboard />} />
         <Route path="applications" element={<Applications />} />

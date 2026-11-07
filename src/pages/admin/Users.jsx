@@ -127,16 +127,19 @@ function Credentials({ c, onClose }) {
 }
 
 function NewUser({ list, onClose, onDone }) {
-  const [f, setF] = useState({ name: '', email: '', password: genPw(), role: 'staff' })
+  const [f, setF] = useState({ name: '', email: '', password: genPw(), role: 'staff', staff_id: '' })
   const [perms, setPerms] = useState({})
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [teachers, setTeachers] = useState([])
+  useEffect(() => { supabase.from('staff').select('id,name_bn,name_en').eq('kind', 'teacher').eq('status', 'active').order('name_bn').then(({ data }) => setTeachers(data || [])) }, [])
   async function save(e) {
     e.preventDefault()
+    if (f.role === 'teacher' && !f.staff_id) return setErr('শিক্ষকের রেকর্ড বাছুন')
     setBusy(true)
     setErr('')
     const clean = Object.fromEntries(list.map((x) => [x.key, !!perms[x.key]]))
-    const { error } = await supabase.rpc('admin_create_user', { p_email: f.email, p_password: f.password, p_name: f.name, p_role: f.role, p_perms: clean })
+    const { error } = await supabase.rpc('admin_create_user', { p_email: f.email, p_password: f.password, p_name: f.name, p_role: f.role, p_perms: clean, p_staff: f.role === 'teacher' ? f.staff_id || null : null })
     setBusy(false)
     if (error) return setErr(error.message)
     onDone({ email: f.email.trim().toLowerCase(), password: f.password })
@@ -153,9 +156,13 @@ function NewUser({ list, onClose, onDone }) {
             <button type="button" className="btn outline" onClick={() => setF({ ...f, password: genPw() })}>নতুন বানান</button>
           </div>
         </div>
-        <div className="field"><label>ভূমিকা</label><Select value={f.role} onChange={(v) => setF({ ...f, role: v })} options={['admin', 'accountant', 'staff'].map((r) => [r, ROLE_LABEL[r]])} /></div>
+        <div className="field"><label>ভূমিকা</label><Select value={f.role} onChange={(v) => setF({ ...f, role: v })} options={['admin', 'accountant', 'staff', 'teacher'].map((r) => [r, ROLE_LABEL[r]])} /></div>
+        {f.role === 'teacher' ? (
+          <div className="field"><label>শিক্ষকের রেকর্ড (শিক্ষক ও কর্মচারী তালিকা থেকে)</label><Select value={f.staff_id} onChange={(v) => setF({ ...f, staff_id: v })} options={teachers.map((t) => [t.id, t.name_bn || t.name_en])} placeholder="শিক্ষক বাছুন" /><p className="muted" style={{ fontSize: '.85rem' }}>শিক্ষক শুধু /teacher পেজে ঢুকে নিজের নির্ধারিত শ্রেণির হাজিরা ও নম্বর এন্ট্রি করতে পারবেন। শ্রেণি নির্ধারণ হয় “শিক্ষকের বিষয় নির্ধারণ” পেজে।</p></div>
+        ) : (<>
         <TemplatePick onPick={(t) => setPerms(Object.fromEntries(t.keys.map((k) => [k, true])))} />
         <PermBoxes list={list} perms={perms} setPerms={setPerms} />
+        </>)}
         {err && <div className="alert err">{err}</div>}
         <div className="row-actions">
           <button className="btn" disabled={busy}>{busy ? 'তৈরি হচ্ছে…' : 'তৈরি করুন'}</button>
@@ -314,7 +321,7 @@ export default function Users() {
 
   if (!isSuper) return <div className="alert warn">এই পেজ শুধু সুপার অ্যাডমিনের জন্য।</div>
 
-  const staff = rows.filter((r) => STAFF_ROLES.includes(r.role))
+  const staff = rows.filter((r) => STAFF_ROLES.includes(r.role) || r.role === 'teacher')
 
   async function deactivate(r) {
     if (!(await confirm({ name: r.full_name || r.email, text: 'অ্যাডমিন অ্যাক্সেস বন্ধ করবেন? ব্যক্তি সাবস্ক্রাইবার হয়ে যাবে।', ok: 'হ্যাঁ, বন্ধ করুন' }))) return
@@ -345,11 +352,11 @@ export default function Users() {
                 <tr key={r.id}>
                   <td><b>{r.full_name || '—'}</b><div className="muted" style={{ fontSize: '.85rem' }}>{r.email}</div></td>
                   <td>{ROLE_LABEL[r.role]}</td>
-                  <td>{r.role === 'super_admin' ? 'সব' : `${count(r)} / ${list.length}`}</td>
+                  <td>{r.role === 'super_admin' ? 'সব' : r.role === 'teacher' ? 'শিক্ষক পোর্টাল' : `${count(r)} / ${list.length}`}</td>
                   <td>
                     {r.role !== 'super_admin' && (
                       <div className="row-actions">
-                        <button className="btn small" onClick={() => setEdit(r)}>ফিচার</button>
+                        {r.role !== 'teacher' && <button className="btn small" onClick={() => setEdit(r)}>ফিচার</button>}
                         <button className="btn small outline" onClick={() => setAccess(r)}>ইমেইল / পাসওয়ার্ড</button>
                         <button className="btn small danger" onClick={() => deactivate(r)}>অ্যাক্সেস বন্ধ</button>
                       </div>

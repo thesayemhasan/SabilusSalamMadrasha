@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { configured } from '../../lib/supabase'
 import { useAuth, useSite } from '../../lib/store'
 import { ScrollToTop } from '../../components/ScrollTools'
@@ -134,6 +134,7 @@ export default function AdminShell() {
   }
   if (loading) return <div className="login-wrap"><p>লোড হচ্ছে…</p></div>
   if (!session) return <Login />
+  if (profile?.role === 'teacher') return <Navigate to="/teacher" replace />
   if (!isStaff) {
     return (
       <div className="login-wrap">
