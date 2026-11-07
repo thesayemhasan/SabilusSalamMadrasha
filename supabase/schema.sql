@@ -1666,3 +1666,39 @@ create policy "health_admin" on public.health_records for all using (public.has_
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('health','people','শিক্ষার্থী ও হাজিরা','স্বাস্থ্য ব্যবস্থাপনা','Health',30)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== লাইব্রেরি: বই, প্রদান ও ফেরত =====
+create table if not exists public.library_books (
+  id uuid primary key default gen_random_uuid(),
+  code text,
+  title text not null,
+  author text,
+  category text,
+  shelf text,
+  copies int not null default 1,
+  note text,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.library_loans (
+  id uuid primary key default gen_random_uuid(),
+  book_id uuid not null references public.library_books(id) on delete cascade,
+  student_id uuid references public.students(id) on delete cascade,
+  staff_id uuid references public.staff(id) on delete cascade,
+  issued_on date not null default current_date,
+  due_on date,
+  returned_on date,
+  note text,
+  created_at timestamptz not null default now(),
+  check (student_id is not null or staff_id is not null)
+);
+create index if not exists library_loans_book_idx on public.library_loans(book_id);
+alter table public.library_books enable row level security;
+alter table public.library_loans enable row level security;
+drop policy if exists "library_books_admin" on public.library_books;
+create policy "library_books_admin" on public.library_books for all using (public.has_area('people')) with check (public.has_area('people'));
+drop policy if exists "library_loans_admin" on public.library_loans;
+create policy "library_loans_admin" on public.library_loans for all using (public.has_area('people')) with check (public.has_area('people'));
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('library','people','শিক্ষার্থী ও হাজিরা','লাইব্রেরি','Library',31)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
