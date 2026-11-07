@@ -4,6 +4,7 @@ import { fetchAll } from '../../lib/db'
 import { Select, useConfirm, Modal } from '../../components/Ui'
 import Icon from '../../components/Icon'
 import { downloadCsv } from './Crud'
+import LateFee from './LateFee'
 import { useYearDates } from '../../lib/year'
 import { PrintDoc, VoidDialog, addDays, dateBn, monthName, monthStr, nm, num, taka, todayStr, useMethods, voidPatch } from './fin'
 
@@ -116,6 +117,7 @@ export function Billing() {
     <>
       <h2>বিল তৈরি</h2>
       <AutoBilling />
+      <LateFee />
       <p className="muted">মাস, ফি-র ধরন ও শ্রেণি বেছে পুরো মাসের বিল এক ক্লিকে তৈরি করুন। আগে "ফি-র ধরন ও পরিমাণ" পেইজে পরিমাণ ঠিক করে নিন।</p>
       <div className="card form" style={{ marginBottom: 14 }}>
         <div className="row2">
