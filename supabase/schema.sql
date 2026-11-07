@@ -1830,3 +1830,28 @@ drop policy if exists "teacher_staff_sel" on public.staff;
 create policy "teacher_staff_sel" on public.staff for select
   using (id = (select staff_id from public.profiles where id = auth.uid() and role = 'teacher'));
 
+
+
+-- ===== দৈনিক পাঠ মূল্যায়ন: প্রতিদিন শিক্ষার্থীর পড়া কেমন হলো =====
+create table if not exists public.daily_lessons (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references public.students(id) on delete cascade,
+  lesson_date date not null default current_date,
+  subject text not null default '',
+  rating text not null default 'good' check (rating in ('excellent','good','average','weak','none')),
+  note text,
+  created_by uuid default auth.uid(),
+  created_at timestamptz not null default now(),
+  unique (student_id, lesson_date, subject)
+);
+create index if not exists daily_lessons_date_idx on public.daily_lessons(lesson_date);
+alter table public.daily_lessons enable row level security;
+drop policy if exists "daily_lessons_admin" on public.daily_lessons;
+create policy "daily_lessons_admin" on public.daily_lessons for all using (public.has_area('people')) with check (public.has_area('people'));
+drop policy if exists "teacher_lessons_all" on public.daily_lessons;
+create policy "teacher_lessons_all" on public.daily_lessons for all
+  using (public.is_teacher() and student_id in (select id from public.students where class_id in (select public.teacher_class_ids())))
+  with check (public.is_teacher() and student_id in (select id from public.students where class_id in (select public.teacher_class_ids())));
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('daily_lesson','people','শিক্ষার্থী ও হাজিরা','দৈনিক পাঠ মূল্যায়ন','Daily lesson',31)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;

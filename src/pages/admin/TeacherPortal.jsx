@@ -5,6 +5,7 @@ import { fetchAll } from '../../lib/db'
 import { useAuth, useSite } from '../../lib/store'
 import { Select } from '../../components/Ui'
 import { nm, num, todayStr } from './fin'
+import DailyLesson from './DailyLesson'
 
 const bn = (n) => Number(n || 0).toLocaleString('bn-BD')
 const STATUS = [['present', 'উপস্থিত'], ['absent', 'অনুপস্থিত'], ['late', 'দেরি'], ['leave', 'ছুটি']]
@@ -227,6 +228,7 @@ export default function TeacherPortal() {
         <button className={tab === 'mine' ? 'on' : ''} onClick={() => setTab('mine')}>আমার ক্লাস</button>
         <button className={tab === 'att' ? 'on' : ''} onClick={() => setTab('att')}>হাজিরা</button>
         <button className={tab === 'marks' ? 'on' : ''} onClick={() => setTab('marks')}>নম্বর এন্ট্রি</button>
+        {modules.daily_lesson !== false && <button className={tab === 'lesson' ? 'on' : ''} onClick={() => setTab('lesson')}>দৈনিক পাঠ</button>}
       </div>
       {tab === 'mine' && (
         <div className="table-wrap"><table>
@@ -239,6 +241,7 @@ export default function TeacherPortal() {
       )}
       {tab === 'att' && (mine.length ? <Attend classes={mine} /> : <div className="alert info">কোনো শ্রেণি নির্ধারিত নেই।</div>)}
       {tab === 'marks' && (mine.length ? <Marks classes={mine} /> : <div className="alert info">কোনো শ্রেণি নির্ধারিত নেই।</div>)}
+      {tab === 'lesson' && (mine.length ? <DailyLesson classes={mine} /> : <div className="alert info">কোনো শ্রেণি নির্ধারিত নেই।</div>)}
     </div>
   )
 }
