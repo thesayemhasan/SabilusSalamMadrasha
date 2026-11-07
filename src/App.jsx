@@ -25,6 +25,7 @@ import Boarding from './pages/admin/Boarding'
 import SeatPlan from './pages/admin/SeatPlan'
 import Savings from './pages/admin/Savings'
 import Holidays from './pages/admin/Holidays'
+import Reminders from './pages/admin/Reminders'
 import ReceiptSettings from './pages/admin/ReceiptSettings'
 import ModulePage from './pages/admin/ModulePage'
 import Enroll from './pages/admin/Enroll'
@@ -86,6 +87,7 @@ export default function App() {
         <Route path="hifz" element={<Gate mod="hifz" name="হিফজ ট্র্যাকিং"><Hifz /></Gate>} />
         <Route path="idcards" element={<Gate mod="id_print" name="আইডি কার্ড ও প্রিন্ট"><IdCards /></Gate>} />
         <Route path="admit" element={<Gate mod="admit_card" name="প্রবেশপত্র"><Admit /></Gate>} />
+        <Route path="reminders" element={<Gate mod="reminders" name="রিমাইন্ডার"><Reminders /></Gate>} />
         <Route path="holidays" element={<Gate mod="leave" name="ছুটি ব্যবস্থাপনা"><Holidays /></Gate>} />
         <Route path="savings" element={<Gate mod="student_savings" name="শিক্ষার্থী সঞ্চয়"><Savings /></Gate>} />
         <Route path="seatplan" element={<Gate mod="seat_plan" name="পরীক্ষার সিট প্ল্যান"><SeatPlan /></Gate>} />

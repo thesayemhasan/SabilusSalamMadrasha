@@ -7,6 +7,7 @@ export const FEATURES = [
   ['staff', 'people', 'শিক্ষার্থী ও হাজিরা', 'শিক্ষক ও কর্মচারী', '/admin/staff'],
   ['import', 'people', 'শিক্ষার্থী ও হাজিরা', 'এক্সেল ইম্পোর্ট', '/admin/import'],
   ['enroll', 'people', 'শিক্ষার্থী ও হাজিরা', 'শিক্ষাবর্ষে ভর্তি ও উত্তীর্ণ', '/admin/enroll'],
+  ['reminders', 'people', 'প্রধান', 'রিমাইন্ডার', '/admin/reminders'],
   ['holidays', 'people', 'শিক্ষার্থী ও হাজিরা', 'ছুটির তালিকা', '/admin/holidays'],
   ['boarding', 'people', 'শিক্ষার্থী ও হাজিরা', 'বোর্ডিং ও রুম', '/admin/boarding'],
   ['attendance', 'people', 'শিক্ষার্থী ও হাজিরা', 'হাজিরা', '/admin/attendance'],

@@ -1607,3 +1607,22 @@ create policy "holidays_admin" on public.holidays for all using (public.has_area
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('holidays','people','শিক্ষার্থী ও হাজিরা','ছুটির তালিকা','Holidays',28)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== রিমাইন্ডার: কাজ, নোট ও তারিখের স্মরণ =====
+create table if not exists public.reminders (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  note text,
+  due_date date,
+  done boolean not null default false,
+  created_at timestamptz not null default now()
+);
+alter table public.reminders enable row level security;
+drop policy if exists "reminders_admin" on public.reminders;
+create policy "reminders_admin" on public.reminders for all
+  using (public.has_area('people') or public.has_area('finance') or public.has_area('system') or public.has_area('cms'))
+  with check (public.has_area('people') or public.has_area('finance') or public.has_area('system') or public.has_area('cms'));
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('reminders','people','প্রধান','রিমাইন্ডার','Reminders',5)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
