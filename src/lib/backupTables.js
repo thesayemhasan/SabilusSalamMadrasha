@@ -3,7 +3,7 @@ export const TABLES = [
   ['profiles', 'ব্যবহারকারী', 'id'], ['features', 'ফিচার তালিকা', 'key'], ['site_texts', 'সাইটের লেখা', 'key'], ['site_settings', 'সাইটের সেটিংস', 'key'], ['modules', 'মডিউল সুইচ', 'key'], ['integrations', 'মেশিন ও বাইরের সেবা', 'key'],
   ['notices', 'নোটিশ', 'id'], ['events', 'ইভেন্ট', 'id'], ['gallery', 'গ্যালারি', 'id'], ['public_teachers', 'শিক্ষকবৃন্দ (পাবলিক)', 'id'], ['departments', 'বিভাগ', 'id'], ['hero_slides', 'হোম স্লাইড', 'id'], ['home_blocks', 'হোম সেকশন', 'id'],
   ['admission_applications', 'ভর্তির আবেদন', 'id'], ['contact_messages', 'যোগাযোগের বার্তা', 'id'], ['admission_fields', 'ভর্তি ফরমের ঘর', 'id'], ['lookups', 'তালিকা (আবাসিক ধরন, সময় ইত্যাদি)', 'id'],
-  ['academic_years', 'শিক্ষাবর্ষ', 'id'], ['classes', 'শ্রেণি/হালকা', 'id'], ['boarding_rooms', 'বোর্ডিং রুম', 'id'], ['students', 'ছাত্র-ছাত্রী', 'id'], ['enrollments', 'বর্ষে ভর্তি', 'id'], ['staff', 'শিক্ষক-কর্মচারী', 'id'],
+  ['academic_years', 'শিক্ষাবর্ষ', 'id'], ['classes', 'শ্রেণি/হালকা', 'id'], ['holidays', 'ছুটির তালিকা', 'id'], ['boarding_rooms', 'বোর্ডিং রুম', 'id'], ['students', 'ছাত্র-ছাত্রী', 'id'], ['enrollments', 'বর্ষে ভর্তি', 'id'], ['staff', 'শিক্ষক-কর্মচারী', 'id'],
   ['attendance', 'হাজিরা', 'id'], ['device_punches', 'মেশিনের পাঞ্চ', 'id'],
   ['fee_heads', 'ফি-র ধরন', 'id'], ['fee_rates', 'ফি-র হার', 'id'], ['student_fees', 'শিক্ষার্থীভিত্তিক ফি', 'id'], ['invoices', 'বিল', 'id'], ['payments', 'আদায় ও রসিদ', 'id'], ['payment_items', 'রসিদের আইটেম', 'id'],
   ['ledger_categories', 'আয়-ব্যয়ের খাত', 'id'], ['ledger', 'আয়-ব্যয়ের খাতা', 'id'], ['staff_advances', 'অগ্রিম', 'id'], ['salary_payments', 'বেতন', 'id'], ['audit_log', 'আর্থিক লগ', 'id'],

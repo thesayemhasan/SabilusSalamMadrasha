@@ -1589,3 +1589,21 @@ create policy "student_savings_admin" on public.student_savings_tx for all
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('savings','finance','ফি ও হিসাব','শিক্ষার্থী সঞ্চয়','Student savings',27)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== ছুটি ব্যবস্থাপনা: ঘোষিত ছুটির তালিকা (হাজিরার পাতায় দেখানো হয়) =====
+create table if not exists public.holidays (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  from_date date not null,
+  to_date date not null,
+  note text,
+  created_at timestamptz not null default now(),
+  check (to_date >= from_date)
+);
+alter table public.holidays enable row level security;
+drop policy if exists "holidays_admin" on public.holidays;
+create policy "holidays_admin" on public.holidays for all using (public.has_area('people')) with check (public.has_area('people'));
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('holidays','people','শিক্ষার্থী ও হাজিরা','ছুটির তালিকা','Holidays',28)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;

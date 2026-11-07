@@ -9,6 +9,7 @@ import { dig } from '../../lib/util'
 import { Select, useConfirm } from '../../components/Ui'
 import Icon from '../../components/Icon'
 import { downloadCsv } from './Crud'
+import { useHolidays } from '../../lib/holidays'
 
 const ST = [['present', 'উপস্থিত', 'p'], ['absent', 'অনুপস্থিত', 'a'], ['late', 'দেরি', 'l'], ['leave', 'ছুটি', 'v']]
 const ST_L = Object.fromEntries(ST.map(([k, l]) => [k, l]))
@@ -53,6 +54,8 @@ function useClasses() {
 /* ---------------- হাজিরা নিন ---------------- */
 function Take({ type, sessions, classes }) {
   const { date, setDate, min: dMin, max: dMax } = useYearDay()
+  const hol = useHolidays()
+  const holiday = hol.on(date)
   const en = useEnrolled()
   const enIds = en.ids; const enActive = en.active
   const keep = useCallback((id) => !enActive || (enIds ? enIds.has(id) : false), [enActive, enIds])
@@ -111,6 +114,7 @@ function Take({ type, sessions, classes }) {
         {type === 'student' && <button className="btn outline" onClick={() => (changed.length ? setMsg('আগে হাজিরা সংরক্ষণ করুন, তারপর SMS পাঠান।') : setSmsOpen(true))}><Icon name="mail" size={17} cls="cur" /> অনুপস্থিতদের অভিভাবককে SMS</button>}
       </div>
       {smsOpen && <SmsSend kind="absent" title="অনুপস্থিত শিক্ষার্থীদের অভিভাবককে SMS" onClose={() => setSmsOpen(false)} rows={people.filter((p) => marks[p.id] === 'absent').map((p) => ({ student_id: p.id, name: nm(p), phone: p.guardian_phone || p.phone2, vars: { date: new Date(`${date}T00:00:00`).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' }) } }))} />}
+      {holiday && <div className="alert err" style={{ marginBottom: 12 }}>এই তারিখে ঘোষিত ছুটি আছে: <b>{holiday.title}</b>। ছুটির দিনে হাজিরা নেওয়ার দরকার না-ও হতে পারে।</div>}
       <div className="grid g4" style={{ marginBottom: 14 }}>
         {[['উপস্থিত', count('present')], ['অনুপস্থিত', count('absent')], ['দেরি', count('late')], ['ছুটি', count('leave')]].map(([l, n]) => (
           <div className="card stat" key={l}><b>{dig(n, 'bn')}</b><span className="muted">{l}</span></div>
@@ -151,6 +155,7 @@ function Take({ type, sessions, classes }) {
 /* ---------------- মাসিক রিপোর্ট ---------------- */
 function Report({ type, sessions, classes }) {
   const { month, setMonth, min: mMin, max: mMax } = useYearMonth()
+  const holM = useHolidays()
   const en = useEnrolled()
   const enIds = en.ids; const enActive = en.active
   const [session, setSession] = useState('day')
@@ -193,7 +198,7 @@ function Report({ type, sessions, classes }) {
         </button>
       </div>
       <div className="card" style={{ marginBottom: 14 }}>
-        মোট উপস্থিত <b>{dig(tot.present, 'bn')}</b> · দেরি <b>{dig(tot.late, 'bn')}</b> · অনুপস্থিত <b>{dig(tot.absent, 'bn')}</b> · ছুটি <b>{dig(tot.leave, 'bn')}</b> · গড় উপস্থিতি <b>{base ? dig(Math.round(((tot.present + tot.late) / base) * 100), 'bn') + '%' : '—'}</b>
+        মোট উপস্থিত <b>{dig(tot.present, 'bn')}</b> · দেরি <b>{dig(tot.late, 'bn')}</b> · অনুপস্থিত <b>{dig(tot.absent, 'bn')}</b> · ছুটি <b>{dig(tot.leave, 'bn')}</b> · গড় উপস্থিতি <b>{base ? dig(Math.round(((tot.present + tot.late) / base) * 100), 'bn') + '%' : '—'}</b>{holM.daysIn(month) > 0 && <> · ঘোষিত ছুটি <b>{dig(holM.daysIn(month), 'bn')}</b> দিন</>}
       </div>
       <div className="card table-wrap">
         <table>
