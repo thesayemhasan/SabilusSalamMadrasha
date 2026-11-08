@@ -26,6 +26,7 @@ import SeatPlan from './pages/admin/SeatPlan'
 import Savings from './pages/admin/Savings'
 import Holidays from './pages/admin/Holidays'
 import Reminders from './pages/admin/Reminders'
+import AccountsBook from './pages/admin/AccountsBook'
 import GradeScale from './pages/admin/GradeScale'
 import DailyLesson from './pages/admin/DailyLesson'
 import Health from './pages/admin/Health'
@@ -113,6 +114,7 @@ export default function App() {
         <Route path="billing" element={<Gate mod="fees" name="বেতন ও চাঁদা"><Billing /></Gate>} />
         <Route path="fee-setup" element={<Gate mod="fees" name="বেতন ও চাঁদা"><FeeSetup /></Gate>} />
         <Route path="income" element={<Gate mod="accounts_basic" name="আয়-ব্যয় হিসাব"><Ledger kind="income" /></Gate>} />
+        <Route path="accounts-book" element={<Gate mod="accounting" name="অ্যাকাউন্টিং"><AccountsBook /></Gate>} />
         <Route path="expense" element={<Gate mod="accounts_basic" name="আয়-ব্যয় হিসাব"><Ledger kind="expense" /></Gate>} />
         <Route path="account-setup" element={<Gate mod="accounts_basic" name="আয়-ব্যয় হিসাব"><AccountSetup /></Gate>} />
         <Route path="salary" element={<Gate mod="hr_payroll" name="এইচআর ও পে-রোল"><Salary /></Gate>} />

@@ -30,6 +30,7 @@ export const FEATURES = [
   ['fee_setup', 'finance', 'ফি ও হিসাব', 'ফি-র ধরন ও পরিমাণ', '/admin/fee-setup'],
   ['income', 'finance', 'ফি ও হিসাব', 'দান ও অন্যান্য আয়', '/admin/income'],
   ['savings', 'finance', 'ফি ও হিসাব', 'শিক্ষার্থী সঞ্চয়', '/admin/savings'],
+  ['accounts_book', 'finance', 'ফি ও হিসাব', 'ভাউচার ও খতিয়ান', '/admin/accounts-book'],
   ['expense', 'finance', 'ফি ও হিসাব', 'ব্যয়', '/admin/expense'],
   ['salary', 'finance', 'ফি ও হিসাব', 'শিক্ষক-কর্মচারীর বেতন', '/admin/salary'],
   ['reports', 'finance', 'ফি ও হিসাব', 'হিসাব ও রিপোর্ট', '/admin/reports'],
