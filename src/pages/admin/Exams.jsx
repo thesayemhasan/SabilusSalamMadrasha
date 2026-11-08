@@ -9,10 +9,10 @@ import { useAuth, useSite } from '../../lib/store'
 import { Select, useConfirm } from '../../components/Ui'
 import { downloadCsv } from './Crud'
 import { dateBn, nm, num, printNode, printedAt } from './fin'
+import { gradeByPct, gradeByGpa, useGradeScales } from '../../lib/gradeScale'
 
 // গ্রেড স্কেল (মাদরাসা বোর্ডের প্রচলিত ধাঁচ): শতকরা নম্বর → গ্রেড, পয়েন্ট
 export const GRADES = [[80, 'A+', 5], [70, 'A', 4], [60, 'A-', 3.5], [50, 'B', 3], [40, 'C', 2], [33, 'D', 1], [0, 'F', 0]]
-const gradeOf = (pct) => GRADES.find(([min]) => pct >= min)
 const bn = (n, d = 0) => Number(n).toLocaleString('bn-BD', { maximumFractionDigits: d, minimumFractionDigits: d })
 
 export function useClassList() {
@@ -257,7 +257,7 @@ function Entry({ exams, classes }) {
 }
 
 /* ---------- ফলাফল ---------- */
-function compute(subs, students, marks) {
+function compute(subs, students, marks, scale) {
   const byKey = {}
   marks.forEach((m) => { byKey[`${m.student_id}|${m.subject_id}`] = m })
   const fullTotal = subs.reduce((a, s) => a + num(s.full_marks), 0)
@@ -270,17 +270,17 @@ function compute(subs, students, marks) {
       const m = byKey[`${st.id}|${s.id}`]
       if (!m) return { s, none: true }
       entered += 1
-      if (m.absent) { fail = true; return { s, absent: true, g: 'F' } }
+      if (m.absent) { fail = true; return { s, absent: true, g: scale[scale.length - 1][1] } }
       const v = num(m.marks)
       total += v
-      const g = gradeOf((v / num(s.full_marks)) * 100)
+      const g = gradeByPct(scale, (v / num(s.full_marks)) * 100)
       const failed = v < num(s.pass_marks)
       if (failed) fail = true
       gp += failed ? 0 : g[2]
-      return { s, v, g: failed ? 'F' : g[1], failed }
+      return { s, v, g: failed ? scale[scale.length - 1][1] : g[1], failed }
     })
     const gpa = fail ? 0 : subs.length ? gp / subs.length : 0
-    const g = fail ? 'F' : gpa >= 5 ? 'A+' : gpa >= 4 ? 'A' : gpa >= 3.5 ? 'A-' : gpa >= 3 ? 'B' : gpa >= 2 ? 'C' : gpa >= 1 ? 'D' : 'F'
+    const g = fail ? scale[scale.length - 1][1] : gradeByGpa(scale, gpa)
     return { st, cells, total, fail, gpa, grade: g, complete: entered === subs.length, pct: fullTotal ? (total / fullTotal) * 100 : 0 }
   })
   const ranked = rows.filter((r) => r.complete).sort((a, b) => (a.fail - b.fail) || (b.total - a.total))
@@ -303,7 +303,9 @@ function Results({ exams, classes }) {
     if (!exam) return setMarks([])
     fetchAll((a, b) => supabase.from('exam_marks').select('*').eq('exam_id', exam).order('id').range(a, b)).then(({ data }) => setMarks(data || []))
   }, [exam, cls])
-  const { rows, fullTotal } = useMemo(() => compute(subs, students, marks), [subs, students, marks])
+  const { scaleFor } = useGradeScales()
+  const scale = useMemo(() => scaleFor(cls), [scaleFor, cls])
+  const { rows, fullTotal } = useMemo(() => compute(subs, students, marks, scale), [subs, students, marks, scale])
   const ex = exams.find((e) => e.id === exam)
   const cl = classes.find((c) => c.id === cls)
   const sorted = [...rows].sort((a, b) => (a.pos ?? 9999) - (b.pos ?? 9999) || (b.complete - a.complete) || String(a.st.student_no).localeCompare(String(b.st.student_no)))

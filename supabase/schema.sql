@@ -1855,3 +1855,9 @@ create policy "teacher_lessons_all" on public.daily_lessons for all
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('daily_lesson','people','শিক্ষার্থী ও হাজিরা','দৈনিক পাঠ মূল্যায়ন','Daily lesson',31)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== সেকশনভিত্তিক গ্রেড স্কেল (স্কেল print_configs-এ 'grade_scales' কী-তে জমা থাকে) =====
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('grade_scale','people','পরীক্ষা ও হিফজ','গ্রেড স্কেল','Grade scale',26)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;

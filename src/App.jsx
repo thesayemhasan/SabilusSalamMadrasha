@@ -26,6 +26,7 @@ import SeatPlan from './pages/admin/SeatPlan'
 import Savings from './pages/admin/Savings'
 import Holidays from './pages/admin/Holidays'
 import Reminders from './pages/admin/Reminders'
+import GradeScale from './pages/admin/GradeScale'
 import DailyLesson from './pages/admin/DailyLesson'
 import Health from './pages/admin/Health'
 import Library from './pages/admin/Library'
@@ -98,6 +99,7 @@ export default function App() {
         <Route path="board-exam" element={<Gate mod="board_exam" name="বোর্ড পরীক্ষা"><BoardExam /></Gate>} />
         <Route path="library" element={<Gate mod="library" name="লাইব্রেরি"><Library /></Gate>} />
         <Route path="daily-lesson" element={<Gate mod="daily_lesson" name="দৈনিক পাঠ মূল্যায়ন"><h2>দৈনিক পাঠ মূল্যায়ন</h2><DailyLesson /></Gate>} />
+        <Route path="grade-scale" element={<Gate mod="section_grade" name="সেকশনভিত্তিক গ্রেড"><GradeScale /></Gate>} />
         <Route path="health" element={<Gate mod="health" name="স্বাস্থ্য ব্যবস্থাপনা"><Health /></Gate>} />
         <Route path="reminders" element={<Gate mod="reminders" name="রিমাইন্ডার"><Reminders /></Gate>} />
         <Route path="holidays" element={<Gate mod="leave" name="ছুটি ব্যবস্থাপনা"><Holidays /></Gate>} />

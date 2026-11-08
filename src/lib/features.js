@@ -9,6 +9,7 @@ export const FEATURES = [
   ['enroll', 'people', 'শিক্ষার্থী ও হাজিরা', 'শিক্ষাবর্ষে ভর্তি ও উত্তীর্ণ', '/admin/enroll'],
   ['reminders', 'people', 'প্রধান', 'রিমাইন্ডার', '/admin/reminders'],
   ['subject_assign', 'people', 'শিক্ষার্থী ও হাজিরা', 'শিক্ষকের বিষয় নির্ধারণ', '/admin/teacher-subjects'],
+  ['grade_scale', 'people', 'পরীক্ষা ও হিফজ', 'গ্রেড স্কেল', '/admin/grade-scale'],
   ['daily_lesson', 'people', 'শিক্ষার্থী ও হাজিরা', 'দৈনিক পাঠ মূল্যায়ন', '/admin/daily-lesson'],
   ['health', 'people', 'শিক্ষার্থী ও হাজিরা', 'স্বাস্থ্য ব্যবস্থাপনা', '/admin/health'],
   ['library', 'people', 'শিক্ষার্থী ও হাজিরা', 'লাইব্রেরি', '/admin/library'],
