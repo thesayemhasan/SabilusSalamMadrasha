@@ -1896,3 +1896,48 @@ create index if not exists students_route_idx on public.students(transport_route
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('transport','people','শিক্ষার্থী ও হাজিরা','ট্রান্সপোর্ট ও বাস','Transport',27)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== বাসভাড়া ফি-র সাথে যুক্ত =====
+alter table public.fee_heads add column if not exists for_transport boolean not null default false;
+create or replace function public.generate_monthly_invoices(p_month text default to_char(current_date, 'YYYY-MM')) returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  n int;
+  mnames text[] := array['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+  mlabel text;
+begin
+  if auth.uid() is not null and not public.has_area('finance') then
+    raise exception 'অনুমতি নেই';
+  end if;
+  if p_month !~ '^\d{4}-(0[1-9]|1[0-2])$' then
+    raise exception 'মাসের ফরম্যাট ভুল (২০২৬-০৩ এর মতো হতে হবে)';
+  end if;
+  mlabel := mnames[substr(p_month, 6, 2)::int] || ' ' || translate(substr(p_month, 1, 4), '0123456789', '০১২৩৪৫৬৭৮৯');
+  insert into public.invoices (student_id, head_id, period, title, amount)
+  select s.id, h.id, p_month, coalesce(nullif(h.name_bn, ''), h.name_en, '') || ' — ' || mlabel, x.amt
+  from public.students s
+  cross join public.fee_heads h
+  left join public.student_fees sf on sf.student_id = s.id and sf.head_id = h.id
+  left join public.transport_routes tr on tr.id = s.transport_route_id
+  cross join lateral (
+    select case
+      when coalesce(sf.exempt, false) then 0
+      else greatest(0, coalesce(sf.amount, case when coalesce(h.for_transport, false) then tr.fare else (
+        select r.amount from public.fee_rates r
+        where r.head_id = h.id
+          and (r.class_id is null or r.class_id = s.class_id)
+          and (r.department_id is null or r.department_id = s.department_id)
+          and (r.residence is null or r.residence = s.residence)
+        order by ((r.class_id is not null)::int + (r.department_id is not null)::int + (r.residence is not null)::int) desc
+        limit 1) end, h.default_amount) - coalesce(sf.discount, 0))
+    end as amt
+  ) x
+  where s.status = 'active' and h.kind = 'monthly' and h.published and x.amt > 0
+    and (not coalesce(h.for_transport, false) or s.transport_route_id is not null)
+  on conflict (student_id, head_id, period) do nothing;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function public.generate_monthly_invoices(text) from public, anon;
+grant execute on function public.generate_monthly_invoices(text) to authenticated;

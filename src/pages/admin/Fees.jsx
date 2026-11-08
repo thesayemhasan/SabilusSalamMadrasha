@@ -9,12 +9,13 @@ import { useYearDates } from '../../lib/year'
 import { PrintDoc, VoidDialog, addDays, dateBn, monthName, monthStr, nm, num, taka, todayStr, useMethods, voidPatch } from './fin'
 
 /* ---------------- বিল তৈরি ---------------- */
-function resolveAmount(st, head, rates, sf) {
+function resolveAmount(st, head, rates, sf, routes = {}) {
   const o = sf[`${st.id}|${head.id}`]
   if (o?.exempt) return 0
+  if (head.for_transport && !st.transport_route_id) return 0
   const cand = rates.filter((r) => r.head_id === head.id && (!r.class_id || r.class_id === st.class_id) && (!r.department_id || r.department_id === st.department_id) && (!r.residence || r.residence === st.residence))
   cand.sort((a, b) => ['class_id', 'department_id', 'residence'].filter((k) => b[k]).length - ['class_id', 'department_id', 'residence'].filter((k) => a[k]).length)
-  const base = o && o.amount != null ? num(o.amount) : cand.length ? num(cand[0].amount) : num(head.default_amount)
+  const base = o && o.amount != null ? num(o.amount) : head.for_transport ? num(routes[st.transport_route_id]?.fare ?? head.default_amount) : cand.length ? num(cand[0].amount) : num(head.default_amount)
   return Math.max(0, base - num(o?.discount))
 }
 
@@ -83,16 +84,17 @@ export function Billing() {
     (async () => {
       const st = await fetchAll((a, b) => { let q = supabase.from('students').select('*').eq('status', 'active').order('id').range(a, b); if (cls) q = q.eq('class_id', cls); return q })
       const rates = await fetchAll((a, b) => supabase.from('fee_rates').select('*').order('id').range(a, b))
+      const rts = await fetchAll((a, b) => supabase.from('transport_routes').select('id,fare').order('id').range(a, b))
       const sfr = await fetchAll((a, b) => supabase.from('student_fees').select('*').order('id').range(a, b))
       const inv = await fetchAll((a, b) => supabase.from('invoices').select('student_id,head_id,period').order('id').range(a, b))
-      setData({ students: st.data || [], rates: rates.data || [], sf: Object.fromEntries((sfr.data || []).map((r) => [`${r.student_id}|${r.head_id}`, r])), existing: new Set((inv.data || []).map((r) => `${r.student_id}|${r.head_id}|${r.period}`)) })
+      setData({ routes: Object.fromEntries((rts.data || []).map((r) => [r.id, r])), students: st.data || [], rates: rates.data || [], sf: Object.fromEntries((sfr.data || []).map((r) => [`${r.student_id}|${r.head_id}`, r])), existing: new Set((inv.data || []).map((r) => `${r.student_id}|${r.head_id}|${r.period}`)) })
     })()
   }, [cls, msg])
 
   const plan = useMemo(() => {
     const rows = []; let skipped = 0
     data.students.forEach((s) => chosen.forEach((h) => {
-      const amt = resolveAmount(s, h, data.rates, data.sf)
+      const amt = resolveAmount(s, h, data.rates, data.sf, data.routes)
       if (amt <= 0) return
       const period = periodOf(h)
       if (data.existing.has(`${s.id}|${h.id}|${period}`)) { skipped += 1; return }

@@ -14,16 +14,17 @@ const Heads = () => (
   <Crud
     table="fee_heads" title="ফি-র ধরন" order="sort" asc nameOf={(r) => nm(r)}
     hint="যেমন মাসিক বেতন, খাবার ও থাকা, ভর্তি ফি, পরীক্ষা ফি। 'সাধারণ পরিমাণ' সবার জন্য প্রযোজ্য; শ্রেণি/বিভাগ/আবাসিক অনুযায়ী আলাদা পরিমাণ পরের ট্যাবে দিন। খাবারের ফি শুধু আবাসিকদের জন্য হলে সাধারণ পরিমাণ ০ রেখে পরের ট্যাবে 'আবাসিক' ধরনের জন্য পরিমাণ দিন।"
-    blank={{ published: true, sort: 0, kind: 'monthly', default_amount: 0 }}
+    blank={{ published: true, sort: 0, kind: 'monthly', default_amount: 0, for_transport: false }}
     fields={[
       { name: 'name', label: 'নাম', i18n: true, required: true },
       { name: 'kind', label: 'কখন ধরা হবে', type: 'select', options: KINDS },
+      { name: 'for_transport', label: 'বাসভাড়া (শুধু বাসে বরাদ্দ শিক্ষার্থীর বিলে, তার রুটের ভাড়া অনুযায়ী)', type: 'bool' },
       { name: 'default_amount', label: 'সাধারণ পরিমাণ (টাকা)', type: 'number' },
       { name: 'sort', label: 'ক্রম', type: 'number' },
       { name: 'published', label: 'চালু', type: 'bool' },
     ]}
     toggleLabel="চালু"
-    summary={(r) => (<><b>{nm(r)}</b><span className="tag">{r.kind === 'monthly' ? 'মাসিক' : 'এককালীন'}</span>{sub(`সাধারণ পরিমাণ: ${taka(r.default_amount)}`)}</>)}
+    summary={(r) => (<><b>{nm(r)}</b><span className="tag">{r.kind === 'monthly' ? 'মাসিক' : 'এককালীন'}</span>{r.for_transport && <span className="tag">বাসভাড়া</span>}{sub(`সাধারণ পরিমাণ: ${taka(r.default_amount)}`)}</>)}
   />
 )
 
