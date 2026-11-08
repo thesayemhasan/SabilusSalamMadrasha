@@ -1871,3 +1871,28 @@ alter table public.staff_advances add column if not exists voucher_serial bigint
 insert into public.features (key, area, grp, name_bn, name_en, sort) values
   ('accounts_book','finance','ফি ও হিসাব','ভাউচার ও খতিয়ান','Vouchers and ledger book',40)
 on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;
+
+
+-- ===== ট্রান্সপোর্ট: বাস/রুট, চালক, লাইভ ট্র্যাকিং লিংক ও শিক্ষার্থী বরাদ্দ =====
+create table if not exists public.transport_routes (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  vehicle_no text,
+  driver_name text,
+  driver_phone text,
+  tracking_url text,
+  fare numeric not null default 0,
+  capacity int not null default 0,
+  note text,
+  sort int not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table public.transport_routes enable row level security;
+drop policy if exists "transport_routes_admin" on public.transport_routes;
+create policy "transport_routes_admin" on public.transport_routes for all
+  using (public.has_area('people')) with check (public.has_area('people'));
+alter table public.students add column if not exists transport_route_id uuid references public.transport_routes(id) on delete set null;
+create index if not exists students_route_idx on public.students(transport_route_id);
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('transport','people','শিক্ষার্থী ও হাজিরা','ট্রান্সপোর্ট ও বাস','Transport',27)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;

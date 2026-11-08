@@ -60,7 +60,7 @@ const L = [
 export const MODULES = L.map(([key, name, group, step, free, desc]) => ({ key, name, group, step, free, desc }))
 
 // যেগুলো ধাপ ১ এ ইতিমধ্যে তৈরি
-export const BUILT = new Set(['accounting', 'section_grade', 'daily_lesson', 'teacher_portal', 'settings', 'events', 'website', 'students', 'teachers', 'attendance', 'fees', 'accounts_basic', 'reports', 'hr_payroll', 'activity_log', 'exams', 'hifz', 'id_print', 'receipt_online', 'receipt_pad', 'admit_card', 'readmission', 'sms', 'tc_certificate', 'boarding', 'seat_plan', 'student_savings', 'late_fee', 'leave', 'reminders', 'subject_assign', 'health', 'library', 'board_exam'])
+export const BUILT = new Set(['transport', 'accounting', 'section_grade', 'daily_lesson', 'teacher_portal', 'settings', 'events', 'website', 'students', 'teachers', 'attendance', 'fees', 'accounts_basic', 'reports', 'hr_payroll', 'activity_log', 'exams', 'hifz', 'id_print', 'receipt_online', 'receipt_pad', 'admit_card', 'readmission', 'sms', 'tc_certificate', 'boarding', 'seat_plan', 'student_savings', 'late_fee', 'leave', 'reminders', 'subject_assign', 'health', 'library', 'board_exam'])
 
 // বাইরের সেবা, যেগুলো চালু করলে সংশ্লিষ্ট মডিউল নিজে থেকে কাজ শুরু করবে
 export const INTEGRATIONS = [

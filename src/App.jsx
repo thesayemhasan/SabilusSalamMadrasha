@@ -26,6 +26,7 @@ import SeatPlan from './pages/admin/SeatPlan'
 import Savings from './pages/admin/Savings'
 import Holidays from './pages/admin/Holidays'
 import Reminders from './pages/admin/Reminders'
+import Transport from './pages/admin/Transport'
 import AccountsBook from './pages/admin/AccountsBook'
 import GradeScale from './pages/admin/GradeScale'
 import DailyLesson from './pages/admin/DailyLesson'
@@ -106,6 +107,7 @@ export default function App() {
         <Route path="holidays" element={<Gate mod="leave" name="ছুটি ব্যবস্থাপনা"><Holidays /></Gate>} />
         <Route path="savings" element={<Gate mod="student_savings" name="শিক্ষার্থী সঞ্চয়"><Savings /></Gate>} />
         <Route path="seatplan" element={<Gate mod="seat_plan" name="পরীক্ষার সিট প্ল্যান"><SeatPlan /></Gate>} />
+        <Route path="transport" element={<Gate mod="transport" name="ট্রান্সপোর্ট ও বাস"><Transport /></Gate>} />
         <Route path="boarding" element={<Gate mod="boarding" name="বোর্ডিং ব্যবস্থাপনা"><Boarding /></Gate>} />
         <Route path="certificates" element={<Gate mod="tc_certificate" name="টিসি ও সনদপত্র"><Certificates /></Gate>} />
         <Route path="readmit" element={<Gate mod="readmission" name="পুনঃভর্তি ও ভর্তি ফরম"><Readmit /></Gate>} />

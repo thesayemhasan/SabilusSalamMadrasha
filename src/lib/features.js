@@ -14,6 +14,7 @@ export const FEATURES = [
   ['health', 'people', 'শিক্ষার্থী ও হাজিরা', 'স্বাস্থ্য ব্যবস্থাপনা', '/admin/health'],
   ['library', 'people', 'শিক্ষার্থী ও হাজিরা', 'লাইব্রেরি', '/admin/library'],
   ['holidays', 'people', 'শিক্ষার্থী ও হাজিরা', 'ছুটির তালিকা', '/admin/holidays'],
+  ['transport', 'people', 'শিক্ষার্থী ও হাজিরা', 'ট্রান্সপোর্ট ও বাস', '/admin/transport'],
   ['boarding', 'people', 'শিক্ষার্থী ও হাজিরা', 'বোর্ডিং ও রুম', '/admin/boarding'],
   ['attendance', 'people', 'শিক্ষার্থী ও হাজিরা', 'হাজিরা', '/admin/attendance'],
   ['att_setup', 'people', 'শিক্ষার্থী ও হাজিরা', 'আবাসিক ধরন ও হাজিরার সময়', '/admin/residence', '/admin/sessions'],
