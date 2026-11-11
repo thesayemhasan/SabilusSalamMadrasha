@@ -1941,3 +1941,172 @@ begin
 end $$;
 revoke all on function public.generate_monthly_invoices(text) from public, anon;
 grant execute on function public.generate_monthly_invoices(text) to authenticated;
+
+
+-- ===== একাধিক শাখা: শাখা, কর্মীর শাখা-সীমা (ডাটাবেজ স্তরে), শাখা-বদল =====
+create table if not exists public.branches (
+  id uuid primary key default gen_random_uuid(),
+  name_bn text not null,
+  name_en text,
+  code text,
+  address text,
+  phone text,
+  is_default boolean not null default false,
+  sort int not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table public.branches enable row level security;
+drop policy if exists "branches_read" on public.branches;
+create policy "branches_read" on public.branches for select using (auth.uid() is not null);
+drop policy if exists "branches_write" on public.branches;
+create policy "branches_write" on public.branches for all using (public.is_super()) with check (public.is_super());
+create unique index if not exists branches_one_default on public.branches(is_default) where is_default;
+
+-- কর্মীর শাখা: ফাঁকা = সব শাখা। সুপার/সীমাহীন ব্যবহারকারী চলতি শাখা বদলে দেখতে পারেন (active_branch_id)
+alter table public.profiles add column if not exists branch_id uuid references public.branches(id) on delete restrict;
+alter table public.profiles add column if not exists active_branch_id uuid references public.branches(id) on delete set null;
+
+insert into public.branches (name_bn, is_default, sort)
+select 'মূল শাখা', true, 0 where not exists (select 1 from public.branches);
+
+-- আর্থিক এন্ট্রিতে শাখার ঘর বসানো/বদলানো অনুমোদিত (টাকার অঙ্ক ইত্যাদি আগের মতোই তালাবদ্ধ)
+create or replace function public.lock_financial() returns trigger language plpgsql as $f$
+begin
+  if (to_jsonb(new) - 'void' - 'void_reason' - 'voided_at' - 'branch_id') <> (to_jsonb(old) - 'void' - 'void_reason' - 'voided_at' - 'branch_id') then
+    raise exception 'আর্থিক এন্ট্রি বদলানো যাবে না। ভুল হলে বাতিল করে নতুন এন্ট্রি দিন।';
+  end if;
+  if old.void and not new.void then
+    raise exception 'বাতিল এন্ট্রি ফিরিয়ে আনা যাবে না।';
+  end if;
+  return new;
+end $f$;
+
+create or replace function public.my_branch() returns uuid
+language sql security definer set search_path = public stable as $$
+  select coalesce(branch_id, active_branch_id) from public.profiles where id = auth.uid();
+$$;
+create or replace function public.default_branch() returns uuid
+language sql security definer set search_path = public stable as $$
+  select id from public.branches where is_default limit 1;
+$$;
+
+-- শাখা-চিহ্নিত টেবিল
+do $$
+declare t text;
+begin
+  foreach t in array array['students','staff','classes','exams','ledger','payments','invoices','salary_payments','staff_advances'] loop
+    execute format('alter table public.%I add column if not exists branch_id uuid references public.branches(id) on delete restrict', t);
+    execute format('create index if not exists %I on public.%I(branch_id)', t || '_branch_idx', t);
+    execute format('update public.%I set branch_id = (select id from public.branches where is_default limit 1) where branch_id is null', t);
+  end loop;
+end $$;
+
+create or replace function public.set_row_branch() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare b uuid; j jsonb := to_jsonb(new);
+begin
+  if new.branch_id is null then
+    if j->>'student_id' is not null then select branch_id into b from public.students where id = (j->>'student_id')::uuid;
+    elsif j->>'staff_id' is not null then select branch_id into b from public.staff where id = (j->>'staff_id')::uuid; end if;
+    new.branch_id := coalesce(b, public.my_branch(), public.default_branch());
+  end if;
+  return new;
+end $$;
+
+do $$
+declare t text;
+begin
+  foreach t in array array['students','staff','classes','exams','ledger','payments','invoices','salary_payments','staff_advances'] loop
+    execute format('drop trigger if exists set_branch on public.%I', t);
+    execute format('create trigger set_branch before insert on public.%I for each row execute function public.set_row_branch()', t);
+    execute format('drop policy if exists branch_scope on public.%I', t);
+    if t = 'classes' then
+      execute format('create policy branch_scope on public.%I as restrictive for all using (public.my_branch() is null or branch_id is null or branch_id = public.my_branch()) with check (public.my_branch() is null or branch_id is null or branch_id = public.my_branch())', t);
+    else
+      execute format('create policy branch_scope on public.%I as restrictive for all using (public.my_branch() is null or branch_id = public.my_branch()) with check (public.my_branch() is null or branch_id = public.my_branch())', t);
+    end if;
+  end loop;
+end $$;
+
+-- শিক্ষার্থী/কর্মী/শ্রেণি/পরীক্ষা/চালানের সাথে যুক্ত টেবিল: দৃশ্যমান মূল রেকর্ড অনুযায়ী সীমা
+do $$
+declare r record; ok boolean;
+begin
+  for r in select * from (values
+    ('student_fees','student_id','students'),('hifz_logs','student_id','students'),('student_incidents','student_id','students'),
+    ('readmissions','student_id','students'),('sms_log','student_id','students'),('exam_results','student_id','students'),
+    ('result_verify','student_id','students'),('certificates','student_id','students'),('exam_seats','student_id','students'),
+    ('student_savings_tx','student_id','students'),('health_records','student_id','students'),('library_loans','student_id','students'),
+    ('board_registrations','student_id','students'),('daily_lessons','student_id','students'),('enrollments','student_id','students'),
+    ('exam_marks','student_id','students'),('teacher_subjects','staff_id','staff'),('exam_subjects','exam_id','exams'),
+    ('payment_items','invoice_id','invoices')
+  ) v(t, c, p) loop
+    select exists (select 1 from information_schema.columns where table_schema='public' and table_name=r.t and column_name=r.c) into ok;
+    if ok then
+      execute format('drop policy if exists branch_scope on public.%I', r.t);
+      execute format('create policy branch_scope on public.%I as restrictive for all using (public.my_branch() is null or %I is null or %I in (select id from public.%I)) with check (public.my_branch() is null or %I is null or %I in (select id from public.%I))', r.t, r.c, r.c, r.p, r.c, r.c, r.p);
+    end if;
+  end loop;
+end $$;
+drop policy if exists branch_scope on public.attendance;
+create policy branch_scope on public.attendance as restrictive for all
+  using (public.my_branch() is null or (person_type = 'student' and person_id in (select id from public.students)) or (person_type <> 'student' and person_id in (select id from public.staff)))
+  with check (public.my_branch() is null or (person_type = 'student' and person_id in (select id from public.students)) or (person_type <> 'student' and person_id in (select id from public.staff)));
+
+-- চলতি শাখা বদল (শুধু সীমাহীন ব্যবহারকারী; ফাঁকা = সব শাখা)
+create or replace function public.set_active_branch(p_branch uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'লগইন করুন'; end if;
+  if exists (select 1 from public.profiles where id = auth.uid() and branch_id is not null) then
+    raise exception 'আপনার শাখা নির্দিষ্ট করা আছে, বদলানো যাবে না';
+  end if;
+  if p_branch is not null and not exists (select 1 from public.branches where id = p_branch) then raise exception 'শাখা পাওয়া যায়নি'; end if;
+  update public.profiles set active_branch_id = p_branch where id = auth.uid();
+end $$;
+grant execute on function public.set_active_branch(uuid) to authenticated;
+
+create or replace function public.admin_set_user_branch(p_user uuid, p_branch uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_super() then raise exception 'শুধু সুপার অ্যাডমিন পারে'; end if;
+  update public.profiles set branch_id = p_branch, active_branch_id = null where id = p_user;
+end $$;
+grant execute on function public.admin_set_user_branch(uuid, uuid) to authenticated;
+
+-- রেকর্ড অন্য শাখায় সরানো (শিক্ষার্থী/কর্মী সরালে তাদের বিল, রসিদ, বেতনও সাথে যায়)
+create or replace function public.move_to_branch(p_table text, p_ids uuid[], p_branch uuid) returns int
+language plpgsql security definer set search_path = public as $$
+declare n int := 0;
+begin
+  if not public.is_super() then raise exception 'শুধু সুপার অ্যাডমিন পারে'; end if;
+  if not exists (select 1 from public.branches where id = p_branch) then raise exception 'শাখা পাওয়া যায়নি'; end if;
+  if p_table = 'students' then
+    update public.students set branch_id = p_branch where id = any(p_ids); get diagnostics n = row_count;
+    update public.invoices set branch_id = p_branch where student_id = any(p_ids);
+    update public.payments set branch_id = p_branch where student_id = any(p_ids);
+  elsif p_table = 'staff' then
+    update public.staff set branch_id = p_branch where id = any(p_ids); get diagnostics n = row_count;
+    update public.salary_payments set branch_id = p_branch where staff_id = any(p_ids);
+    update public.staff_advances set branch_id = p_branch where staff_id = any(p_ids);
+  elsif p_table in ('classes','exams','ledger') then
+    execute format('update public.%I set branch_id = $1 where id = any($2)', p_table) using p_branch, p_ids;
+    get diagnostics n = row_count;
+  else
+    raise exception 'এই টেবিল সরানো যায় না';
+  end if;
+  return n;
+end $$;
+grant execute on function public.move_to_branch(text, uuid[], uuid) to authenticated;
+
+create or replace function public.move_class_to_branch(p_class uuid, p_branch uuid) returns int
+language plpgsql security definer set search_path = public as $$
+declare ids uuid[]; n int;
+begin
+  if not public.is_super() then raise exception 'শুধু সুপার অ্যাডমিন পারে'; end if;
+  select coalesce(array_agg(id), '{}') into ids from public.students where class_id = p_class;
+  perform public.move_to_branch('classes', array[p_class], p_branch);
+  n := public.move_to_branch('students', ids, p_branch);
+  return n;
+end $$;
+grant execute on function public.move_class_to_branch(uuid, uuid) to authenticated;

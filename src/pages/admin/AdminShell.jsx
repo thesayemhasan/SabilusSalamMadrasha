@@ -4,6 +4,7 @@ import { configured } from '../../lib/supabase'
 import { useAuth, useSite } from '../../lib/store'
 import { ScrollToTop } from '../../components/ScrollTools'
 import Icon from '../../components/Icon'
+import { BranchPick } from './Branches'
 import { MODULES, MODULE_GROUPS, BUILT } from '../../lib/modules'
 import { PATH_FEATURE } from '../../lib/features'
 import { YearProvider, useYear } from '../../lib/year'
@@ -14,10 +15,10 @@ const MENU = [
   ['পরীক্ষা ও হিফজ', [['/admin/exams', 'clipboard', 'পরীক্ষা ও ফলাফল'], ['/admin/hifz', 'books', 'হিফজ ট্র্যাকিং'], ['/admin/idcards', 'users', 'আইডি কার্ড'], ['/admin/admit', 'clipboard', 'প্রবেশপত্র'], ['/admin/seatplan', 'clipboard', 'পরীক্ষার সিট প্ল্যান'], ['/admin/board-exam', 'clipboard', 'বোর্ড পরীক্ষা'], ['/admin/certificates', 'clipboard', 'টিসি ও সনদপত্র'], ['/admin/readmit', 'apply', 'পুনঃভর্তি ও ভর্তি ফরম']]],
   ['ফি ও হিসাব', [['/admin/fees', 'wallet', 'ফি আদায় ও রসিদ'], ['/admin/savings', 'wallet', 'শিক্ষার্থী সঞ্চয়'], ['/admin/billing', 'clipboard', 'বিল তৈরি'], ['/admin/fee-setup', 'sliders', 'ফি-র ধরন ও পরিমাণ'], ['/admin/income', 'coins', 'দান ও অন্যান্য আয়'], ['/admin/expense', 'coins', 'ব্যয়'], ['/admin/accounts-book', 'clipboard', 'ভাউচার ও খতিয়ান'], ['/admin/salary', 'users', 'শিক্ষক-কর্মচারীর বেতন'], ['/admin/reports', 'chart', 'হিসাব ও রিপোর্ট'], ['/admin/account-setup', 'gear', 'খাত ও পেমেন্ট মাধ্যম'], ['/admin/audit', 'shield', 'আর্থিক লগ'], ['/admin/receipt-settings', 'printer', 'রসিদের লেখা ও ডিজাইন']]],
   ['ওয়েবসাইট', [['/admin/texts', 'edit', 'সাইটের লেখা'], ['/admin/slides', 'image', 'হোম স্লাইড'], ['/admin/departments', 'books', 'বিভাগসমূহ'], ['/admin/home-blocks', 'building', 'হোম সেকশন (নতুন রো)'], ['/admin/notices', 'megaphone', 'নোটিশ'], ['/admin/events', 'calendar', 'ইভেন্ট ও টাইমার'], ['/admin/gallery', 'video', 'গ্যালারি'], ['/admin/teachers', 'teacher', 'শিক্ষকবৃন্দ (পাবলিক)'], ['/admin/admission-form', 'apply', 'ভর্তি ফরম']]],
-  ['সিস্টেম', [['/admin/years', 'calendar', 'শিক্ষাবর্ষ'], ['/admin/sms', 'mail', 'এসএমএস'], ['/admin/backup', 'upload', 'ব্যাকআপ ও ডাউনলোড'], ['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'সাইটের সেটিংস (হেডার, ফুটার…)'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
+  ['সিস্টেম', [['/admin/years', 'calendar', 'শিক্ষাবর্ষ'], ['/admin/branches', 'building', 'শাখা'], ['/admin/sms', 'mail', 'এসএমএস'], ['/admin/backup', 'upload', 'ব্যাকআপ ও ডাউনলোড'], ['/admin/modules', 'sliders', 'মডিউল সুইচ'], ['/admin/integrations', 'plug', 'মেশিন ও বাইরের সেবা'], ['/admin/settings', 'gear', 'সাইটের সেটিংস (হেডার, ফুটার…)'], ['/admin/users', 'users', 'ব্যবহারকারী ও অনুমতি']]],
 ]
 
-const PATH_MOD = { '/admin/sms': 'sms', '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance', '/admin/fees': 'fees', '/admin/billing': 'fees', '/admin/fee-setup': 'fees', '/admin/income': 'accounts_basic', '/admin/expense': 'accounts_basic', '/admin/account-setup': 'accounts_basic', '/admin/salary': 'hr_payroll', '/admin/reports': 'reports', '/admin/audit': 'activity_log', '/admin/exams': 'exams', '/admin/hifz': 'hifz', '/admin/idcards': 'id_print', '/admin/admit': 'admit_card', '/admin/readmit': 'readmission', '/admin/certificates': 'tc_certificate', '/admin/boarding': 'boarding', '/admin/seatplan': 'seat_plan', '/admin/savings': 'student_savings', '/admin/holidays': 'leave', '/admin/reminders': 'reminders', '/admin/health': 'health', '/admin/daily-lesson': 'daily_lesson', '/admin/transport': 'transport', '/admin/accounts-book': 'accounting', '/admin/grade-scale': 'section_grade', '/admin/library': 'library', '/admin/board-exam': 'board_exam', '/admin/teacher-subjects': 'subject_assign' }
+const PATH_MOD = { '/admin/sms': 'sms', '/admin/students': 'students', '/admin/classes': 'students', '/admin/staff': 'teachers', '/admin/attendance': 'attendance', '/admin/residence': 'students', '/admin/sessions': 'attendance', '/admin/fees': 'fees', '/admin/billing': 'fees', '/admin/fee-setup': 'fees', '/admin/income': 'accounts_basic', '/admin/expense': 'accounts_basic', '/admin/account-setup': 'accounts_basic', '/admin/salary': 'hr_payroll', '/admin/reports': 'reports', '/admin/audit': 'activity_log', '/admin/exams': 'exams', '/admin/hifz': 'hifz', '/admin/idcards': 'id_print', '/admin/admit': 'admit_card', '/admin/readmit': 'readmission', '/admin/certificates': 'tc_certificate', '/admin/boarding': 'boarding', '/admin/seatplan': 'seat_plan', '/admin/savings': 'student_savings', '/admin/holidays': 'leave', '/admin/reminders': 'reminders', '/admin/health': 'health', '/admin/daily-lesson': 'daily_lesson', '/admin/branches': 'multi_branch', '/admin/transport': 'transport', '/admin/accounts-book': 'accounting', '/admin/grade-scale': 'section_grade', '/admin/library': 'library', '/admin/board-exam': 'board_exam', '/admin/teacher-subjects': 'subject_assign' }
 
 // মেনু খোঁজার সময় বিকল্প নামেও পাওয়ার জন্য (বাংলা/ইংরেজি সমার্থক শব্দ)
 const ALIASES = {
@@ -32,6 +33,7 @@ const ALIASES = {
   '/admin/grade-scale': 'গ্রেড স্কেল গ্রেড শতাংশ পয়েন্ট জিপিএ grade gpa সেকশন',
   '/admin/accounts-book': 'ভাউচার খতিয়ান ক্যাশ বই হিসাব voucher ledger cash book',
   '/admin/transport': 'ট্রান্সপোর্ট বাস গাড়ি রুট চালক ট্র্যাকিং transport bus route driver',
+  '/admin/branches': 'শাখা ব্রাঞ্চ ক্যাম্পাস মহিলা branch campus',
   '/admin/health': 'স্বাস্থ্য অসুস্থ রোগ চিকিৎসা ঔষধ ডাক্তার health medical',
   '/admin/library': 'লাইব্রেরি বই কিতাব গ্রন্থাগার প্রদান ফেরত library book',
   '/admin/board-exam': 'বোর্ড পরীক্ষা নিবন্ধন রেজিস্ট্রেশন রোল বেফাক board exam registration',
@@ -153,9 +155,9 @@ export default function AdminShell() {
 
   const seg = pathname.replace(/\/$/, '')
   const featKey = PATH_FEATURE[seg] || (seg.startsWith('/admin/m/') ? PATH_FEATURE['/admin/m'] : null)
-  const allowed = (seg === '/admin/users' || seg === '/admin/backup') ? isSuper : !featKey || can(featKey)
+  const allowed = (seg === '/admin/users' || seg === '/admin/backup' || seg === '/admin/branches') ? isSuper : !featKey || can(featKey)
 
-  const permitted = (to) => (to === '/admin/users' || to === '/admin/backup' ? isSuper : !PATH_FEATURE[to] || can(PATH_FEATURE[to])) && modules[PATH_MOD[to]] !== false
+  const permitted = (to) => (to === '/admin/users' || to === '/admin/backup' || to === '/admin/branches' ? isSuper : !PATH_FEATURE[to] || can(PATH_FEATURE[to])) && modules[PATH_MOD[to]] !== false
   const hits = (() => {
     const k = nk(mq).trim()
     if (!k) return null
@@ -192,7 +194,7 @@ export default function AdminShell() {
             {hits.length === 0 && <p style={{ margin: '8px 12px', opacity: 0.7, fontSize: '.9rem' }}>কোনো মেনু পাওয়া যায়নি।</p>}
           </div>
         )}
-        {!hits && MENU.map(([title, items]) => [title, items.filter(([to]) => (to === '/admin/users' || to === '/admin/backup' ? isSuper : !PATH_FEATURE[to] || can(PATH_FEATURE[to])) && modules[PATH_MOD[to]] !== false)]).filter(([, items]) => items.length > 0).map(([title, items]) => (
+        {!hits && MENU.map(([title, items]) => [title, items.filter(([to]) => (to === '/admin/users' || to === '/admin/backup' || to === '/admin/branches' ? isSuper : !PATH_FEATURE[to] || can(PATH_FEATURE[to])) && modules[PATH_MOD[to]] !== false)]).filter(([, items]) => items.length > 0).map(([title, items]) => (
           <div key={title}>
             <h5>{title}</h5>
             {items.map(([to, ic, label, end]) => (
@@ -221,6 +223,7 @@ export default function AdminShell() {
         <div className="adm-top">
           <button className="menu-btn" onClick={() => setOpen(true)}><Icon name="menu" size={22} /></button>
           <span className="muted grow" style={{ fontSize: '.9rem' }}>{profile.full_name || profile.email}</span>
+          {modules.multi_branch && <BranchPick />}
           <YearPick />
           <button type="button" className="theme-btn solid" aria-label="theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
             <span key={theme} className="theme-ic"><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} cls="cur" /></span>
