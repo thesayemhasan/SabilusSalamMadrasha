@@ -24,6 +24,9 @@ export const NoticesAdmin = () => (
       { name: 'end_at', label: 'শেষের সময় (ঐচ্ছিক, টাইমারের জন্য)', type: 'datetime' },
       { name: 'show_start_timer', label: 'টাইমার: "শুরু হতে বাকি" দেখান', type: 'bool' },
       { name: 'show_end_timer', label: 'টাইমার: "শেষ হতে বাকি" দেখান', type: 'bool' },
+      { name: 'button_kind', label: 'নোটিশে বাটন (ঐচ্ছিক)', type: 'select', options: [['', 'কোনো বাটন নয়'], ['photocard', 'ফটোকার্ড বানান (ফটোকার্ড চালু থাকলে দেখা যাবে)'], ['link', 'অন্য লিংক']] },
+      { name: 'button_text', label: 'বাটনের লেখা (ফাঁকা রাখলে নিজে থেকে বসবে)' },
+      { name: 'button_url', label: 'লিংক (শুধু "অন্য লিংক" হলে; যেমন https://… বা /events)' },
       { name: 'pinned', label: 'গুরুত্বপূর্ণ (উপরে পিন করুন)', type: 'bool' },
       { name: 'published', label: 'প্রকাশিত', type: 'bool' },
     ]}
