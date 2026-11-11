@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useSite } from '../../lib/store'
-import { BUILT, INTEGRATIONS, MODULES, MODULE_GROUPS } from '../../lib/modules'
+import { BUILT, INTEGRATIONS, MODULES, MODULE_GROUPS, isOn } from '../../lib/modules'
 import { Switch, useConfirm } from '../../components/Ui'
 
 export function Modules() {
@@ -27,7 +27,7 @@ export function Modules() {
           <h3>{g.label}</h3>
           {MODULES.filter((m) => m.group === g.id).map((m) => {
             const built = BUILT.has(m.key)
-            const on = built ? modules[m.key] !== false : Boolean(modules[m.key])
+            const on = isOn(modules, m.key)
             return (
               <div className="mod-row" key={m.key}>
                 <div>

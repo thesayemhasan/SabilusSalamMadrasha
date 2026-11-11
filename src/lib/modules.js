@@ -58,6 +58,10 @@ const L = [
   ['late_fee', 'বিলম্ব ফি ও টেক্সট পরিবর্তন', 'extra', 5, false, 'দেরিতে বেতন দিলে বিলম্ব ফি'],
 ]
 
+// যে মডিউল নিজে থেকে বন্ধ থাকে (অ্যাডমিন চালু না করা পর্যন্ত)
+export const OFF_BY_DEFAULT = new Set(['photocard', 'multi_branch'])
+export const isOn = (modules, key) => (OFF_BY_DEFAULT.has(key) ? modules[key] === true : BUILT.has(key) ? modules[key] !== false : Boolean(modules[key]))
+
 export const MODULES = L.map(([key, name, group, step, free, desc]) => ({ key, name, group, step, free, desc }))
 
 // যেগুলো ধাপ ১ এ ইতিমধ্যে তৈরি

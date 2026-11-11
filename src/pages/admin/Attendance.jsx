@@ -1,3 +1,4 @@
+import { OFF_BY_DEFAULT } from '../../lib/modules'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
@@ -20,7 +21,7 @@ const hhmm = (iso) => (iso ? new Date(iso).toLocaleTimeString('bn-BD', { hour: '
 // মডিউল বন্ধ থাকলে পেইজ দেখাবে না
 export function Gate({ mod, name, children }) {
   const { modules } = useSite()
-  if (modules[mod] === false) {
+  if (OFF_BY_DEFAULT.has(mod) ? modules[mod] !== true : modules[mod] === false) {
     return (
       <div className="card">
         <h3>{name} মডিউল বন্ধ আছে</h3>

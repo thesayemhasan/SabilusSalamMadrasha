@@ -1,13 +1,15 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useSite } from '../../lib/store'
-import { BUILT, MODULES, MODULE_GROUPS } from '../../lib/modules'
+import { BUILT, MODULES, MODULE_GROUPS, isOn } from '../../lib/modules'
 import { Switch } from '../../components/Ui'
 
 const LINKS = {
   attendance: ['/admin/integrations', 'ZKTeco মেশিনের তথ্য বসান'],
   sms: ['/admin/integrations', 'এসএমএস গেটওয়ের তথ্য বসান'],
   online_payment: ['/admin/integrations', 'পেমেন্ট গেটওয়ের তথ্য বসান'],
+  photocard: ['/admin/photocard', 'ফটোকার্ডের ডিজাইন খুলুন'],
+  multi_branch: ['/admin/branches', 'শাখা পেজ খুলুন'],
   events: ['/admin/events', 'ইভেন্ট ক্যালেন্ডার খুলুন'],
   website: ['/admin/texts', 'ওয়েবসাইটের লেখা সম্পাদনা করুন'],
   settings: ['/admin/settings', 'প্রতিষ্ঠানের তথ্য খুলুন'],
@@ -20,7 +22,7 @@ export default function ModulePage() {
   if (!m) return <Navigate to="/admin" replace />
   const group = MODULE_GROUPS.find((g) => g.id === m.group)
   const built = BUILT.has(m.key)
-  const on = built ? modules[m.key] !== false : Boolean(modules[m.key])
+  const on = isOn(modules, m.key)
   const link = LINKS[m.key]
 
   async function toggle(v) {

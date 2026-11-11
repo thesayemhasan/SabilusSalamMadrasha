@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { fetchAll } from '../../lib/db'
 import { useAuth, useSite } from '../../lib/store'
 import { PATH_FEATURE } from '../../lib/features'
-import { MODULES, BUILT } from '../../lib/modules'
+import { MODULES, isOn } from '../../lib/modules'
 import Icon from '../../components/Icon'
 import { Select } from '../../components/Ui'
 import { ChartCard, Columns, Donut, HBars } from '../../components/Charts'
@@ -268,7 +268,7 @@ export default function Dashboard() {
   useEffect(() => {
     Promise.all([supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'), supabase.from('staff').select('*', { count: 'exact', head: true }).eq('status', 'active')]).then(([a, b]) => setCnt({ stu: a.count ?? 0, staff: b.count ?? 0 }))
   }, [])
-  const enabled = MODULES.filter((m) => (BUILT.has(m.key) ? modules[m.key] !== false : modules[m.key])).length
+  const enabled = MODULES.filter((m) => isOn(modules, m.key)).length
   const tiles = [
     ['সক্রিয় শিক্ষার্থী', enD.active ? (stuY ?? undefined) : cnt.stu, '/admin/students'],
     ['শিক্ষক-কর্মচারী', cnt.staff, '/admin/staff'],
