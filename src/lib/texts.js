@@ -136,6 +136,28 @@ export const TEXT_GROUPS = [
     ],
   },
   {
+    id: 'photocard',
+    label: 'ফটোকার্ড পাতা (মাহফিল)',
+    items: [
+      ['pc.title', 'ফটোকার্ড বানান', '', 'Make your photo card'],
+      ['pc.sub', 'আপনার ছবি দিয়ে মাহফিলের সুন্দর ফটোকার্ড বানিয়ে ডাউনলোড করুন ও সবাইকে শেয়ার করুন।', '', 'Add your photo to our event card, download it and share.'],
+      ['pc.privacy', 'আপনার ছবি আমাদের সার্ভারে যায় না, শুধু আপনার ফোন বা কম্পিউটারেই থাকে।', '', 'Your photo is never uploaded. It stays on your device.'],
+      ['pc.step1', '১. ডিজাইন বাছুন', '', '1. Choose a design'],
+      ['pc.step2', '২. আপনার ছবি দিন', '', '2. Add your photo'],
+      ['pc.step3', '৩. সরান ও বড়-ছোট করুন', '', '3. Move and zoom'],
+      ['pc.choose', 'ছবি বাছুন', '', 'Choose photo'],
+      ['pc.change', 'অন্য ছবি দিন', '', 'Change photo'],
+      ['pc.zoom', 'ছবি বড়-ছোট', '', 'Zoom'],
+      ['pc.hint', 'ছবিটি আঙুল বা মাউস দিয়ে টেনে সরান; দুই আঙুলে বড়-ছোট করুন।', '', 'Drag the photo to move it; pinch to zoom.'],
+      ['pc.download', 'ডাউনলোড করুন', '', 'Download'],
+      ['pc.share', 'শেয়ার করুন', '', 'Share'],
+      ['pc.saveHint', 'ডাউনলোড না হলে নিচের ছবিটি চেপে ধরে “ছবি সংরক্ষণ” করুন। ফেসবুক/মেসেঞ্জার থেকে খুললে ক্রোম ব্রাউজারে খুলুন।', '', 'If the download does not start, press and hold the image below to save it. Open in Chrome if you came from Facebook or Messenger.'],
+      ['pc.closed', 'ফটোকার্ড এখন বন্ধ আছে।', '', 'The photo card is closed right now.'],
+      ['pc.none', 'এখনো কোনো ডিজাইন যোগ হয়নি।', '', 'No designs yet.'],
+      ['pc.error', 'ছবিটি খোলা যায়নি। অন্য একটি ছবি দিন।', '', 'Could not open this photo. Try another one.'],
+    ],
+  },
+  {
     id: 'result',
     label: 'ফলাফল দেখার পাতা (অভিভাবক)',
     items: [

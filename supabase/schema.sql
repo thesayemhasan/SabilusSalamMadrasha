@@ -2110,3 +2110,37 @@ begin
   return n;
 end $$;
 grant execute on function public.move_class_to_branch(uuid, uuid) to authenticated;
+
+
+-- ===== ফটোকার্ড (মাহফিলের জন্য): অ্যাডমিন ডিজাইন দেন, সবাই নিজের ফটো বসিয়ে কার্ড বানায় =====
+create table if not exists public.photocard_templates (
+  id uuid primary key default gen_random_uuid(),
+  title_bn text not null default '',
+  image_url text not null,
+  width int not null default 1080,
+  height int not null default 1080,
+  shape text not null default 'rect' check (shape in ('rect','round','circle')),
+  layer text not null default 'under' check (layer in ('under','over')),
+  px numeric not null default 0.2, py numeric not null default 0.2,
+  pw numeric not null default 0.6, ph numeric not null default 0.6,
+  published boolean not null default true,
+  sort int not null default 0,
+  made_count int not null default 0,
+  created_at timestamptz not null default now()
+);
+alter table public.photocard_templates enable row level security;
+drop policy if exists "photocard_read" on public.photocard_templates;
+create policy "photocard_read" on public.photocard_templates for select using (published or public.has_area('cms'));
+drop policy if exists "photocard_admin" on public.photocard_templates;
+create policy "photocard_admin" on public.photocard_templates for all using (public.has_area('cms')) with check (public.has_area('cms'));
+
+-- কতজন কার্ড বানাল তার নামহীন গণনা (কোনো ব্যক্তিগত তথ্য জমা হয় না)
+create or replace function public.photocard_made(p_id uuid) returns void
+language sql security definer set search_path = public as $$
+  update public.photocard_templates set made_count = made_count + 1 where id = p_id and published;
+$$;
+grant execute on function public.photocard_made(uuid) to anon, authenticated;
+
+insert into public.features (key, area, grp, name_bn, name_en, sort) values
+  ('photocard','cms','ওয়েবসাইট','ফটোকার্ড (মাহফিল)','Photo card',60)
+on conflict (key) do update set area = excluded.area, grp = excluded.grp, name_bn = excluded.name_bn, name_en = excluded.name_en, sort = excluded.sort;

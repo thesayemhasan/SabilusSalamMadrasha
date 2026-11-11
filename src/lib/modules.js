@@ -52,6 +52,7 @@ const L = [
   ['health', 'স্বাস্থ্য ব্যবস্থাপনা', 'extra', 5, false, 'স্বাস্থ্য রিপোর্ট, অসুস্থতা, চিকিৎসা ব্যয়'],
   ['section_grade', 'সেকশনভিত্তিক গ্রেড ও উপস্থিতি নম্বর', 'extra', 5, false, 'সেকশন অনুযায়ী গ্রেড স্কেল'],
   ['tc_certificate', 'টিসি ও সনদপত্র', 'extra', 5, false, 'টিসি ও সনদ তৈরি ও প্রিন্ট'],
+  ['photocard', 'ফটোকার্ড (মাহফিল)', 'extra', 5, true, 'সবাই নিজের ছবি দিয়ে ফটোকার্ড বানায়; যেকোনো সময় চালু-বন্ধ'],
   ['transport', 'ট্রান্সপোর্ট ও বাস ট্র্যাকিং', 'extra', 5, false, 'বাসের লাইভ ট্র্যাকিং লিংক'],
   ['leave', 'ছুটি ব্যবস্থাপনা', 'extra', 5, true, 'ঘোষিত ছুটি হাজিরা ও বেতনে ধরা হয়'],
   ['late_fee', 'বিলম্ব ফি ও টেক্সট পরিবর্তন', 'extra', 5, false, 'দেরিতে বেতন দিলে বিলম্ব ফি'],
@@ -60,7 +61,7 @@ const L = [
 export const MODULES = L.map(([key, name, group, step, free, desc]) => ({ key, name, group, step, free, desc }))
 
 // যেগুলো ধাপ ১ এ ইতিমধ্যে তৈরি
-export const BUILT = new Set(['multi_branch', 'transport', 'accounting', 'section_grade', 'daily_lesson', 'teacher_portal', 'settings', 'events', 'website', 'students', 'teachers', 'attendance', 'fees', 'accounts_basic', 'reports', 'hr_payroll', 'activity_log', 'exams', 'hifz', 'id_print', 'receipt_online', 'receipt_pad', 'admit_card', 'readmission', 'sms', 'tc_certificate', 'boarding', 'seat_plan', 'student_savings', 'late_fee', 'leave', 'reminders', 'subject_assign', 'health', 'library', 'board_exam'])
+export const BUILT = new Set(['photocard', 'multi_branch', 'transport', 'accounting', 'section_grade', 'daily_lesson', 'teacher_portal', 'settings', 'events', 'website', 'students', 'teachers', 'attendance', 'fees', 'accounts_basic', 'reports', 'hr_payroll', 'activity_log', 'exams', 'hifz', 'id_print', 'receipt_online', 'receipt_pad', 'admit_card', 'readmission', 'sms', 'tc_certificate', 'boarding', 'seat_plan', 'student_savings', 'late_fee', 'leave', 'reminders', 'subject_assign', 'health', 'library', 'board_exam'])
 
 // বাইরের সেবা, যেগুলো চালু করলে সংশ্লিষ্ট মডিউল নিজে থেকে কাজ শুরু করবে
 export const INTEGRATIONS = [

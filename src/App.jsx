@@ -26,6 +26,8 @@ import SeatPlan from './pages/admin/SeatPlan'
 import Savings from './pages/admin/Savings'
 import Holidays from './pages/admin/Holidays'
 import Reminders from './pages/admin/Reminders'
+import PhotoCard from './pages/public/PhotoCard'
+import PhotoCardAdmin from './pages/admin/PhotoCardAdmin'
 import Branches from './pages/admin/Branches'
 import Transport from './pages/admin/Transport'
 import AccountsBook from './pages/admin/AccountsBook'
@@ -70,6 +72,7 @@ export default function App() {
         <Route path="contact" element={<Contact />} />
         <Route path="result" element={<Result />} />
         <Route path="verify/:code" element={<Verify />} />
+        <Route path="photocard" element={<PhotoCard />} />
         <Route path="account" element={<Account />} />
         <Route path="privacy" element={<Privacy />} />
         <Route path="terms" element={<Terms />} />
@@ -109,6 +112,7 @@ export default function App() {
         <Route path="savings" element={<Gate mod="student_savings" name="শিক্ষার্থী সঞ্চয়"><Savings /></Gate>} />
         <Route path="seatplan" element={<Gate mod="seat_plan" name="পরীক্ষার সিট প্ল্যান"><SeatPlan /></Gate>} />
         <Route path="transport" element={<Gate mod="transport" name="ট্রান্সপোর্ট ও বাস"><Transport /></Gate>} />
+        <Route path="photocard" element={<PhotoCardAdmin />} />
         <Route path="branches" element={<Gate mod="multi_branch" name="একাধিক শাখা"><Branches /></Gate>} />
         <Route path="boarding" element={<Gate mod="boarding" name="বোর্ডিং ব্যবস্থাপনা"><Boarding /></Gate>} />
         <Route path="certificates" element={<Gate mod="tc_certificate" name="টিসি ও সনদপত্র"><Certificates /></Gate>} />
