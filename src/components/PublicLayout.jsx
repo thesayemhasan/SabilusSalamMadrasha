@@ -5,6 +5,7 @@ import { useAuth, useSite } from '../lib/store'
 import { isExternal, menuOf } from '../lib/util'
 import Icon from './Icon'
 import Socials from './Socials'
+import SitePopup from './SitePopup'
 import { BackToTop, ScrollToTop } from './ScrollTools'
 
 // লোগোতে ক্লিক করলে পেইজ রিফ্রেশ
@@ -83,6 +84,7 @@ export default function PublicLayout() {
 
       <main key={pathname} className="page-in">
         <Outlet />
+        <SitePopup />
       </main>
 
       <footer className="footer">

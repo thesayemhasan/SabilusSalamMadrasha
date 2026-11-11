@@ -206,6 +206,16 @@ export function Admission() {
 }
 
 /* ---------------- নোটিশ ---------------- */
+function NoticeButton({ n }) {
+  const { t, modules } = useSite()
+  if (n.button_kind === 'photocard' && modules.photocard === true) return <div><Link className="btn small" to="/photocard">{n.button_text || t('pc.title')}</Link></div>
+  const u = (n.button_url || '').trim()
+  if (n.button_kind === 'link' && u) {
+    return <div>{/^(https?:|mailto:|tel:)/i.test(u) ? <a className="btn small" href={u} target="_blank" rel="noreferrer">{n.button_text || u}</a> : <Link className="btn small" to={u.startsWith('/') ? u : `/${u}`}>{n.button_text || u}</Link>}</div>
+  }
+  return null
+}
+
 export function Notices() {
   const { t, lang } = useSite()
   const { rows, loading } = useRows('notices', { order: 'date' })
@@ -223,6 +233,7 @@ export function Notices() {
               <h3>{pick(n, 'title', lang)}</h3>
               <p className="pre muted" style={{ margin: 0 }}>{pick(n, 'body', lang)}</p>
               <Countdown start={n.start_at} end={n.end_at} showStart={n.show_start_timer} showEnd={n.show_end_timer} />
+              <NoticeButton n={n} />
             </article>
           ))}
         </div>

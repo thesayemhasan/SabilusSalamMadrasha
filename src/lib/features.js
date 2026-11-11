@@ -45,6 +45,7 @@ export const FEATURES = [
   ['notices', 'cms', 'ওয়েবসাইট', 'নোটিশ', '/admin/notices'],
   ['events', 'cms', 'ওয়েবসাইট', 'ইভেন্ট ও টাইমার', '/admin/events'],
   ['gallery', 'cms', 'ওয়েবসাইট', 'গ্যালারি', '/admin/gallery'],
+  ['popup', 'cms', 'ওয়েবসাইট', 'সাইট পপআপ', '/admin/popup'],
   ['photocard', 'cms', 'ওয়েবসাইট', 'ফটোকার্ড (মাহফিল)', '/admin/photocard'],
   ['teachers', 'cms', 'ওয়েবসাইট', 'শিক্ষকবৃন্দ (পাবলিক)', '/admin/teachers'],
   ['admission_form', 'cms', 'ওয়েবসাইট', 'ভর্তি ফরম', '/admin/admission-form'],

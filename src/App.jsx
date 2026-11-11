@@ -27,6 +27,7 @@ import Savings from './pages/admin/Savings'
 import Holidays from './pages/admin/Holidays'
 import Reminders from './pages/admin/Reminders'
 import PhotoCard from './pages/public/PhotoCard'
+import PopupAdmin from './pages/admin/PopupAdmin'
 import PhotoCardAdmin from './pages/admin/PhotoCardAdmin'
 import Branches from './pages/admin/Branches'
 import Transport from './pages/admin/Transport'
@@ -113,6 +114,7 @@ export default function App() {
         <Route path="seatplan" element={<Gate mod="seat_plan" name="পরীক্ষার সিট প্ল্যান"><SeatPlan /></Gate>} />
         <Route path="transport" element={<Gate mod="transport" name="ট্রান্সপোর্ট ও বাস"><Transport /></Gate>} />
         <Route path="photocard" element={<PhotoCardAdmin />} />
+        <Route path="popup" element={<PopupAdmin />} />
         <Route path="branches" element={<Gate mod="multi_branch" name="একাধিক শাখা"><Branches /></Gate>} />
         <Route path="boarding" element={<Gate mod="boarding" name="বোর্ডিং ব্যবস্থাপনা"><Boarding /></Gate>} />
         <Route path="certificates" element={<Gate mod="tc_certificate" name="টিসি ও সনদপত্র"><Certificates /></Gate>} />
