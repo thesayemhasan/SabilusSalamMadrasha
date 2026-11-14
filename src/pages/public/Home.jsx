@@ -6,6 +6,7 @@ import { dig, fmtDate } from '../../lib/util'
 import Icon from '../../components/Icon'
 import SmartLink from '../../components/SmartLink'
 import Countdown from '../../components/Countdown'
+import { EventRow } from '../../components/ItemButton'
 import SecTitle from '../../components/SecTitle'
 
 export const eventEnd = (e) => e.end_at || e.start_at || `${e.event_date}T23:59:59`
@@ -345,7 +346,7 @@ export function Home() {
                 <Link to="/events" className="list-item" key={e.id}>
                   <span className="date-chip">{fmtDate(e.event_date, lang)}</span>
                   <h3>{pick(e, 'title', lang)}</h3>
-                  <Countdown date={e.event_date} start={e.start_at} end={e.end_at} showStart={e.show_start_timer} showEnd={e.show_end_timer} />
+                  <EventRow e={e} nested />
                 </Link>
               ))}
             </div>

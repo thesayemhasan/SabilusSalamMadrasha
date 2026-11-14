@@ -8,6 +8,7 @@ import { Modal, Select } from '../../components/Ui'
 import Prose from '../../components/Prose'
 import PageHead from '../../components/PageHead'
 import Countdown from '../../components/Countdown'
+import ItemButton, { EventRow } from '../../components/ItemButton'
 import { isUpcoming } from './Home'
 
 export { Home } from './Home'
@@ -207,13 +208,7 @@ export function Admission() {
 
 /* ---------------- নোটিশ ---------------- */
 function NoticeButton({ n }) {
-  const { t, modules } = useSite()
-  if (n.button_kind === 'photocard' && modules.photocard === true) return <div><Link className="btn small" to="/photocard">{n.button_text || t('pc.title')}</Link></div>
-  const u = (n.button_url || '').trim()
-  if (n.button_kind === 'link' && u) {
-    return <div>{/^(https?:|mailto:|tel:)/i.test(u) ? <a className="btn small" href={u} target="_blank" rel="noreferrer">{n.button_text || u}</a> : <Link className="btn small" to={u.startsWith('/') ? u : `/${u}`}>{n.button_text || u}</Link>}</div>
-  }
-  return null
+  return <ItemButton n={n} />
 }
 
 export function Notices() {
@@ -254,7 +249,7 @@ export function Events() {
       <span className="date-chip">{fmtDate(e.event_date, lang)}</span>
       <h3>{pick(e, 'title', lang)}</h3>
       <p className="pre muted" style={{ margin: 0 }}>{pick(e, 'desc', lang)}</p>
-      <Countdown date={e.event_date} start={e.start_at} end={e.end_at} showStart={e.show_start_timer} showEnd={e.show_end_timer} />
+      <EventRow e={e} />
     </article>
   )
   return (
