@@ -51,6 +51,9 @@ export const EventsAdmin = () => (
       { name: 'end_at', label: 'শেষের সময়', type: 'datetime' },
       { name: 'show_start_timer', label: 'টাইমার: "শুরু হতে বাকি" দেখান', type: 'bool' },
       { name: 'show_end_timer', label: 'টাইমার: "শেষ হতে বাকি" দেখান', type: 'bool' },
+      { name: 'button_kind', label: 'ইভেন্টে বাটন (ঐচ্ছিক)', type: 'select', options: [['', 'কোনো বাটন নয়'], ['photocard', 'ফটোকার্ড বানান (ফটোকার্ড চালু থাকলে দেখা যাবে)'], ['link', 'অন্য লিংক']] },
+      { name: 'button_text', label: 'বাটনের লেখা (ফাঁকা রাখলে নিজে থেকে বসবে)' },
+      { name: 'button_url', label: 'লিংক (শুধু "অন্য লিংক" হলে; যেমন https://… বা /notices)' },
       { name: 'published', label: 'প্রকাশিত', type: 'bool' },
     ]}
     summary={(r) => (<><b>{bn(r, 'title')}</b>{(r.show_start_timer || r.show_end_timer) && <span className="tag built">টাইমার</span>}{sub(r.start_at ? new Date(r.start_at).toLocaleString('bn-BD') : r.event_date)}</>)}
